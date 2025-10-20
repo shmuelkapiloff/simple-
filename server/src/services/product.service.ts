@@ -1,4 +1,4 @@
-import { ProductModel } from '../models/product.model';
+import { ProductModel } from "../models/product.model";
 
 export async function listProducts() {
   return ProductModel.find({ isActive: true }).lean();

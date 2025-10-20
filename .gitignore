@@ -1,0 +1,22 @@
+# General
+.DS_Store
+Thumbs.db
+.env
+.env.*
+node_modules/
+.idea/
+.vscode/
+*.log
+
+# Build outputs
+/dist/
+/build/
+/.parcel-cache/
+/.cache/
+coverage/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env/

@@ -1,9 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import compression from 'compression';
-import { errorHandler } from './middlewares/error.middleware';
-import { healthRouter } from './routes/health.routes';
-import { productRouter } from './routes/product.routes';
+import express from "express";
+import cors from "cors";
+import compression from "compression";
+import { errorHandler } from "./middlewares/error.middleware";
+import { healthRouter } from "./routes/health.routes";
+import { productRouter } from "./routes/product.routes";
 
 export function createApp() {
   const app = express();
@@ -14,8 +14,8 @@ export function createApp() {
   app.use(express.json()); // parse JSON bodies
 
   // Routes
-  app.use('/api/health', healthRouter);
-  app.use('/api/products', productRouter);
+  app.use("/api/health", healthRouter);
+  app.use("/api/products", productRouter);
 
   // Error handler (keep last)
   app.use(errorHandler);

@@ -1,23 +1,29 @@
-import { createApp } from './app';
-import { env } from './config/env';
-import { connectMongo } from './config/db';
-import { connectRedis } from './config/redisClient';
-import { logger } from './utils/logger';
+import { createApp } from "./app";
+import { env } from "./config/env";
+import { connectMongo } from "./config/db";
+import { connectRedis } from "./config/redisClient";
+import { logger } from "./utils/logger";
 
 async function main() {
   try {
     await connectMongo();
   } catch (err) {
-    logger.warn({ err }, 'Continuing without Mongo connection for health readiness');
+    logger.warn(
+      { err },
+      "Continuing without Mongo connection for health readiness"
+    );
   }
   try {
     await connectRedis();
   } catch (err) {
-    logger.warn({ err }, 'Continuing without Redis connection for health readiness');
+    logger.warn(
+      { err },
+      "Continuing without Redis connection for health readiness"
+    );
   }
   const app = createApp();
   app.listen(env.PORT, () => {
-    logger.info({ port: env.PORT }, 'Server listening');
+    logger.info({ port: env.PORT }, "Server listening");
   });
 }
 

@@ -55,7 +55,41 @@
             { "listen": "test", "script": { "type": "text/javascript", "exec": [
               "const j = pm.response.json();",
               "pm.test('200', () => pm.response.to.have.status(200));",
-              "pm.test('data array', () => pm.expect(Array.isArray(j.data)).to.eql(true));"
+              "pm.test('data array', () => pm.expect(Array.isArray(j.data)).to.eql(true));",
+              "pm.test('has products', () => pm.expect(j.data.length).to.be.greaterThan(0));",
+              "// שמור ID של מוצר ראשון למטרות בדיקה",
+              "if (j.data.length > 0) {",
+              "  pm.collectionVariables.set('firstProductId', j.data[0]._id);",
+              "}"
+            ] } }
+          ]
+        },
+        {
+          "name": "Get single product",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products/{{firstProductId}}", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{firstProductId}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const j = pm.response.json();",
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('has product data', () => pm.expect(j.data).to.have.property('_id'));",
+              "pm.test('has sku', () => pm.expect(j.data).to.have.property('sku'));"
+            ] } }
+          ]
+        },
+        {
+          "name": "Get non-existent product",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products/507f1f77bcf86cd799439011", "host": ["{{baseUrl}}"], "path": ["api", "products", "507f1f77bcf86cd799439011"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const j = pm.response.json();",
+              "pm.test('404', () => pm.response.to.have.status(404));",
+              "pm.test('success false', () => pm.expect(j.success).to.eql(false));"
             ] } }
           ]
         }
