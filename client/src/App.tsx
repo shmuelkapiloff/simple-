@@ -1,7 +1,11 @@
-import { Routes, Route } from 'react-router-dom'
-import ProductList from './components/ProductList'
+import { Routes, Route, Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import ProductList from "./components/ProductList";
+import Cart from "./components/Cart";
+import { selectCartItemCount } from "./app/cartSlice";
 
 function App() {
+  const cartItemCount = useSelector(selectCartItemCount);
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -11,9 +15,12 @@ function App() {
               <h1 className="text-2xl font-bold text-blue-600">TechBasket</h1>
             </div>
             <nav className="hidden md:flex space-x-8">
-              <a href="#" className="text-gray-500 hover:text-gray-900">Home</a>
-              <a href="#" className="text-gray-500 hover:text-gray-900">Products</a>
-              <a href="#" className="text-gray-500 hover:text-gray-900">About</a>
+              <Link to="/" className="text-gray-500 hover:text-gray-900">
+                Products
+              </Link>
+              <Link to="/cart" className="text-gray-500 hover:text-gray-900">
+                Cart
+              </Link>
             </nav>
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -23,14 +30,29 @@ function App() {
                   className="w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <button className="relative p-2 text-gray-600 hover:text-gray-900">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.68 4.32M7 13h10M9 19a1 1 0 100 2 1 1 0 000-2zm8 0a1 1 0 100 2 1 1 0 000-2z" />
+              <Link
+                to="/cart"
+                className="relative p-2 text-gray-600 hover:text-gray-900"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.68 4.32M7 13h10M9 19a1 1 0 100 2 1 1 0 000-2zm8 0a1 1 0 100 2 1 1 0 000-2z"
+                  />
                 </svg>
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  0
-                </span>
-              </button>
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </div>
@@ -39,10 +61,11 @@ function App() {
       <main>
         <Routes>
           <Route path="/" element={<ProductList />} />
+          <Route path="/cart" element={<Cart />} />
         </Routes>
       </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

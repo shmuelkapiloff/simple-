@@ -1,59 +1,183 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Product type להתאמה לשרת
 export interface Product {
-  _id: string
-  sku: string
-  name: string
-  description: string
-  price: number
-  category: string
-  image: string
-  featured: boolean
-  stock: number
-  rating: number
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
+  _id: string;
+  sku: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  image: string;
+  featured: boolean;
+  stock: number;
+  rating: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // API Response type מהשרת
 interface ApiResponse<T> {
-  success: boolean
-  message?: string
-  data?: T
-  errors?: any[]
+  success: boolean;
+  message?: string;
+  data?: T;
+  errors?: any[];
+}
+
+// Cart types
+export interface CartItem {
+  _id: string;
+  product: {
+    _id: string;
+    name: string;
+    price: number;
+    image: string;
+    sku: string;
+  };
+  quantity: number;
+  price: number;
+}
+
+export interface Cart {
+  sessionId: string;
+  userId?: string;
+  items: CartItem[];
+  total: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Cart API request types
+interface AddToCartRequest {
+  sessionId: string;
+  productId: string;
+  quantity: number;
+}
+
+interface UpdateCartRequest {
+  sessionId: string;
+  productId: string;
+  quantity: number;
+}
+
+interface RemoveFromCartRequest {
+  sessionId: string;
+  productId: string;
+}
+
+interface ClearCartRequest {
+  sessionId: string;
 }
 
 // הגדרת RTK Query API
 export const api = createApi({
-  reducerPath: 'api',
+  reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:4001/api/', // כתובת השרת
+    baseUrl: "http://localhost:4001/api/", // כתובת השרת
     prepareHeaders: (headers) => {
       // נוסיף X-Client-Id בהמשך לעגלת אורח
-      headers.set('Content-Type', 'application/json')
-      return headers
+      headers.set("Content-Type", "application/json");
+      return headers;
     },
   }),
-  tagTypes: ['Product'],
+  tagTypes: ["Product", "Cart"],
   endpoints: (builder) => ({
     // GET /api/products - רשימת מוצרים
     getProducts: builder.query<Product[], void>({
-      query: () => 'products',
+      query: () => "products",
       // RTK Query מצפה למערך, אבל השרת מחזיר { data: [...] }
-      transformResponse: (response: ApiResponse<Product[]>) => response.data || [],
-      providesTags: ['Product'],
+      transformResponse: (response: ApiResponse<Product[]>) =>
+        response.data || [],
+      providesTags: ["Product"],
     }),
-    
+
     // GET /api/products/:id - מוצר בודד
     getProduct: builder.query<Product, string>({
       query: (id) => `products/${id}`,
       transformResponse: (response: ApiResponse<Product>) => response.data!,
-      providesTags: (result, error, id) => [{ type: 'Product', id }],
+      providesTags: (result, error, id) => [{ type: "Product", id }],
+    }),
+
+    // === CART ENDPOINTS === //
+
+    // GET /api/cart - קבלת עגלה
+    getCart: builder.query<Cart, string>({
+      query: (sessionId) => ({
+        url: "cart",
+        params: { sessionId },
+      }),
+      transformResponse: (response: ApiResponse<Cart>) => response.data!,
+      providesTags: ["Cart"],
+    }),
+
+    // GET /api/cart/count - ספירת פריטים בעגלה
+    getCartCount: builder.query<{ count: number }, string>({
+      query: (sessionId) => ({
+        url: "cart/count",
+        params: { sessionId },
+      }),
+      transformResponse: (response: ApiResponse<{ count: number }>) =>
+        response.data!,
+      providesTags: ["Cart"],
+    }),
+
+    // POST /api/cart/add - הוספת פריט לעגלה
+    addToCart: builder.mutation<Cart, AddToCartRequest>({
+      query: (body) => ({
+        url: "cart/add",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<Cart>) => response.data!,
+      invalidatesTags: ["Cart"],
+    }),
+
+    // PUT /api/cart/update - עדכון כמות
+    updateCartQuantity: builder.mutation<Cart, UpdateCartRequest>({
+      query: (body) => ({
+        url: "cart/update",
+        method: "PUT",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<Cart>) => response.data!,
+      invalidatesTags: ["Cart"],
+    }),
+
+    // DELETE /api/cart/remove - הסרת פריט
+    removeFromCart: builder.mutation<Cart, RemoveFromCartRequest>({
+      query: (body) => ({
+        url: "cart/remove",
+        method: "DELETE",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<Cart>) => response.data!,
+      invalidatesTags: ["Cart"],
+    }),
+
+    // DELETE /api/cart/clear - ניקוי עגלה
+    clearCart: builder.mutation<Cart, ClearCartRequest>({
+      query: (body) => ({
+        url: "cart/clear",
+        method: "DELETE",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<Cart>) => response.data!,
+      invalidatesTags: ["Cart"],
     }),
   }),
-})
+});
 
 // ייצוא hooks לשימוש בקומפוננטים
-export const { useGetProductsQuery, useGetProductQuery } = api
+export const {
+  // Products
+  useGetProductsQuery,
+  useGetProductQuery,
+  // Cart
+  useGetCartQuery,
+  useGetCartCountQuery,
+  useAddToCartMutation,
+  useUpdateCartQuantityMutation,
+  useRemoveFromCartMutation,
+  useClearCartMutation,
+} = api;
