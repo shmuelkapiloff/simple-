@@ -24,6 +24,11 @@ client/build/
 .env.*
 !.env.example
 
+# Health check logs (if any)
+tools/health-check.log
+tools/health-check-*.log
+tools/*.log
+
 # General
 .DS_Store
 Thumbs.db

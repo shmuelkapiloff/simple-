@@ -16,8 +16,9 @@
 3. **[code-examples.md](./cart-system/code-examples.md)** - קוד מוכן לעותק-הדבק
 
 ### **🔧 יש בעיה או שגיאה:**
-1. **[troubleshooting.md](./setup/troubleshooting.md)** - פתרון בעיות נפוצות
-2. **[setup-guide.md#troubleshooting](./setup/setup-guide.md#troubleshooting)** - בעיות התקנה
+1. **[🔍 tools/HEALTH-CHECK.md](../tools/HEALTH-CHECK.md)** - כלי בדיקה אוטומטי
+2. **[troubleshooting.md](./setup/troubleshooting.md)** - פתרון בעיות נפוצות
+3. **[setup-guide.md#troubleshooting](./setup/setup-guide.md#troubleshooting)** - בעיות התקנה
 
 ---
 
