@@ -21,20 +21,25 @@ export class CartService {
       if (redisCart) {
         const parsedCart = JSON.parse(redisCart);
         console.log(`✅ Cart loaded from Redis: ${cartId}`);
-        
+
         // 🔄 עכשיו נוודא שיש populate של product data
         // אם parsedCart.items מכיל ObjectIds במקום אובייקטים מלאים
         if (parsedCart.items && parsedCart.items.length > 0) {
           // בדוק אם הפריט הראשון צריך populate
           const firstItem = parsedCart.items[0];
-          if (typeof firstItem.product === 'string' || !firstItem.product.name) {
-            console.log(`🔄 Redis cart needs population, fetching from MongoDB: ${cartId}`);
-            
+          if (
+            typeof firstItem.product === "string" ||
+            !firstItem.product.name
+          ) {
+            console.log(
+              `🔄 Redis cart needs population, fetching from MongoDB: ${cartId}`
+            );
+
             // טען מהמונגו עם populate
             const dbCart = await CartModel.findOne({
               $or: [{ sessionId: sessionId }, { userId: userId }],
             }).populate("items.product");
-            
+
             if (dbCart) {
               // עדכן את Redis עם הנתונים המלאים
               await redisClient.setex(
@@ -42,12 +47,14 @@ export class CartService {
                 this.CACHE_TTL,
                 JSON.stringify(dbCart)
               );
-              console.log(`📥 Redis updated with populated cart data: ${cartId}`);
+              console.log(
+                `📥 Redis updated with populated cart data: ${cartId}`
+              );
               return dbCart;
             }
           }
         }
-        
+
         return parsedCart;
       }
 
@@ -309,7 +316,6 @@ export class CartService {
     quantity: number,
     userId?: string
   ): Promise<ICart | null> {
-    
     console.log(`6📝 Updating quantity: ${productId} to ${quantity} for `);
     // אם כמות 0 או פחות - מחק פריט
     if (quantity <= 0) {

@@ -9,7 +9,6 @@ import {
 } from "../app/cartSlice";
 import { useEffect, useMemo } from "react";
 
-
 export default function ProductList() {
   const dispatch = useDispatch();
   const sessionId = useSelector(selectSessionId);
@@ -44,6 +43,14 @@ export default function ProductList() {
     }
 
     try {
+      // 📤 לוג מה אנחנו שולחים לשרת
+      const requestData = {
+        sessionId,
+        productId: product._id,
+        quantity: 1,
+      };
+      console.log("📤 Sending to server:", requestData);
+
       dispatch(
         addItemOptimistic({
           productId: product._id,
@@ -58,12 +65,10 @@ export default function ProductList() {
         })
       );
 
-      await addToCartMutation({
-        sessionId,
-        productId: product._id,
-        quantity: 1,
-      }).unwrap();
+      const response = await addToCartMutation(requestData).unwrap();
 
+      // 📥 לוג מה קיבלנו בחזרה
+      console.log("📥 Server response:", response);
       console.log(`✅ Added ${product.name} to cart`);
     } catch (error: any) {
       console.error("Add to cart failed:", error);

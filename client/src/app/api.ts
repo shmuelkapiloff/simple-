@@ -80,6 +80,36 @@ export const api = createApi({
       headers.set("Content-Type", "application/json");
       return headers;
     },
+    // 🔍 הוספת interceptor לדיבוג
+    fetchFn: async (...args) => {
+      const [url, options] = args;
+      console.log("🌐 API Call:", {
+        url: url?.toString(),
+        method: options?.method || "GET",
+        headers: options?.headers,
+        body: options?.body ? JSON.parse(options.body as string) : null,
+      });
+
+      const response = await fetch(...args);
+      const clonedResponse = response.clone();
+
+      try {
+        const data = await clonedResponse.json();
+        console.log("🌐 API Response:", {
+          url: url?.toString(),
+          status: response.status,
+          data: data,
+        });
+      } catch (e) {
+        console.log("🌐 API Response (non-JSON):", {
+          url: url?.toString(),
+          status: response.status,
+          statusText: response.statusText,
+        });
+      }
+
+      return response;
+    },
   }),
   tagTypes: ["Product", "Cart"],
   endpoints: (builder) => ({

@@ -18,9 +18,9 @@ function App() {
               <Link to="/" className="text-gray-500 hover:text-gray-900">
                 Products
               </Link>
-              <Link to="/cart" className="text-gray-500 hover:text-gray-900">
+              {/* <Link to="/cart" className="text-gray-500 hover:text-gray-900">
                 Cart
-              </Link>
+              </Link> */}
             </nav>
             <div className="flex items-center space-x-4">
               <div className="relative">

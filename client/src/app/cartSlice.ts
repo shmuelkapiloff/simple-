@@ -36,20 +36,22 @@ const initialState: CartState = {
 // Helper functions
 const generateSessionId = (): string => {
   // 🔍 נסה לטעון sessionId קיים מ-localStorage
-  const existingSessionId = localStorage.getItem('cart-session-id');
-  
+  const existingSessionId = localStorage.getItem("cart-session-id");
+
   if (existingSessionId) {
-    console.log('🔄 Using existing session ID:', existingSessionId);
+    console.log("🔄 Using existing session ID:", existingSessionId);
     return existingSessionId;
   }
-  
+
   // 🆕 צור sessionId חדש
-  const newSessionId = `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
+  const newSessionId = `guest-${Date.now()}-${Math.random()
+    .toString(36)
+    .substr(2, 9)}`;
+
   // 💾 שמור ב-localStorage לעתיד
-  localStorage.setItem('cart-session-id', newSessionId);
-  console.log('🆕 Created new session ID:', newSessionId);
-  
+  localStorage.setItem("cart-session-id", newSessionId);
+  console.log("🆕 Created new session ID:", newSessionId);
+
   return newSessionId;
 };
 
@@ -198,11 +200,11 @@ export const cartSlice = createSlice({
       state.total = 0;
       state.itemCount = 0;
       state.error = null;
-      
+
       // 🧹 נקה גם sessionId מ-localStorage כשמנקים עגלה לגמרי
       if (state.sessionId) {
-        localStorage.removeItem('cart-session-id');
-        console.log('🧹 Cart cleared and session ID removed from storage');
+        localStorage.removeItem("cart-session-id");
+        console.log("🧹 Cart cleared and session ID removed from storage");
       }
 
       console.log("🧹 Cart cleared");
@@ -233,12 +235,14 @@ export const cartSlice = createSlice({
 
       console.log("↩️ Optimistic update reverted");
     },
-    
+
     // 🔧 Debug function - מחק sessionId מ-localStorage (לטסטים)
     resetSessionId: (state) => {
-      localStorage.removeItem('cart-session-id');
+      localStorage.removeItem("cart-session-id");
       state.sessionId = null;
-      console.log("🔧 Session ID reset - next initializeCart will create new one");
+      console.log(
+        "🔧 Session ID reset - next initializeCart will create new one"
+      );
     },
   },
 });
