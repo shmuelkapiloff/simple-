@@ -126,7 +126,7 @@ export const api = createApi({
     getProduct: builder.query<Product, string>({
       query: (id) => `products/${id}`,
       transformResponse: (response: ApiResponse<Product>) => response.data!,
-      providesTags: (result, error, id) => [{ type: "Product", id }],
+      providesTags: (_, __, id) => [{ type: "Product", id }],
     }),
 
     // === CART ENDPOINTS === //

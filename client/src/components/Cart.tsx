@@ -8,7 +8,6 @@ import {
   selectCartItemCount,
   selectSessionId,
   initializeCart,
-  addItemOptimistic,
   updateQuantityOptimistic,
   removeItemOptimistic,
   clearCart as clearCartAction,
@@ -17,7 +16,6 @@ import {
 } from "../app/cartSlice";
 import {
   useGetCartQuery,
-  useAddToCartMutation,
   useUpdateCartQuantityMutation,
   useRemoveFromCartMutation,
   useClearCartMutation,
@@ -32,8 +30,7 @@ const Cart: React.FC = () => {
   const itemCount = useSelector(selectCartItemCount);
   const sessionId = useSelector(selectSessionId);
 
-  // RTK Query mutations
-  const [addToCartMutation] = useAddToCartMutation();
+  // RTK Query mutations  
   const [updateQuantityMutation] = useUpdateCartQuantityMutation();
   const [removeFromCartMutation] = useRemoveFromCartMutation();
   const [clearCartMutation] = useClearCartMutation();
@@ -311,7 +308,7 @@ const Cart: React.FC = () => {
       )}
 
       {/* Debug Info (remove in production) */}
-      {process.env.NODE_ENV === "development" && (
+      {true && (
         <div className="mt-6 p-3 bg-gray-100 rounded text-xs">
           <strong>Debug Info:</strong>
           <br />
