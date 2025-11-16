@@ -252,7 +252,7 @@ flowchart TD
     UpdateUI --> CheckCartCount{🔢 Cart count?}
     CheckCartCount -->|0| HideCartBadge[👻 Hide cart badge]
     CheckCartCount -->|1-9| ShowSimpleBadge[🔵 Show number badge]
-    CheckCartCount -->|10+| ShowPlusBadge[🔴 Show "9+" badge]
+    CheckCartCount -->|10+| ShowPlusBadge[🔴 Show 9+ badge]
     
     %% Success end states
     HideCartBadge --> Success[✅ Operation complete]
