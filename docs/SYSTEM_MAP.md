@@ -20,17 +20,17 @@ graph TB
     
     subgraph "🖥️ FRONTEND - React App"
         subgraph "📱 UI Components"
-            NavBar[🧭 NavBar<br/>• Auth buttons<br/>• Cart icon<br/>• User menu]
-            ProductList[📦 Product List<br/>• Grid display<br/>• Product cards]
-            AuthModal[🔐 Auth Modal<br/>• Login form<br/>• Register form]
-            Cart[🛒 Cart Page<br/>• Item list<br/>• Totals]
+            NavBar["🧭 NavBar<br/>Auth buttons<br/>Cart icon<br/>User menu"]
+            ProductList["📦 Product List<br/>Grid display<br/>Product cards"]
+            AuthModal["🔐 Auth Modal<br/>Login form<br/>Register form"]
+            Cart["🛒 Cart Page<br/>Item list<br/>Totals"]
         end
         
         subgraph "🧠 State Management"
             Redux[⚡ Redux Store]
-            AuthSlice[🔐 authSlice<br/>• user: User &#124; null<br/>• token: string<br/>• isAuthenticated: boolean]
-            CartSlice[🛒 cartSlice<br/>• items: CartItem[]<br/>• total: number<br/>• sessionId: string]
-            ApiSlice[🌐 apiSlice<br/>• RTK Query<br/>• Auto-caching]
+            AuthSlice["🔐 authSlice<br/>user: User | null<br/>token: string<br/>isAuthenticated: boolean"]
+            CartSlice["🛒 cartSlice<br/>items: CartItem[]<br/>total: number<br/>sessionId: string"]
+            ApiSlice["🌐 apiSlice<br/>RTK Query<br/>Auto-caching"]
         end
     end
     
@@ -40,34 +40,34 @@ graph TB
     
     subgraph "🔙 BACKEND - Express Server"
         subgraph "🛣️ Routes Layer"
-            AuthRoutes[🔐 /api/auth/*<br/>• POST /login<br/>• POST /register<br/>• GET /verify<br/>• POST /logout]
-            CartRoutes[🛒 /api/cart/*<br/>• GET /<br/>• POST /add<br/>• PUT /update<br/>• DELETE /remove]
-            ProductRoutes[📦 /api/products/*<br/>• GET /<br/>• GET /:id]
+            AuthRoutes["🔐 /api/auth/*<br/>POST /login<br/>POST /register<br/>GET /verify<br/>POST /logout"]
+            CartRoutes["🛒 /api/cart/*<br/>GET /<br/>POST /add<br/>PUT /update<br/>DELETE /remove"]
+            ProductRoutes["📦 /api/products/*<br/>GET /<br/>GET /:id"]
         end
         
         subgraph "🎯 Controllers"
-            AuthController[🔐 AuthController<br/>• login()<br/>• register()<br/>• verify()<br/>• logout()]
-            CartController[🛒 CartController<br/>• addToCart()<br/>• getCart()<br/>• updateCart()<br/>• clearCart()]
-            ProductController[📦 ProductController<br/>• getProducts()<br/>• getProduct()]
+            AuthController["🔐 AuthController<br/>login()<br/>register()<br/>verify()<br/>logout()"]
+            CartController["🛒 CartController<br/>addToCart()<br/>getCart()<br/>updateCart()<br/>clearCart()"]
+            ProductController["📦 ProductController<br/>getProducts()<br/>getProduct()"]
         end
         
         subgraph "⚙️ Services Layer"
-            AuthService[🔐 AuthService<br/>• User validation<br/>• JWT generation<br/>• Password hashing]
-            CartService[🛒 CartService<br/>• Cart operations<br/>• Guest/User merge<br/>• Session handling]
-            ProductService[📦 ProductService<br/>• Product queries<br/>• Stock management]
+            AuthService["🔐 AuthService<br/>User validation<br/>JWT generation<br/>Password hashing"]
+            CartService["🛒 CartService<br/>Cart operations<br/>Guest/User merge<br/>Session handling"]
+            ProductService["📦 ProductService<br/>Product queries<br/>Stock management"]
         end
     end
     
     subgraph "🗄️ DATABASE LAYER"
         subgraph "💾 MongoDB"
-            Users[(👤 users<br/>• _id<br/>• name<br/>• email<br/>• passwordHash)]
-            Products[(📦 products<br/>• _id<br/>• name<br/>• price<br/>• stock<br/>• image)]
-            Carts[(🛒 carts<br/>• userId<br/>• sessionId<br/>• items[])]
+            Users["👤 users<br/>_id<br/>name<br/>email<br/>passwordHash"]
+            Products["📦 products<br/>_id<br/>name<br/>price<br/>stock<br/>image"]
+            Carts["🛒 carts<br/>userId<br/>sessionId<br/>items[]"]
         end
         
         subgraph "⚡ Redis Cache"
-            Sessions[(🔄 sessions<br/>session:id → cart data)]
-            Cache[(📋 cache<br/>products cache)]
+            Sessions["🔄 sessions<br/>session:id → cart data"]
+            Cache["📋 cache<br/>products cache"]
         end
     end
 
