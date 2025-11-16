@@ -295,44 +295,42 @@ stateDiagram-v2
         CheckingToken --> TokenFound : localStorage has token
         CheckingToken --> NoToken : no token found
         TokenFound --> VerifyingToken : dispatch verifyToken
-        NoToken --> GuestState
+        NoToken --> GuestMode
     }
 
     state VerifyingToken {
         [*] --> Pending
         Pending --> ValidToken : server returns user data
         Pending --> InvalidToken : server returns 401
-        ValidToken --> AuthenticatedState
-        InvalidToken --> GuestState
+        ValidToken --> AuthenticatedMode
+        InvalidToken --> GuestMode
     }
 
-    state GuestState {
+    state GuestMode {
         [*] --> BrowsingAsGuest
-        BrowsingAsGuest --> ShowingLoginModal : user clicks login
-        BrowsingAsGuest --> ShowingRegisterModal : user clicks register
+        BrowsingAsGuest --> LoginModal : user clicks login
+        BrowsingAsGuest --> RegisterModal : user clicks register
         BrowsingAsGuest --> AddingToGuestCart : user adds to cart
         AddingToGuestCart --> BrowsingAsGuest
+        
+        state LoginModal {
+            [*] --> EnteringCredentials
+            EnteringCredentials --> LoginPending : submit form
+            LoginPending --> LoginSuccess : valid credentials
+            LoginPending --> LoginError : invalid credentials
+            LoginError --> EnteringCredentials : try again
+        }
+        
+        state RegisterModal {
+            [*] --> EnteringDetails
+            EnteringDetails --> RegisterPending : submit form
+            RegisterPending --> RegisterSuccess : valid data
+            RegisterPending --> RegisterError : validation failed
+            RegisterError --> EnteringDetails : try again
+        }
     }
 
-    state ShowingLoginModal {
-        [*] --> LoggingIn : user submits form
-        LoggingIn --> LoginPending
-        LoginPending --> LoginSuccess : credentials valid
-        LoginPending --> LoginError : credentials invalid
-        LoginSuccess --> AuthenticatedState
-        LoginError --> [*] : show error, try again
-    }
-
-    state ShowingRegisterModal {
-        [*] --> Registering : user submits form
-        Registering --> RegisterPending
-        RegisterPending --> RegisterSuccess : registration valid
-        RegisterPending --> RegisterError : validation failed
-        RegisterSuccess --> AuthenticatedState
-        RegisterError --> [*] : show error, try again
-    }
-
-    state AuthenticatedState {
+    state AuthenticatedMode {
         [*] --> BrowsingAsUser
         BrowsingAsUser --> AddingToUserCart : user adds to cart
         BrowsingAsUser --> ViewingProfile : user clicks profile
@@ -340,10 +338,13 @@ stateDiagram-v2
         
         AddingToUserCart --> BrowsingAsUser
         ViewingProfile --> BrowsingAsUser
-        LoggingOut --> GuestState
     }
 
-    AuthenticatedState --> GuestState : token expires
+    %% Main transitions
+    LoginSuccess --> AuthenticatedMode
+    RegisterSuccess --> AuthenticatedMode
+    LoggingOut --> GuestMode
+    AuthenticatedMode --> GuestMode : token expires
 ```
 
 ---
