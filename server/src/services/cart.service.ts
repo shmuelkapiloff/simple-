@@ -1,8 +1,8 @@
 import { CartModel, ICart, ICartItem } from "../models/cart.model";
 import { ProductModel } from "../models/product.model";
 import { redis as redisClient } from "../config/redisClient";
+import { track, log } from "../utils/quickLog";
 
-// Service functions for cart management
 export class CartService {
   // מאפיין סטטי לDebounce של MongoDB saves
   private static pendingSaves = new Map<string, NodeJS.Timeout>();
@@ -13,14 +13,15 @@ export class CartService {
     sessionId: string,
     userId?: string
   ): Promise<ICart | null> {
-    const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
-    console.log(`1🔍 Fetching cart: ${cartId}`);
+    const t = track("CartService", "getCart"); // 🎯 שורה אחת!
+
     try {
+      const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
+
       // ⚡ תמיד נסה Redis קודם (מהיר!)
       const redisCart = await redisClient.get(`cart:${cartId}`);
       if (redisCart) {
         const parsedCart = JSON.parse(redisCart);
-        console.log(`✅ Cart loaded from Redis: ${cartId}`);
 
         // 🔄 עכשיו נוודא שיש populate של product data
         // אם parsedCart.items מכיל ObjectIds במקום אובייקטים מלאים
@@ -31,9 +32,7 @@ export class CartService {
             typeof firstItem.product === "string" ||
             !firstItem.product.name
           ) {
-            console.log(
-              `🔄 Redis cart needs population, fetching from MongoDB: ${cartId}`
-            );
+            // Redis cart needs population, fetch from MongoDB
 
             // טען מהמונגו עם populate
             const dbCart = await CartModel.findOne({
@@ -72,14 +71,14 @@ export class CartService {
           this.CACHE_TTL,
           JSON.stringify(dbCart)
         );
-        console.log(`📥 Cart cached in Redis from MongoDB: ${cartId}`);
+        t.success(); // 🎯 לוג הצלחה
         return dbCart;
       }
 
-      console.log(`❌ No cart found: ${cartId}`);
+      t.success(); // 🎯 לוג הצלחה גם אם לא נמצא
       return null;
     } catch (error) {
-      console.error("❌ Error getting cart:", error);
+      t.error(error); // 🎯 לוג שגיאה
 
       // 🔄 אם Redis נפל, נסה רק מונגו
       if ((error as Error).message?.includes("Redis")) {
@@ -104,7 +103,6 @@ export class CartService {
     cartId: string,
     cart: ICart
   ): Promise<void> {
-    console.log(`2scheduleMongoSave: ${cartId}  ${cart}`);
     // בטל timer קודם אם יש
     const existingTimer = this.pendingSaves.get(cartId);
     if (existingTimer) {
@@ -154,7 +152,6 @@ export class CartService {
     cartId: string,
     cart: ICart
   ): Promise<void> {
-    console.log(`3🗄️ Updating cart in cache: ${cartId}  ${cart}`);
     try {
       // 1. ⚡ עדכון מיידי בRedis
       await redisClient.setex(
@@ -179,11 +176,10 @@ export class CartService {
     quantity: number,
     userId?: string
   ): Promise<ICart> {
-    const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
-    console.log(`4🛒 Adding to cart: ${productId} x${quantity} for ${cartId}`);
+    const t = track("CartService", "addToCart"); // 🎯 שורה אחת!
 
     try {
-      console.log(`🛒 Adding to cart: ${productId} x${quantity} for ${cartId}`);
+      const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
 
       // ✅ בדוק מוצר ומלאי (חייב להיות מדויק)
       const product = await ProductModel.findById(productId);
@@ -247,12 +243,10 @@ export class CartService {
       // ⚡ עדכן בcache מיידי + תזמן למונגו
       await this.updateCartInCache(cartId, cart);
 
-      console.log(
-        `✅ Cart updated successfully: ${cartId}, Total: $${cart.total}`
-      );
+      t.success(cart); // 🎯 לוג הצלחה
       return cart;
     } catch (error) {
-      console.error(`❌ Error adding to cart ${cartId}:`, error);
+      t.error(error); // 🎯 לוג שגיאה
       throw error;
     }
   }
@@ -263,10 +257,10 @@ export class CartService {
     productId: string,
     userId?: string
   ): Promise<ICart | null> {
-    const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
-    console.log(`5🗑️ Removing from cart: ${productId} for ${cartId}`);
+    const t = track("CartService", "removeFromCart"); // 🎯 שורה אחת!
+
     try {
-      console.log(`🗑️ Removing from cart: ${productId} for ${cartId}`);
+      const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
 
       // ⚡ קבל עגלה נוכחית (מהיר מRedis)
       const cart = await this.getCart(sessionId, userId);
@@ -301,10 +295,10 @@ export class CartService {
       // ⚡ עדכן בcache מיידי + תזמן למונגו
       await this.updateCartInCache(cartId, cart);
 
-      console.log(`✅ Item removed successfully: ${productId}`);
+      t.success(cart); // 🎯 לוג הצלחה
       return cart;
     } catch (error) {
-      console.error(`❌ Error removing from cart ${cartId}:`, error);
+      t.error(error); // 🎯 לוג שגיאה
       throw error;
     }
   }
@@ -383,7 +377,7 @@ export class CartService {
   // Clear cart - עם ביטול שמירות ממתינות
   static async clearCart(sessionId: string, userId?: string): Promise<boolean> {
     const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
-    console.log(`7🗑️ Clearing cart: ${cartId}`);
+    console.log(`🗑️ Clearing cart: ${cartId}`);
 
     try {
       console.log(`🗑️ Clearing cart: ${cartId}`);
@@ -421,7 +415,7 @@ export class CartService {
 
   // 🧹 פונקציה לניקוי כל הsaves הממתינים (לטסטים או shutdown)
   static async flushPendingSaves(): Promise<void> {
-    console.log(`8🧹 Flushing ${this.pendingSaves.size} pending saves...`);
+    console.log(`\n\n\n\n\nFlushing pending saves...\n\n\n\n\n`);
     console.log(`🧹 Flushing ${this.pendingSaves.size} pending saves...`);
 
     for (const [cartId, timer] of this.pendingSaves.entries()) {
@@ -431,5 +425,151 @@ export class CartService {
 
     this.pendingSaves.clear();
     console.log("✅ All pending saves cleared");
+  }
+
+  // 🔄 מיזוג עגלת אורח לעגלת משתמש (כשמשתמש מתחבר)
+  static async mergeGuestCartToUser(
+    guestSessionId: string,
+    userId: string
+  ): Promise<ICart | null> {
+    const t = track("CartService", "mergeGuestCartToUser");
+
+    try {
+      console.log(
+        `🔄 Merging guest cart to user: ${guestSessionId} → ${userId}`
+      );
+
+      // קבל עגלת האורח
+      const guestCart = await this.getCart(guestSessionId);
+      if (!guestCart || guestCart.items.length === 0) {
+        console.log("⚪ No guest cart to merge");
+        t.success();
+        return null;
+      }
+
+      // קבל עגלת המשתמש הקיימת (אם יש)
+      const userCart = await this.getCart("", userId);
+
+      if (!userCart) {
+        // אין עגלת משתמש - העבר את עגלת האורח למשתמש
+        console.log("📦 No existing user cart - transferring guest cart");
+
+        // עדכן ב-Redis
+        const userCartId = `user:${userId}`;
+        guestCart.userId = userId as any;
+        guestCart.sessionId = null as any; // הסר session ID
+        guestCart.updatedAt = new Date();
+
+        await this.updateCartInCache(userCartId, guestCart);
+
+        // נקה עגלת האורח
+        await this.clearCart(guestSessionId);
+
+        t.success({ merged: true, transferred: true });
+        return guestCart;
+      } else {
+        // יש עגלת משתמש קיימת - מזג את הפריטים
+        console.log("🔄 Merging items from guest cart to existing user cart");
+
+        let hasChanges = false;
+
+        // עבור על כל פריט בעגלת האורח
+        for (const guestItem of guestCart.items) {
+          const existingItemIndex = userCart.items.findIndex(
+            (item: ICartItem) =>
+              item.product.toString() === guestItem.product.toString()
+          );
+
+          if (existingItemIndex >= 0) {
+            // פריט קיים - הוסף כמות
+            const oldQuantity = userCart.items[existingItemIndex].quantity;
+            userCart.items[existingItemIndex].quantity += guestItem.quantity;
+            console.log(
+              `➕ Merged quantities for product ${guestItem.product}: ${oldQuantity} + ${guestItem.quantity} = ${userCart.items[existingItemIndex].quantity}`
+            );
+            hasChanges = true;
+          } else {
+            // פריט חדש - הוסף לעגלה
+            userCart.items.push(guestItem);
+            console.log(
+              `🆕 Added new item from guest cart: ${guestItem.product}`
+            );
+            hasChanges = true;
+          }
+        }
+
+        if (hasChanges) {
+          // חשב מחדש סכום כולל
+          userCart.total = userCart.items.reduce(
+            (sum: number, item: ICartItem) => sum + item.price * item.quantity,
+            0
+          );
+          userCart.updatedAt = new Date();
+
+          // עדכן בcache
+          const userCartId = `user:${userId}`;
+          await this.updateCartInCache(userCartId, userCart);
+        }
+
+        // נקה עגלת האורח
+        await this.clearCart(guestSessionId);
+
+        console.log(
+          `✅ Successfully merged guest cart to user cart (${guestCart.items.length} items)`
+        );
+        t.success({
+          merged: true,
+          transferred: false,
+          itemsCount: guestCart.items.length,
+        });
+        return userCart;
+      }
+    } catch (error) {
+      t.error(error);
+      console.error("❌ Error merging guest cart:", error);
+      throw error;
+    }
+  }
+
+  // 📊 סטטיסטיקות עגלות (למנהלים)
+  static async getCartStats() {
+    const t = track("CartService", "getCartStats");
+
+    try {
+      const stats = await CartModel.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalCarts: { $sum: 1 },
+            guestCarts: {
+              $sum: {
+                $cond: [{ $eq: ["$userId", null] }, 1, 0],
+              },
+            },
+            userCarts: {
+              $sum: {
+                $cond: [{ $ne: ["$userId", null] }, 1, 0],
+              },
+            },
+            averageTotal: { $avg: "$total" },
+            averageItems: { $avg: { $size: "$items" } },
+          },
+        },
+      ]);
+
+      const result = stats[0] || {
+        totalCarts: 0,
+        guestCarts: 0,
+        userCarts: 0,
+        averageTotal: 0,
+        averageItems: 0,
+      };
+
+      t.success(result);
+      return result;
+    } catch (error) {
+      t.error(error);
+      throw error;
+    }
   }
 }

@@ -23,14 +23,28 @@ export function sendSuccess<T>(
 
 export function sendError(
   res: Response,
+  status: number,
   message: string,
-  status: number = 400,
   errors?: any[]
 ): void {
   res.status(status).json({
     success: false,
     message,
     errors: errors || [],
+  });
+}
+
+// Export sendResponse with compatible signature for auth controller
+export function sendResponse<T>(
+  res: Response,
+  status: number,
+  message: string,
+  data?: T
+): void {
+  res.status(status).json({
+    success: true,
+    message,
+    data,
   });
 }
 

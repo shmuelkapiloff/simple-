@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 Detailed Server Flow Chart - תרשים זרימה מפורט</title>
+    <script src="https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.2em;
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+            gap: 8px;
+        }
+        
+        .tab {
+            background: #f0f0f0;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .tab.active {
+            background: #4CAF50;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.3);
+        }
+        
+        .tab:hover:not(.active) {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+        
+        .chart-container {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 2px solid #e0e0e0;
+            overflow-x: auto;
+            min-height: 500px;
+        }
+        
+        .details-panel {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .code-details {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+            direction: ltr;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        .timing-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .timing-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .mermaid {
+            font-size: 12px;
+        }
+        
+        .error-paths {
+            background: #ffebee;
+            border: 1px solid #ffcdd2;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .success-paths {
+            background: #e8f5e8;
+            border: 1px solid #c8e6c9;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Detailed Server Flow Chart</h1>
+        <p style="text-align: center; font-size: 1.1em; color: #666;">
+            תרשים זרימה מפורט עם כל הפונקציות, החלטות וזמנים
+        </p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showChart('cart-add')">🛒 הוספה לעגלה</button>
+            <button class="tab" onclick="showChart('cart-get')">🔍 קבלת עגלה</button>
+            <button class="tab" onclick="showChart('product-get')">📦 קבלת מוצרים</button>
+            <button class="tab" onclick="showChart('cart-update')">📝 עדכון עגלה</button>
+            <button class="tab" onclick="showChart('error-handling')">🚨 טיפול שגיאות</button>
+            <button class="tab" onclick="showChart('cache-flow')">⚡ זרימת Cache</button>
+        </div>
+        
+        <!-- Cart Add Flow -->
+        <div id="cart-add" class="chart-section">
+            <div class="chart-container">
+                <div class="mermaid">
+                    graph TD
+                        A[🌐 Client: Add to Cart Click] --> A1[📤 POST /api/cart/add Request]
+                        A1 --> A2[🛣️ Express Router: cart.routes.ts]
+                        A2 --> A3[🎮 CartController.addToCart]
+                        
+                        A3 --> A4[📝 Log: track('CartService', 'addToCart')]
+                        A4 --> A5[⚙️ CartService.addToCart]
+                        
+                        A5 --> B1{🔍 Validate Input}
+                        B1 -->|✅ Valid| B2[📝 Log: 'Adding to cart: productId x quantity']
+                        B1 -->|❌ Invalid| E1[❌ Error: Missing required fields]
+                        
+                        B2 --> B3[🔍 ProductModel.findById(productId)]
+                        B3 --> C1{📦 Product Exists?}
+                        C1 -->|✅ Yes| C2[📊 Check Stock: product.stock >= quantity]
+                        C1 -->|❌ No| E2[❌ Error: Product not found]
+                        
+                        C2 --> D1{📊 Sufficient Stock?}
+                        D1 -->|✅ Yes| D2[🛒 CartService.getCart(sessionId)]
+                        D1 -->|❌ No| E3[❌ Error: Insufficient stock]
+                        
+                        D2 --> D3[📝 Log: getCart → function called]
+                        D3 --> D4[⚡ Try Redis: redisClient.get(`cart:${cartId}`)]
+                        D4 --> D5{🎯 Redis Hit?}
+                        
+                        D5 -->|✅ Hit| D6[📝 Parse JSON + Populate Products]
+                        D5 -->|❌ Miss| D7[🗄️ MongoDB: CartModel.findOne()]
+                        
+                        D6 --> D8[🛒 Cart Object Ready]
+                        D7 --> D8
+                        
+                        D8 --> E4{🛒 Cart Exists?}
+                        E4 -->|❌ No| E5[🆕 Create New Cart Object]
+                        E4 -->|✅ Yes| E6[🔄 Update Existing Cart]
+                        
+                        E5 --> F1[➕ Add New Item to Cart]
+                        E6 --> F2{📦 Item Already in Cart?}
+                        F2 -->|✅ Yes| F3[📈 Increase Quantity]
+                        F2 -->|❌ No| F1
+                        
+                        F1 --> F4[💰 Calculate Total: Σ(item.price * item.quantity)]
+                        F3 --> F4
+                        
+                        F4 --> F5[📅 Set updatedAt = new Date()]
+                        F5 --> F6[⚡ updateCartInCache(cartId, cart)]
+                        F6 --> F7[📝 Log: 'Cart updated in Redis']
+                        F7 --> F8[⏰ scheduleMongoSave(cartId, cart) - 5sec debounce]
+                        F8 --> F9[📝 Log: 'MongoDB save scheduled']
+                        F9 --> F10[📝 Log: track.success()]
+                        F10 --> F11[📤 Return Updated Cart]
+                        
+                        E1 --> G1[📤 400 Bad Request]
+                        E2 --> G2[📤 404 Not Found]
+                        E3 --> G3[📤 400 Insufficient Stock]
+                        
+                        F11 --> H1[✅ 200 Success Response]
+                        G1 --> H2[❌ Error Response]
+                        G2 --> H2
+                        G3 --> H2
+                        
+                        H1 --> I1[🌐 Client Receives Success]
+                        H2 --> I2[🌐 Client Receives Error]
+                        
+                        style A fill:#e3f2fd
+                        style A1 fill:#e3f2fd
+                        style A2 fill:#fff3e0
+                        style A3 fill:#f1f8e9
+                        style A4 fill:#f3e5f5
+                        style A5 fill:#f3e5f5
+                        style D4 fill:#e0f2f1
+                        style D7 fill:#ffebee
+                        style F6 fill:#e0f2f1
+                        style F8 fill:#fff9c4
+                        style E1 fill:#ffebee
+                        style E2 fill:#ffebee
+                        style E3 fill:#ffebee
+                        style H1 fill:#e8f5e8
+                        style I1 fill:#c8e6c9
+                        style I2 fill:#ffcdd2
+                </div>
+            </div>
+            
+            <div class="details-panel">
+                <h3>🔍 פרטים מפורטים - הוספה לעגלה</h3>
+                <div class="timing-info">
+                    <div class="timing-card">
+                        <h4>⚡ Redis Operations</h4>
+                        <p><strong>Cache Hit:</strong> ~2-5ms</p>
+                        <p><strong>Cache Update:</strong> ~3-8ms</p>
+                        <p><strong>TTL:</strong> 3600s (1 hour)</p>
+                    </div>
+                    <div class="timing-card">
+                        <h4>🗄️ MongoDB Operations</h4>
+                        <p><strong>Product Lookup:</strong> ~20-50ms</p>
+                        <p><strong>Cart Query:</strong> ~30-80ms</p>
+                        <p><strong>Save (Debounced):</strong> ~50-120ms</p>
+                    </div>
+                    <div class="timing-card">
+                        <h4>📊 Total Performance</h4>
+                        <p><strong>Cache Hit Path:</strong> ~50-150ms</p>
+                        <p><strong>Cache Miss Path:</strong> ~100-300ms</p>
+                        <p><strong>Error Response:</strong> ~10-50ms</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-details">
+                <h4>📝 Expected Logs Sequence:</h4>
+                <pre>
+22:31:49 [CartService] → addToCart
+🛒 Adding to cart: 507f1f77bcf86cd799439011 x2 for guest:guest-1762688526749
+22:31:49 [CartService] → getCart
+✅ Cart loaded from Redis: guest:guest-1762688526749
+⚡ Cart updated in Redis: guest:guest-1762688526749
+⏰ MongoDB save scheduled in 5000ms: guest:guest-1762688526749
+22:31:49 [CartService] ✅ addToCart (123ms)
+
+// 5 seconds later:
+💾 Saving to MongoDB: guest:guest-1762688526749
+✅ MongoDB save completed: guest:guest-1762688526749
+                </pre>
+            </div>
+        </div>
+        
+        <!-- Cart Get Flow -->
+        <div id="cart-get" class="chart-section hidden">
+            <div class="chart-container">
+                <div class="mermaid">
+                    graph TD
+                        A[🌐 Client: Load Cart Page] --> A1[📤 GET /api/cart?sessionId=xxx]
+                        A1 --> A2[🛣️ Express Router: cart.routes.ts]
+                        A2 --> A3[🎮 CartController.getCart]
+                        
+                        A3 --> A4[📝 Log: track('CartService', 'getCart')]
+                        A4 --> A5[⚙️ CartService.getCart]
+                        A5 --> A6[🔧 Generate cartId = userId ? user:ID : guest:sessionId]
+                        
+                        A6 --> B1[⚡ Redis Lookup: redisClient.get(`cart:${cartId}`)]
+                        B1 --> B2{🎯 Cache Hit?}
+                        
+                        B2 -->|✅ Hit| C1[📥 Parse JSON: JSON.parse(redisCart)]
+                        B2 -->|❌ Miss| D1[📝 Log: 'Cart not in Redis, checking MongoDB']
+                        
+                        C1 --> C2{🔄 Needs Population?}
+                        C2 -->|✅ Yes| C3[🗄️ MongoDB: CartModel.findOne().populate('items.product')]
+                        C2 -->|❌ No| C4[✅ Return Redis Cart]
+                        
+                        C3 --> C5[📥 Update Redis: redisClient.setex()]
+                        C5 --> C6[📝 Log: 'Cart cached in Redis from MongoDB']
+                        C6 --> C7[✅ Return Populated Cart]
+                        
+                        D1 --> D2[🗄️ MongoDB Query: CartModel.findOne()]
+                        D2 --> D3[📦 Populate: .populate('items.product')]
+                        D3 --> D4{🛒 Cart Found?}
+                        
+                        D4 -->|✅ Yes| D5[📥 Cache in Redis: redisClient.setex()]
+                        D4 -->|❌ No| D6[📝 Log: 'No cart found']
+                        
+                        D5 --> D7[📝 Log: 'Cart cached in Redis from MongoDB']
+                        D7 --> D8[✅ Return MongoDB Cart]
+                        D6 --> D9[📤 Return null]
+                        
+                        C4 --> E1[📝 Log: track.success()]
+                        C7 --> E1
+                        D8 --> E1
+                        D9 --> E1
+                        
+                        E1 --> F1[📤 200 Success Response]
+                        F1 --> G1[🌐 Client Receives Cart Data]
+                        
+                        style A fill:#e3f2fd
+                        style A1 fill:#e3f2fd
+                        style B1 fill:#e0f2f1
+                        style C1 fill:#e0f2f1
+                        style C3 fill:#ffebee
+                        style C5 fill:#e0f2f1
+                        style D2 fill:#ffebee
+                        style D3 fill:#ffebee
+                        style D5 fill:#e0f2f1
+                        style F1 fill:#e8f5e8
+                        style G1 fill:#c8e6c9
+                </div>
+            </div>
+            
+            <div class="code-details">
+                <h4>📝 Expected Logs - Cache Hit:</h4>
+                <pre>
+22:31:49 [CartService] → getCart
+✅ Cart loaded from Redis: guest:guest-1762688526749
+22:31:49 [CartService] ✅ getCart (5ms)
+                </pre>
+                
+                <h4>📝 Expected Logs - Cache Miss:</h4>
+                <pre>
+22:31:49 [CartService] → getCart
+🔍 Cart not in Redis, checking MongoDB: guest:guest-1762688526749
+📥 Cart cached in Redis from MongoDB: guest:guest-1762688526749
+22:31:49 [CartService] ✅ getCart (85ms)
+                </pre>
+            </div>
+        </div>
+        
+        <!-- Product Get Flow -->
+        <div id="product-get" class="chart-section hidden">
+            <div class="chart-container">
+                <div class="mermaid">
+                    graph TD
+                        A[🌐 Client: Load Products] --> A1[📤 GET /api/products]
+                        A1 --> A2[🛣️ Express Router: product.routes.ts]
+                        A2 --> A3[🎮 ProductController.getProducts]
+                        A3 --> A4[⚙️ ProductService.getProducts]
+                        
+                        A4 --> B1[🗄️ MongoDB: ProductModel.find()]
+                        B1 --> B2[🔍 Filter: { isActive: true }]
+                        B2 --> B3[📊 Sort: { featured: -1, createdAt: -1 }]
+                        B3 --> B4[📦 Select Fields: name, price, image, etc.]
+                        
+                        B4 --> C1[📤 Return Products Array]
+                        C1 --> D1[🌐 Client Receives Products]
+                        
+                        E[🌐 Client: Get Single Product] --> E1[📤 GET /api/products/:id]
+                        E1 --> E2[🛣️ Express Router: product.routes.ts]
+                        E2 --> E3[🎮 ProductController.getProduct]
+                        E3 --> E4[⚙️ ProductService.getProduct]
+                        
+                        E4 --> F1[🗄️ MongoDB: ProductModel.findById(id)]
+                        F1 --> F2{📦 Product Found?}
+                        
+                        F2 -->|✅ Yes| F3[✅ Return Product Details]
+                        F2 -->|❌ No| F4[❌ 404 Product Not Found]
+                        
+                        F3 --> G1[🌐 Client Receives Product]
+                        F4 --> G2[🌐 Client Receives 404]
+                        
+                        style A fill:#e3f2fd
+                        style E fill:#e3f2fd
+                        style B1 fill:#ffebee
+                        style F1 fill:#ffebee
+                        style C1 fill:#e8f5e8
+                        style F3 fill:#e8f5e8
+                        style F4 fill:#ffcdd2
+                        style G1 fill:#c8e6c9
+                        style G2 fill:#ffcdd2
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cart Update Flow -->
+        <div id="cart-update" class="chart-section hidden">
+            <div class="chart-container">
+                <div class="mermaid">
+                    graph TD
+                        A[🌐 Client: Update Quantity] --> A1[📤 PUT /api/cart/update]
+                        A1 --> A2[🛣️ Express Router: cart.routes.ts]
+                        A2 --> A3[🎮 CartController.updateQuantity]
+                        A3 --> A4[⚙️ CartService.updateQuantity]
+                        
+                        A4 --> B1{🔍 Validate Input}
+                        B1 -->|✅ Valid| B2[🛒 Get Current Cart]
+                        B1 -->|❌ Invalid| E1[❌ Missing Fields Error]
+                        
+                        B2 --> C1{🛒 Cart Exists?}
+                        C1 -->|✅ Yes| C2[🔍 Find Item in Cart]
+                        C1 -->|❌ No| E2[❌ Cart Not Found]
+                        
+                        C2 --> D1{📦 Item Found?}
+                        D1 -->|✅ Yes| D2[📈 Update Quantity]
+                        D1 -->|❌ No| E3[❌ Item Not Found in Cart]
+                        
+                        D2 --> D3{🔢 New Quantity > 0?}
+                        D3 -->|✅ Yes| D4[💰 Recalculate Total]
+                        D3 -->|❌ No| D5[🗑️ Remove Item from Cart]
+                        
+                        D4 --> F1[⚡ Update Redis Cache]
+                        D5 --> F1
+                        F1 --> F2[⏰ Schedule MongoDB Save]
+                        F2 --> F3[✅ Return Updated Cart]
+                        
+                        E1 --> G1[📤 400 Bad Request]
+                        E2 --> G2[📤 404 Cart Not Found] 
+                        E3 --> G3[📤 404 Item Not Found]
+                        
+                        F3 --> H1[📤 200 Success]
+                        G1 --> H2[📤 Error Response]
+                        G2 --> H2
+                        G3 --> H2
+                        
+                        H1 --> I1[🌐 Client Success]
+                        H2 --> I2[🌐 Client Error]
+                        
+                        style A fill:#e3f2fd
+                        style B2 fill:#f3e5f5
+                        style D2 fill:#fff3e0
+                        style D5 fill:#fff3e0
+                        style F1 fill:#e0f2f1
+                        style F2 fill:#fff9c4
+                        style E1 fill:#ffebee
+                        style E2 fill:#ffebee
+                        style E3 fill:#ffebee
+                        style F3 fill:#e8f5e8
+                        style H1 fill:#e8f5e8
+                        style I1 fill:#c8e6c9
+                        style I2 fill:#ffcdd2
+                </div>
+            </div>
+            
+            <div class="code-details">
+                <h4>📝 Expected Logs - Successful Update:</h4>
+                <pre>
+📝 Updating quantity: 507f1f77bcf86cd799439011 to 5 for guest:guest-1762688526749
+22:31:49 [CartService] → getCart
+✅ Quantity updated: iPhone 15 Pro x5
+⚡ Cart updated in Redis: guest:guest-1762688526749
+⏰ MongoDB save scheduled in 5000ms: guest:guest-1762688526749
+                </pre>
+                
+                <h4>📝 Expected Logs - Item Not Found:</h4>
+                <pre>
+📝 Updating quantity: nonexistent-id to 5 for guest:guest-1762688526749
+22:31:49 [CartService] → getCart
+❌ Item not found in cart: nonexistent-id
+                </pre>
+            </div>
+        </div>
+        
+        <!-- Error Handling Flow -->
+        <div id="error-handling" class="chart-section hidden">
+            <div class="chart-container">
+                <div class="mermaid">
+                    graph TD
+                        A[🚨 Error Occurs] --> B{🔍 Error Type}
+                        
+                        B -->|Redis Connection| C1[⚡ Redis Error Handler]
+                        B -->|MongoDB Connection| D1[🗄️ MongoDB Error Handler] 
+                        B -->|Validation Error| E1[📝 Validation Error Handler]
+                        B -->|Business Logic| F1[🏢 Business Logic Error Handler]
+                        B -->|Network/Unknown| G1[🌐 Unknown Error Handler]
+                        
+                        C1 --> C2[📝 Log: 'Redis failed, falling back to MongoDB']
+                        C2 --> C3[🔄 Switch to MongoDB-only Mode]
+                        C3 --> C4[✅ Continue Operation]
+                        
+                        D1 --> D2[📝 Log: 'MongoDB connection lost']
+                        D2 --> D3[🔄 Switch to Redis-only Mode]
+                        D3 --> D4[⚠️ Limited Functionality Mode]
+                        
+                        E1 --> E2[📝 Log: Validation details]
+                        E2 --> E3[📤 400 Bad Request Response]
+                        E3 --> E4[📋 Return Specific Error Messages]
+                        
+                        F1 --> F2[📝 Log: Business logic error]
+                        F2 --> F3{🔍 Error Category}
+                        F3 -->|Product| F4[📤 404 Product Not Found]
+                        F3 -->|Stock| F5[📤 400 Insufficient Stock]
+                        F3 -->|Permission| F6[📤 403 Forbidden]
+                        
+                        G1 --> G2[📝 Log: Full error stack]
+                        G2 --> G3[📤 500 Internal Server Error]
+                        G3 --> G4[🔒 Hide Internal Details]
+                        
+                        C4 --> H1[📤 Degraded Performance Response]
+                        D4 --> H2[📤 Limited Feature Response]
+                        E4 --> H3[📤 Client-friendly Error]
+                        F4 --> H3
+                        F5 --> H3
+                        F6 --> H3
+                        G4 --> H4[📤 Generic Error Response]
+                        
+                        H1 --> I1[🌐 Client Handles Degraded Mode]
+                        H2 --> I2[🌐 Client Shows Limited Features]
+                        H3 --> I3[🌐 Client Shows Specific Error]
+                        H4 --> I4[🌐 Client Shows Generic Error]
+                        
+                        style A fill:#ffebee
+                        style C1 fill:#fff3e0
+                        style D1 fill:#fff3e0
+                        style E1 fill:#e3f2fd
+                        style F1 fill:#f3e5f5
+                        style G1 fill:#ffebee
+                        style C3 fill:#fff9c4
+                        style D3 fill:#fff9c4
+                        style E3 fill:#ffcdd2
+                        style G3 fill:#ffcdd2
+                        style H1 fill:#fff9c4
+                        style H2 fill:#fff9c4
+                        style H3 fill:#ffcdd2
+                        style H4 fill:#ffcdd2
+                </div>
+            </div>
+            
+            <div class="error-paths">
+                <h4>🚨 Common Error Scenarios:</h4>
+                <ul>
+                    <li><strong>Redis Down:</strong> Automatic fallback to MongoDB-only mode</li>
+                    <li><strong>MongoDB Down:</strong> Cache-only mode with limited writes</li>
+                    <li><strong>Product Not Found:</strong> 404 with clear message</li>
+                    <li><strong>Insufficient Stock:</strong> 400 with current stock info</li>
+                    <li><strong>Invalid Session:</strong> Auto-generate new session ID</li>
+                    <li><strong>Network Timeout:</strong> Retry logic with exponential backoff</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Cache Flow -->
+        <div id="cache-flow" class="chart-section hidden">
+            <div class="chart-container">
+                <div class="mermaid">
+                    graph TD
+                        A[📥 Request Arrives] --> B{🔍 Operation Type}
+                        
+                        B -->|Read| C1[⚡ Redis GET]
+                        B -->|Write| D1[⚡ Redis SET + MongoDB Queue]
+                        B -->|Update| E1[⚡ Redis UPDATE + MongoDB Queue]
+                        B -->|Delete| F1[⚡ Redis DEL + MongoDB DELETE]
+                        
+                        C1 --> C2{🎯 Cache Hit?}
+                        C2 -->|✅ Hit| C3[📊 Increment Hit Counter]
+                        C2 -->|❌ Miss| C4[📊 Increment Miss Counter]
+                        
+                        C3 --> C5[📤 Return Cached Data (~2-5ms)]
+                        C4 --> C6[🗄️ Query MongoDB (~50-200ms)]
+                        C6 --> C7[📥 Store in Redis (TTL: 3600s)]
+                        C7 --> C8[📤 Return Fresh Data]
+                        
+                        D1 --> D2[📥 Store in Redis Immediately]
+                        D2 --> D3[⏰ Add to MongoDB Write Queue]
+                        D3 --> D4{🕐 Debounce Timer}
+                        D4 -->|5 seconds| D5[💾 Batch Write to MongoDB]
+                        D4 -->|New write| D6[⏰ Reset Timer]
+                        D6 --> D4
+                        
+                        E1 --> E2[🔄 Update Redis Cache]
+                        E2 --> E3[⏰ Add to MongoDB Update Queue]
+                        E3 --> D4
+                        
+                        F1 --> F2[🗑️ Delete from Redis]
+                        F2 --> F3[🗑️ Delete from MongoDB]
+                        
+                        G[📊 Cache Monitoring] --> G1[📈 Hit Rate Tracking]
+                        G1 --> G2[🎯 Target: >90% Hit Rate]
+                        G2 --> G3[📊 Performance Metrics]
+                        G3 --> G4[⚠️ Alert if Hit Rate < 80%]
+                        
+                        H[🧹 Cache Maintenance] --> H1[🔄 TTL Management]
+                        H1 --> H2[🗑️ Expired Key Cleanup]
+                        H2 --> H3[📊 Memory Usage Monitoring]
+                        H3 --> H4[⚠️ Alert if Memory > 80%]
+                        
+                        style A fill:#e3f2fd
+                        style C1 fill:#e0f2f1
+                        style C5 fill:#c8e6c9
+                        style C6 fill:#ffebee
+                        style D2 fill:#e0f2f1
+                        style D5 fill:#fff9c4
+                        style E2 fill:#e0f2f1
+                        style F2 fill:#ffcdd2
+                        style F3 fill:#ffebee
+                        style G2 fill:#e8f5e8
+                        style G4 fill:#fff3e0
+                        style H3 fill:#e8f5e8
+                        style H4 fill:#fff3e0
+                </div>
+            </div>
+            
+            <div class="success-paths">
+                <h4>⚡ Cache Performance Metrics:</h4>
+                <div class="timing-info">
+                    <div class="timing-card">
+                        <h4>🎯 Hit Rate Targets</h4>
+                        <p><strong>Excellent:</strong> >95% hit rate</p>
+                        <p><strong>Good:</strong> 90-95% hit rate</p>
+                        <p><strong>Needs Improvement:</strong> <90%</p>
+                    </div>
+                    <div class="timing-card">
+                        <h4>⏱️ Response Times</h4>
+                        <p><strong>Cache Hit:</strong> 1-5ms</p>
+                        <p><strong>Cache Miss:</strong> 50-200ms</p>
+                        <p><strong>Write Operation:</strong> 3-10ms</p>
+                    </div>
+                    <div class="timing-card">
+                        <h4>💾 Memory Management</h4>
+                        <p><strong>TTL:</strong> 1 hour (3600s)</p>
+                        <p><strong>Max Memory:</strong> 100MB</p>
+                        <p><strong>Eviction:</strong> LRU policy</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#4CAF50',
+                primaryTextColor: '#333',
+                primaryBorderColor: '#2196F3',
+                lineColor: '#666',
+                secondaryColor: '#f0f0f0',
+                tertiaryColor: '#fff'
+            },
+            flowchart: {
+                nodeSpacing: 20,
+                rankSpacing: 30,
+                curve: 'basis'
+            }
+        });
+        
+        function showChart(chartName) {
+            // Hide all charts
+            const charts = document.querySelectorAll('.chart-section');
+            charts.forEach(chart => chart.classList.add('hidden'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected chart
+            document.getElementById(chartName).classList.remove('hidden');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

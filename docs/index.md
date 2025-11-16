@@ -1,24 +1,60 @@
-# 📖 מדריך התיעוד המלא - TechBasket
-*כל מה שצריך לדעת במקום אחד*
+# � TechBasket Documentation Center
+
+> **⚠️ שים לב: המקום המרכזי עבר!**  
+> **👉 כל הפרויקט מנוהל מ:** [**PROJECT_DASHBOARD.md**](../PROJECT_DASHBOARD.md) 👈
 
 ---
 
-## 🎯 **לאן כדאי להתחיל?**
+## 🎯 **קישורים מהירים למסמכים חשובים:**
 
-### **👨‍💻 מפתח חדש בפרויקט:**
-1. **[README.md](../README.md)** - סקירה כללית ומה זה הפרויקט
-2. **[setup-guide.md](./setup/setup-guide.md)** - הקמה והפעלה צעד אחר צעד
-3. **[architecture.md](./setup/architecture.md)** - הבנת המבנה והעיצוב
+### **� ניהול הפרויקט:**
+- **[📊 Project Dashboard](../PROJECT_DASHBOARD.md)** ⭐ **המקום הראשי - התחל כאן!**
+- **[🏗️ Server Architecture](../SERVER_ARCHITECTURE_MAP.md)** - ארכיטקטורת המערכת
+- **[📋 Flow Chart Guide](../FLOW_CHART_GUIDE.md)** - איך להשתמש בתרשימים
 
-### **🎓 רוצה ללמוד איך זה עובד:**
-1. **[learning-path.md](./learning/learning-path.md)** - מסלול למידה מובנה
-2. **[flow-complete.md](./cart-system/flow-complete.md)** - זרימת העגלה המלאה
-3. **[code-examples.md](./cart-system/code-examples.md)** - קוד מוכן לעותק-הדבק
+### **🛠️ מסמכי פיתוח:**
+- **[📖 API Documentation](../API_ENDPOINTS_DOCUMENTATION.md)** - תיעוד API מלא
+- **[🧹 Project Structure](../PROJECT_STRUCTURE_CLEAN.md)** - מבנה הפרויקט
+- **[📈 Interactive Flow Charts](http://localhost:4173/detailed-flow.html)** - תרשימים אינטראקטיביים
 
-### **🔧 יש בעיה או שגיאה:**
-1. **[🔍 tools/HEALTH-CHECK.md](../tools/HEALTH-CHECK.md)** - כלי בדיקה אוטומטי
-2. **[troubleshooting.md](./setup/troubleshooting.md)** - פתרון בעיות נפוצות
-3. **[setup-guide.md#troubleshooting](./setup/setup-guide.md#troubleshooting)** - בעיות התקנה
+### **📚 מסמכים מקומיים (לא מעודכנים):**
+- **[📝 Code Examples](./code-examples.md)** - דוגמאות קוד ישנות
+- **[⚡ Cheat Sheet](./cheat-sheet.md)** - קיצורי דרך בסיסיים
+
+---
+
+## 🚀 **Quick Start:**
+
+### **חדש בפרויקט?**
+1. **� [PROJECT_DASHBOARD.md](../PROJECT_DASHBOARD.md)** - התחל כאן!
+2. בדוק את הסטטוס הנוכחי
+3. עקוב אחרי ההוראות להתחלה מהירה (30 שניות)
+
+### **מפתח מנוסה?**
+1. **👉 [PROJECT_DASHBOARD.md](../PROJECT_DASHBOARD.md)** - סקירת מצב
+2. **[📖 API Documentation](../API_ENDPOINTS_DOCUMENTATION.md)** - מפרט API
+3. **[📈 Flow Charts](http://localhost:4173/detailed-flow.html)** - תרשימי זרימה
+
+---
+
+## ⚠️ **הערה חשובה:**
+
+**קבצי התיעוד הישנים בתיקייה זו (docs/) אינם מעודכנים!**  
+
+**כל הניהול והעדכונים מתבצעים ב:** 
+## **[📊 PROJECT_DASHBOARD.md](../PROJECT_DASHBOARD.md)**
+
+זה כולל:
+- ✅ סטטוס הפרויקט בזמן אמת
+- ✅ מה עובד עכשיו ומה לא
+- ✅ הוראות התחלה מעודכנות  
+- ✅ רשימת משימות נוכחית
+- ✅ מדריכים מעודכנים
+- ✅ קישורים לכל הכלים
+
+---
+
+*🎯 כל עדכון או שינוי בפרויקט מתועד ב-[Project Dashboard](../PROJECT_DASHBOARD.md)*
 
 ---
 

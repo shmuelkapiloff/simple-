@@ -30,7 +30,7 @@ const Cart: React.FC = () => {
   const itemCount = useSelector(selectCartItemCount);
   const sessionId = useSelector(selectSessionId);
 
-  // RTK Query mutations  
+  // RTK Query mutations
   const [updateQuantityMutation] = useUpdateCartQuantityMutation();
   const [removeFromCartMutation] = useRemoveFromCartMutation();
   const [clearCartMutation] = useClearCartMutation();

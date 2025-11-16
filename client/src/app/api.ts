@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { ApiLogger } from "../utils/apiLogger";
 
 // Product type להתאמה לשרת
 export interface Product {
@@ -70,47 +71,44 @@ interface ClearCartRequest {
   sessionId: string;
 }
 
-// הגדרת RTK Query API
+// הגדרת RTK Query API עם ApiLogger מתקדם
+const baseQueryWithLogging = fetchBaseQuery({
+  baseUrl: "http://localhost:4001/api/",
+  prepareHeaders: (headers) => {
+    headers.set("Content-Type", "application/json");
+    return headers;
+  },
+});
+
+// Wrapper עם ApiLogger
+const baseQueryWithInterceptor = async (
+  args: any,
+  api: any,
+  extraOptions: any
+) => {
+  const endpoint =
+    typeof args === "string" ? args : `${args.method || "GET"} ${args.url}`;
+  const callId = ApiLogger.startCall(endpoint, args.body);
+
+  try {
+    const result = await baseQueryWithLogging(args, api, extraOptions);
+
+    if (result.error) {
+      ApiLogger.endCall(callId, null, result.error);
+    } else {
+      ApiLogger.endCall(callId, result.data);
+    }
+
+    return result;
+  } catch (error) {
+    ApiLogger.endCall(callId, null, error);
+    throw error;
+  }
+};
+
 export const api = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:4001/api/", // כתובת השרת
-    prepareHeaders: (headers) => {
-      // נוסיף X-Client-Id בהמשך לעגלת אורח
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-    // 🔍 הוספת interceptor לדיבוג
-    fetchFn: async (...args) => {
-      const [url, options] = args;
-      console.log("🌐 API Call:", {
-        url: url?.toString(),
-        method: options?.method || "GET",
-        headers: options?.headers,
-        body: options?.body ? JSON.parse(options.body as string) : null,
-      });
-
-      const response = await fetch(...args);
-      const clonedResponse = response.clone();
-
-      try {
-        const data = await clonedResponse.json();
-        console.log("🌐 API Response:", {
-          url: url?.toString(),
-          status: response.status,
-          data: data,
-        });
-      } catch (e) {
-        console.log("🌐 API Response (non-JSON):", {
-          url: url?.toString(),
-          status: response.status,
-          statusText: response.statusText,
-        });
-      }
-
-      return response;
-    },
-  }),
+  baseQuery: baseQueryWithInterceptor,
   tagTypes: ["Product", "Cart"],
   endpoints: (builder) => ({
     // GET /api/products - רשימת מוצרים

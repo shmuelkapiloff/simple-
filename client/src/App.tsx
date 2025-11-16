@@ -1,62 +1,28 @@
-import { Routes, Route, Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
 import ProductList from "./components/ProductList";
 import Cart from "./components/Cart";
-import { selectCartItemCount } from "./app/cartSlice";
+import { NavBar } from "./components/NavBar";
+import { DebugPanel } from "./components/DebugPanel";
+import { verifyToken } from "./app/authSlice";
+import type { AppDispatch } from "./app/store";
 
 function App() {
-  const cartItemCount = useSelector(selectCartItemCount);
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Auto-verify token on app startup
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      dispatch(verifyToken());
+    }
+  }, [dispatch]);
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">TechBasket</h1>
-            </div>
-            <nav className="hidden md:flex space-x-8">
-              <Link to="/" className="text-gray-500 hover:text-gray-900">
-                Products
-              </Link>
-              {/* <Link to="/cart" className="text-gray-500 hover:text-gray-900">
-                Cart
-              </Link> */}
-            </nav>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  className="w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <Link
-                to="/cart"
-                className="relative p-2 text-gray-600 hover:text-gray-900"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.68 4.32M7 13h10M9 19a1 1 0 100 2 1 1 0 000-2zm8 0a1 1 0 100 2 1 1 0 000-2z"
-                  />
-                </svg>
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartItemCount}
-                  </span>
-                )}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Navigation Bar with Authentication */}
+      <NavBar />
 
       <main>
         <Routes>
@@ -64,6 +30,9 @@ function App() {
           <Route path="/cart" element={<Cart />} />
         </Routes>
       </main>
+
+      {/* 🔧 Debug Panel - רק בפיתוח */}
+      <DebugPanel />
     </div>
   );
 }

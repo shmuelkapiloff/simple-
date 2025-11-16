@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import { errorHandler } from "./middlewares/error.middleware";
 import { healthRouter } from "./routes/health.routes";
 import { productRouter } from "./routes/product.routes";
 import cartRoutes from "./routes/cart.routes";
+import { authRoutes } from "./routes/auth.routes";
 
 export function createApp() {
   console.log("🏗️ שמואל: מתחיל ליצור Express app...");
@@ -18,6 +20,8 @@ export function createApp() {
   app.use(compression()); // gzip responses
   console.log("📝 שמואל: מוסיף JSON parser...");
   app.use(express.json()); // parse JSON bodies
+  console.log("🍪 שמואל: מוסיף Cookie parser...");
+  app.use(cookieParser()); // parse cookies
 
   // Routes
   console.log("🛣️ שמואל: מוסיף routes...");
@@ -27,6 +31,8 @@ export function createApp() {
   console.log("🛍️ שמואל: Product routes נוספו!");
   app.use("/api/cart", cartRoutes);
   console.log("🛒 שמואל: Cart routes נוספו!");
+  app.use("/api/auth", authRoutes);
+  console.log("🔐 שמואל: Auth routes נוספו!");
 
   // שמואל: route מיוחד שלי!
   app.get("/api/shmuel", (req, res) => {

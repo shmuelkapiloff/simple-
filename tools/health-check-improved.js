@@ -10,7 +10,7 @@ const { performance } = require('perf_hooks');
 
 // הגדרות מערכת
 const CONFIG = {
-  server: { host: 'localhost', port: 3000, timeout: 3000 },
+  server: { host: 'localhost', port: 4001, timeout: 3000 },
   client: { host: 'localhost', port: 5173, timeout: 2000 }
 };
 

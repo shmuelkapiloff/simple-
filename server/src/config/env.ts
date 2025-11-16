@@ -7,4 +7,7 @@ export const env = {
   MONGO_URI: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/simple_shop",
   REDIS_URL: process.env.REDIS_URL || "redis://127.0.0.1:6379",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
+  JWT_SECRET:
+    process.env.JWT_SECRET ||
+    "your-super-secret-jwt-key-change-in-production-2024!",
 };
