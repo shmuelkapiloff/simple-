@@ -200,7 +200,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    UserAction([👤 User clicks "Add to Cart"]) --> CheckProduct{📦 Product exists?}
+    UserAction([👤 User clicks Add to Cart]) --> CheckProduct{📦 Product exists?}
     
     %% Product Validation
     CheckProduct -->|❌ No| ProductError[❌ Product not found]
@@ -311,26 +311,25 @@ stateDiagram-v2
         BrowsingAsGuest --> ShowingLoginModal : user clicks login
         BrowsingAsGuest --> ShowingRegisterModal : user clicks register
         BrowsingAsGuest --> AddingToGuestCart : user adds to cart
-        
-        ShowingLoginModal --> LoggingIn : user submits form
-        ShowingRegisterModal --> Registering : user submits form
         AddingToGuestCart --> BrowsingAsGuest
     }
 
-    state LoggingIn {
-        [*] --> LoginPending
+    state ShowingLoginModal {
+        [*] --> LoggingIn : user submits form
+        LoggingIn --> LoginPending
         LoginPending --> LoginSuccess : credentials valid
         LoginPending --> LoginError : credentials invalid
         LoginSuccess --> AuthenticatedState
-        LoginError --> ShowingLoginModal : show error, try again
+        LoginError --> [*] : show error, try again
     }
 
-    state Registering {
-        [*] --> RegisterPending
+    state ShowingRegisterModal {
+        [*] --> Registering : user submits form
+        Registering --> RegisterPending
         RegisterPending --> RegisterSuccess : registration valid
         RegisterPending --> RegisterError : validation failed
         RegisterSuccess --> AuthenticatedState
-        RegisterError --> ShowingRegisterModal : show error, try again
+        RegisterError --> [*] : show error, try again
     }
 
     state AuthenticatedState {
@@ -345,7 +344,8 @@ stateDiagram-v2
     }
 
     AuthenticatedState --> GuestState : token expires
-    GuestState --> AuthenticatedState : successful login/register
+    ShowingLoginModal --> AuthenticatedState : successful login
+    ShowingRegisterModal --> AuthenticatedState : successful register
 ```
 
 ---
@@ -358,7 +358,7 @@ flowchart LR
         AppStart([App.tsx mounts]) --> LoadReduxStore[📋 Initialize Redux Store]
         LoadReduxStore --> CheckInitialAuth{🔐 Token in localStorage?}
         
-        CheckInitialAuth -->|✅ Yes| DispatchVerify[🚀 dispatch(verifyToken)]
+        CheckInitialAuth -->|✅ Yes| DispatchVerify[🚀 dispatch verifyToken]
         CheckInitialAuth -->|❌ No| GuestMode[👤 Continue as guest]
         
         DispatchVerify --> TokenResult{📊 Token verification result}
@@ -384,7 +384,7 @@ flowchart LR
         
         UserInteraction -->|🔑 Login clicked| ShowLoginModal[📝 Show login modal]
         UserInteraction -->|📝 Register clicked| ShowRegisterModal[📝 Show register modal]
-        UserInteraction -->|🚪 Logout clicked| ProcessLogout[🚀 dispatch(logout)]
+        UserInteraction -->|🚪 Logout clicked| ProcessLogout[🚀 dispatch logout]
         UserInteraction -->|🛒 Add to cart| ProcessAddToCart[🚀 Add to cart flow]
         UserInteraction -->|📦 Browse products| ContinueBrowsing[👀 Continue browsing]
         
