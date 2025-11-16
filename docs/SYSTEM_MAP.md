@@ -294,7 +294,7 @@ stateDiagram-v2
         [*] --> CheckingToken
         CheckingToken --> TokenFound : localStorage has token
         CheckingToken --> NoToken : no token found
-        TokenFound --> VerifyingToken : dispatch verifyToken()
+        TokenFound --> VerifyingToken : dispatch verifyToken
         NoToken --> GuestState
     }
 
@@ -344,8 +344,6 @@ stateDiagram-v2
     }
 
     AuthenticatedState --> GuestState : token expires
-    ShowingLoginModal --> AuthenticatedState : successful login
-    ShowingRegisterModal --> AuthenticatedState : successful register
 ```
 
 ---
