@@ -37,14 +37,14 @@ export class AuthMiddleware {
 
       if (!token) {
         console.log("❌ No token provided in request");
-        return sendError(res, "Access denied. No token provided", 401);
+        return sendError(res, 401, "Access denied. No token provided");
       }
 
       // Verify token and get user
       const user = await AuthService.verifyToken(token);
 
       // Attach user info to request object
-      req.userId = user._id;
+      req.userId = user._id.toString(); // Ensure string conversion
       req.user = user;
 
       console.log(`✅ User authenticated: ${user.email}`);
@@ -55,7 +55,7 @@ export class AuthMiddleware {
       t.error(error);
       console.log("❌ Authentication failed:", error.message);
 
-      return sendError(res, "Access denied. Invalid token", 401);
+      return sendError(res, 401, "Access denied. Invalid token");
     }
   }
 
@@ -126,7 +126,7 @@ export class AuthMiddleware {
       });
     } catch (error: any) {
       t.error(error);
-      return sendError(res, "Access denied. Admin privileges required", 403);
+      return sendError(res, 403, "Access denied. Admin privileges required");
     }
   }
 
@@ -178,8 +178,8 @@ export class AuthMiddleware {
 
           return sendError(
             res,
-            `Too many attempts. Try again in ${remainingTime} minutes`,
-            429
+            429,
+            `Too many attempts. Try again in ${remainingTime} minutes`
           );
         }
 

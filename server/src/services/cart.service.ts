@@ -2,6 +2,7 @@ import { CartModel, ICart, ICartItem } from "../models/cart.model";
 import { ProductModel } from "../models/product.model";
 import { redis as redisClient } from "../config/redisClient";
 import { track, log } from "../utils/quickLog";
+import mongoose from "mongoose";
 
 export class CartService {
   // מאפיין סטטי לDebounce של MongoDB saves
@@ -35,9 +36,18 @@ export class CartService {
             // Redis cart needs population, fetch from MongoDB
 
             // טען מהמונגו עם populate
-            const dbCart = await CartModel.findOne({
-              $or: [{ sessionId: sessionId }, { userId: userId }],
-            }).populate("items.product");
+            let query;
+            if (userId) {
+              // For logged-in users, only look for their cart
+              query = { userId: userId };
+            } else {
+              // For guests, look by sessionId only
+              query = { sessionId: sessionId };
+            }
+
+            const dbCart = await CartModel.findOne(query).populate(
+              "items.product"
+            );
 
             if (dbCart) {
               // עדכן את Redis עם הנתונים המלאים
@@ -60,9 +70,14 @@ export class CartService {
       console.log(`🔍 Cart not in Redis, checking MongoDB: ${cartId}`);
 
       // 💾 Fallback למונגו (אם Redis ריק)
-      const dbCart = await CartModel.findOne({
-        $or: [{ sessionId: sessionId }, { userId: userId }],
-      }).populate("items.product");
+      let query;
+      if (userId) {
+        query = { userId: userId };
+      } else {
+        query = { sessionId: sessionId };
+      }
+
+      const dbCart = await CartModel.findOne(query).populate("items.product");
 
       if (dbCart) {
         // 📥 שמור בRedis לפעמים הבאות
@@ -83,9 +98,16 @@ export class CartService {
       // 🔄 אם Redis נפל, נסה רק מונגו
       if ((error as Error).message?.includes("Redis")) {
         try {
-          const dbCart = await CartModel.findOne({
-            $or: [{ sessionId: sessionId }, { userId: userId }],
-          }).populate("items.product");
+          let query;
+          if (userId) {
+            query = { userId: userId };
+          } else {
+            query = { sessionId: sessionId };
+          }
+
+          const dbCart = await CartModel.findOne(query).populate(
+            "items.product"
+          );
 
           console.log("🚨 Redis failed, served from MongoDB only");
           return dbCart;
@@ -116,10 +138,15 @@ export class CartService {
         console.log(`💾 Saving to MongoDB: ${cartId}`);
 
         // שמור במונגו
+        let query;
+        if (cart.userId) {
+          query = { userId: cart.userId };
+        } else {
+          query = { sessionId: cart.sessionId };
+        }
+
         await CartModel.findOneAndUpdate(
-          {
-            $or: [{ sessionId: cart.sessionId }, { userId: cart.userId }],
-          },
+          query,
           {
             sessionId: cart.sessionId,
             userId: cart.userId,
@@ -196,9 +223,12 @@ export class CartService {
 
       // צור עגלה חדשה אם לא קיימת
       if (!cart) {
+        const userObjectId = userId
+          ? new mongoose.Types.ObjectId(userId)
+          : undefined;
         cart = new CartModel({
           sessionId,
-          userId,
+          userId: userObjectId,
           items: [],
           total: 0,
         });
@@ -395,9 +425,14 @@ export class CartService {
       console.log(`⚡ Cleared from Redis: ${cartId}`);
 
       // מחק ממונגו (יכול להיות איטי, אבל לא חוסם)
-      CartModel.deleteOne({
-        $or: [{ sessionId: sessionId }, { userId: userId }],
-      })
+      let query;
+      if (userId) {
+        query = { userId: userId };
+      } else {
+        query = { sessionId: sessionId };
+      }
+
+      CartModel.deleteOne(query)
         .exec()
         .then(() => {
           console.log(`💾 Cleared from MongoDB: ${cartId}`);

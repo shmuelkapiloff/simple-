@@ -19,6 +19,7 @@ import {
   useUpdateCartQuantityMutation,
   useRemoveFromCartMutation,
   useClearCartMutation,
+  useCreateOrderMutation,
 } from "../app/api";
 
 const Cart: React.FC = () => {
@@ -34,6 +35,8 @@ const Cart: React.FC = () => {
   const [updateQuantityMutation] = useUpdateCartQuantityMutation();
   const [removeFromCartMutation] = useRemoveFromCartMutation();
   const [clearCartMutation] = useClearCartMutation();
+  const [createOrderMutation, { isLoading: isCreatingOrder }] =
+    useCreateOrderMutation();
 
   // Initialize cart on mount
   useEffect(() => {
@@ -145,6 +148,41 @@ const Cart: React.FC = () => {
       // Revert optimistic update
       dispatch(setCart({ items: currentItems, total: currentTotal }));
       dispatch(setError("Failed to clear cart"));
+    }
+  };
+
+  // Create order handler
+  const handleCreateOrder = async () => {
+    if (!sessionId) {
+      dispatch(setError("No session ID"));
+      return;
+    }
+
+    if (items.length === 0) {
+      dispatch(setError("Cart is empty"));
+      return;
+    }
+
+    try {
+      const order = await createOrderMutation({ sessionId }).unwrap();
+
+      // Clear cart after successful order
+      dispatch(clearCartAction());
+
+      // Show success message and navigate to orders
+      alert(`הזמנה נוצרה בהצלחה! מספר הזמנה: ${order.orderNumber}`);
+      navigate("/orders");
+    } catch (error: any) {
+      console.error("Create order failed:", error);
+
+      // Handle different error types
+      if (error?.data?.message) {
+        dispatch(setError(error.data.message));
+      } else if (error?.message) {
+        dispatch(setError(error.message));
+      } else {
+        dispatch(setError("Failed to create order"));
+      }
     }
   };
 
@@ -293,14 +331,22 @@ const Cart: React.FC = () => {
                 onClick={() => navigate("/")}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-3 px-4 rounded-lg transition-colors"
               >
-                Continue Shopping
+                המשך קניות
               </button>
 
               <button
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-                onClick={() => alert("Checkout functionality coming soon!")}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={handleCreateOrder}
+                disabled={isCreatingOrder || items.length === 0}
               >
-                Proceed to Checkout
+                {isCreatingOrder ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    יוצר הזמנה...
+                  </div>
+                ) : (
+                  "🛍️ בצע הזמנה"
+                )}
               </button>
             </div>
           </div>

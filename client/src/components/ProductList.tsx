@@ -14,7 +14,8 @@ export default function ProductList() {
   const sessionId = useSelector(selectSessionId);
   const cartItems = useSelector(selectCartItems); // ✅ קבל את כל העגלה פעם אחת
   const { data: products = [], error, isLoading } = useGetProductsQuery();
-  const [addToCartMutation, { isLoading: isAddingToCart }] =
+  const [
+    addToCartMutation, { isLoading: isAddingToCart }] =
     useAddToCartMutation();
 
   // ✅ חישוב מיפוי מוצרים בעגלה
@@ -31,7 +32,8 @@ export default function ProductList() {
     }
   }, [dispatch, sessionId]);
 
-  const handleAddToCart = async (product: any) => {
+  const 
+  handleAddToCart = async (product: any) => {
     if (!sessionId) {
       dispatch(setError("Session not initialized"));
       return;

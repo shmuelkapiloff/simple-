@@ -71,11 +71,51 @@ interface ClearCartRequest {
   sessionId: string;
 }
 
+// Order types
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  user: {
+    _id: string;
+    email?: string;
+  };
+  items: Array<{
+    product: {
+      _id: string;
+      name: string;
+      price: number;
+      sku: string;
+    };
+    quantity: number;
+    price: number;
+  }>;
+  total: number;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Order API request types
+interface CreateOrderRequest {
+  sessionId: string;
+}
+
+interface CancelOrderRequest {
+  orderId: string;
+}
+
 // הגדרת RTK Query API עם ApiLogger מתקדם
 const baseQueryWithLogging = fetchBaseQuery({
   baseUrl: "http://localhost:4001/api/",
   prepareHeaders: (headers) => {
     headers.set("Content-Type", "application/json");
+
+    // Add authorization token for protected routes
+    const token = localStorage.getItem("token");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
     return headers;
   },
 });
@@ -109,7 +149,7 @@ const baseQueryWithInterceptor = async (
 export const api = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithInterceptor,
-  tagTypes: ["Product", "Cart"],
+  tagTypes: ["Product", "Cart", "Order"],
   endpoints: (builder) => ({
     // GET /api/products - רשימת מוצרים
     getProducts: builder.query<Product[], void>({
@@ -193,6 +233,37 @@ export const api = createApi({
       transformResponse: (response: ApiResponse<Cart>) => response.data!,
       invalidatesTags: ["Cart"],
     }),
+
+    // === ORDER ENDPOINTS === //
+
+    // POST /api/orders - יצירת הזמנה מהעגלה
+    createOrder: builder.mutation<Order, CreateOrderRequest>({
+      query: (body) => ({
+        url: "orders",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<Order>) => response.data!,
+      invalidatesTags: ["Cart", "Order"],
+    }),
+
+    // GET /api/orders - קבלת הזמנות המשתמש
+    getUserOrders: builder.query<Order[], void>({
+      query: () => "orders",
+      transformResponse: (response: ApiResponse<Order[]>) =>
+        response.data || [],
+      providesTags: ["Order"],
+    }),
+
+    // PUT /api/orders/:id/cancel - ביטול הזמנה
+    cancelOrder: builder.mutation<Order, CancelOrderRequest>({
+      query: ({ orderId }) => ({
+        url: `orders/${orderId}/cancel`,
+        method: "PUT",
+      }),
+      transformResponse: (response: ApiResponse<Order>) => response.data!,
+      invalidatesTags: ["Order"],
+    }),
   }),
 });
 
@@ -208,4 +279,8 @@ export const {
   useUpdateCartQuantityMutation,
   useRemoveFromCartMutation,
   useClearCartMutation,
+  // Orders
+  useCreateOrderMutation,
+  useGetUserOrdersQuery,
+  useCancelOrderMutation,
 } = api;

@@ -7,6 +7,7 @@ import { healthRouter } from "./routes/health.routes";
 import { productRouter } from "./routes/product.routes";
 import cartRoutes from "./routes/cart.routes";
 import { authRoutes } from "./routes/auth.routes";
+import orderRoutes from "./routes/order.routes";
 
 export function createApp() {
   console.log("🏗️ שמואל: מתחיל ליצור Express app...");
@@ -33,6 +34,8 @@ export function createApp() {
   console.log("🛒 שמואל: Cart routes נוספו!");
   app.use("/api/auth", authRoutes);
   console.log("🔐 שמואל: Auth routes נוספו!");
+  app.use("/api/orders", orderRoutes);
+  console.log("📋 שמואל: Order routes נוספו!");
 
   // שמואל: route מיוחד שלי!
   app.get("/api/shmuel", (req, res) => {

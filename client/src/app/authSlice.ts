@@ -30,9 +30,12 @@ interface RegisterData {
 }
 
 interface AuthResponse {
-  user: User;
-  token: string;
+  success: boolean;
   message: string;
+  data: {
+    user: User;
+    token: string;
+  };
 }
 
 // Initial state
@@ -81,8 +84,10 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
 
       return data;
     } catch (error: any) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        return rejectWithValue("לא ניתן להתחבר לשרת. אנא וודא שהשרת רץ על http://localhost:4001");
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        return rejectWithValue(
+          "לא ניתן להתחבר לשרת. אנא וודא שהשרת רץ על http://localhost:4001"
+        );
       }
       return rejectWithValue(error.message || "שגיאת רשת");
     }
@@ -125,8 +130,10 @@ export const register = createAsyncThunk<AuthResponse, RegisterData>(
 
       return data;
     } catch (error: any) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        return rejectWithValue("לא ניתן להתחבר לשרת. אנא וודא שהשרת רץ על http://localhost:4001");
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        return rejectWithValue(
+          "לא ניתן להתחבר לשרת. אנא וודא שהשרת רץ על http://localhost:4001"
+        );
       }
       return rejectWithValue(error.message || "שגיאת רשת");
     }
@@ -137,13 +144,26 @@ export const verifyToken = createAsyncThunk<User>(
   "auth/verifyToken",
   async (_, { rejectWithValue, getState }) => {
     try {
+      console.log("🔍 verifyToken: Starting verification...");
+
       const state = getState() as { auth: AuthState };
-      const token = state.auth.token;
+      const tokenFromState = state.auth.token;
+      const tokenFromStorage = localStorage.getItem("token");
+
+      console.log("🔍 verifyToken: Token sources:", {
+        fromState: tokenFromState ? "exists" : "missing",
+        fromStorage: tokenFromStorage ? "exists" : "missing",
+      });
+
+      // Use token from localStorage if state token is missing
+      const token = tokenFromState || tokenFromStorage;
 
       if (!token) {
+        console.log("❌ verifyToken: No token found anywhere");
         return rejectWithValue("No token found");
       }
 
+      console.log("🚀 verifyToken: Making API call...");
       const response = await fetch("http://localhost:4001/api/auth/verify", {
         method: "GET",
         headers: {
@@ -151,26 +171,37 @@ export const verifyToken = createAsyncThunk<User>(
         },
       });
 
+      console.log("📡 verifyToken: Response status:", response.status);
+
       // Check if response has content
       const text = await response.text();
       if (!text) {
+        console.log("❌ verifyToken: Empty response");
         return rejectWithValue("שרת לא זמין");
       }
 
       let data;
       try {
         data = JSON.parse(text);
+        console.log("✅ verifyToken: Parsed response:", {
+          success: data.success,
+          userExists: !!data.user,
+        });
       } catch (jsonError) {
+        console.log("❌ verifyToken: JSON parse error:", jsonError);
         return rejectWithValue("תגובה לא תקינה מהשרת");
       }
 
       if (!response.ok) {
+        console.log("❌ verifyToken: Server error:", data.message);
         return rejectWithValue(data.message || "Token verification failed");
       }
 
+      console.log("🎉 verifyToken: Success! User:", data.user?.name);
       return data.user;
     } catch (error: any) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.log("❌ verifyToken: Network error:", error);
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
         return rejectWithValue("שרת לא זמין - מעבר למצב offline");
       }
       return rejectWithValue(error.message || "שגיאת רשת");
@@ -186,7 +217,7 @@ export const logout = createAsyncThunk<void>(
 
       if (token) {
         // Optional: Call logout endpoint to invalidate token on server
-        await fetch("/api/auth/logout", {
+        await fetch("http://localhost:4001/api/auth/logout", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -224,9 +255,14 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
+        console.log("🎉 login.fulfilled - Setting user and token:", {
+          user: action.payload.data?.user?.name,
+          tokenExists: !!action.payload.data?.token,
+          fullPayload: action.payload,
+        });
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload.data.user;
+        state.token = action.payload.data.token;
         state.isAuthenticated = true;
         state.error = null;
       })
@@ -244,8 +280,8 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload.data.user;
+        state.token = action.payload.data.token;
         state.isAuthenticated = true;
         state.error = null;
       })
@@ -266,6 +302,11 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
         state.error = null;
+        // Make sure token is in state from localStorage
+        const token = localStorage.getItem("token");
+        if (token) {
+          state.token = token;
+        }
       })
       .addCase(verifyToken.rejected, (state) => {
         state.isLoading = false;

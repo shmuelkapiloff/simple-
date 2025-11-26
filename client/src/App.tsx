@@ -5,6 +5,8 @@ import ProductList from "./components/ProductList";
 import Cart from "./components/Cart";
 import { NavBar } from "./components/NavBar";
 import { DebugPanel } from "./components/DebugPanel";
+import Profile from "./pages/Profile";
+import Orders from "./pages/Orders";
 import { verifyToken } from "./app/authSlice";
 import type { AppDispatch } from "./app/store";
 
@@ -12,8 +14,9 @@ function App() {
   const dispatch = useDispatch<AppDispatch>();
 
   // Auto-verify token on app startup
+  
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       dispatch(verifyToken());
     }
@@ -28,6 +31,8 @@ function App() {
         <Routes>
           <Route path="/" element={<ProductList />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/orders" element={<Orders />} />
         </Routes>
       </main>
 

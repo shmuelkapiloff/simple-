@@ -51,3 +51,6 @@ const cartSchema = new Schema(
 export type ICartItem = InferSchemaType<typeof cartItemSchema>;
 export type ICart = InferSchemaType<typeof cartSchema>;
 export const CartModel = model("Cart", cartSchema);
+
+// Default export for compatibility
+export default CartModel;

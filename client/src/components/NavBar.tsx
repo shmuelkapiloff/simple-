@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   logout,
@@ -14,10 +14,15 @@ import type { AppDispatch, RootState } from "../app/store";
 
 export const NavBar: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const user = useSelector((state: RootState) => selectUser(state));
-  const isAuthenticated = useSelector((state: RootState) => selectIsAuthenticated(state));
+  const isAuthenticated = useSelector((state: RootState) =>
+    selectIsAuthenticated(state)
+  );
   const isLoading = useSelector((state: RootState) => selectAuthLoading(state));
-  const cartItemCount = useSelector((state: RootState) => selectCartItemCount(state));
+  const cartItemCount = useSelector((state: RootState) =>
+    selectCartItemCount(state)
+  );
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<"login" | "register">(
@@ -27,10 +32,21 @@ export const NavBar: React.FC = () => {
 
   // Verify token on app startup
   useEffect(() => {
-    if (localStorage.getItem("token") && !isAuthenticated && !isLoading) {
+    const token = localStorage.getItem("token");
+    console.log("🔍 NavBar Debug:", {
+      token: token ? "exists" : "missing",
+      tokenValue: token ? token.substring(0, 20) + "..." : "none",
+      isAuthenticated,
+      isLoading,
+      user: user?.name || "no user",
+      userObject: user,
+    });
+
+    if (token && !isAuthenticated && !isLoading) {
+      console.log("🚀 Dispatching verifyToken...");
       dispatch(verifyToken());
     }
-  }, [dispatch, isAuthenticated, isLoading]);
+  }, [dispatch, isAuthenticated, isLoading, user]); // Added user to dependencies
 
   const handleLogin = () => {
     setAuthModalView("login");
@@ -79,31 +95,38 @@ export const NavBar: React.FC = () => {
     <>
       <nav className="bg-white shadow-lg border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Server Status Banner */}
-          <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
-            <p className="text-yellow-800 text-sm text-center">
-              💡 <strong>מצב פיתוח:</strong> השרת לא רץ כרגע. ניתן לראות את הממשק אך ההרשמה/התחברות לא יעבדו עד שהשרת יופעל.
-            </p>
-          </div>
-          
+          {/* Debug Info */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-1">
+              <p className="text-blue-800 text-xs text-center">
+                � <strong>Debug:</strong> isAuthenticated:{" "}
+                {isAuthenticated ? "YES" : "NO"} | User: {user?.name || "NONE"}{" "}
+                | Loading: {isLoading ? "YES" : "NO"}
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-between items-center h-16">
             {/* Logo/Brand */}
             <div className="flex-shrink-0">
-              <Link to="/" className="text-2xl font-bold text-gray-800 hover:text-blue-600 transition-colors">
+              <Link
+                to="/"
+                className="text-2xl font-bold text-gray-800 hover:text-blue-600 transition-colors"
+              >
                 🛍️ Simple Shop
               </Link>
             </div>
 
             {/* Navigation Links */}
             <nav className="hidden md:flex space-x-8">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 📦 מוצרים
               </Link>
-              <Link 
-                to="/cart" 
+              <Link
+                to="/cart"
                 className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 🛒 עגלה
@@ -195,8 +218,7 @@ export const NavBar: React.FC = () => {
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => {
                           setShowUserMenu(false);
-                          // TODO: Navigate to profile page
-                          console.log("Navigate to profile");
+                          navigate("/profile");
                         }}
                       >
                         👤 הפרופיל שלי
@@ -206,8 +228,7 @@ export const NavBar: React.FC = () => {
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => {
                           setShowUserMenu(false);
-                          // TODO: Navigate to orders page
-                          console.log("Navigate to orders");
+                          navigate("/orders");
                         }}
                       >
                         📦 ההזמנות שלי
