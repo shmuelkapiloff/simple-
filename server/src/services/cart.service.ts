@@ -135,7 +135,6 @@ export class CartService {
 
     // צור timer חדש
     const timer = setTimeout(async () => {
-      console.log(`setTimeout: ${cartId}`);
       try {
         console.log(`💾 Saving to MongoDB: ${cartId}`);
 
@@ -409,7 +408,6 @@ export class CartService {
   // Clear cart - עם ביטול שמירות ממתינות
   static async clearCart(sessionId: string, userId?: string): Promise<boolean> {
     const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
-    console.log(`🗑️ Clearing cart: ${cartId}`);
 
     try {
       console.log(`🗑️ Clearing cart: ${cartId}`);
@@ -452,7 +450,6 @@ export class CartService {
 
   // 🧹 פונקציה לניקוי כל הsaves הממתינים (לטסטים או shutdown)
   static async flushPendingSaves(): Promise<void> {
-    console.log(`\n\n\n\n\nFlushing pending saves...\n\n\n\n\n`);
     console.log(`🧹 Flushing ${this.pendingSaves.size} pending saves...`);
 
     for (const [cartId, timer] of this.pendingSaves.entries()) {
