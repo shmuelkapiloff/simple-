@@ -5,6 +5,7 @@ import {
   selectCartItems,
   initializeCart,
   addItemOptimistic,
+  removeItemOptimistic,
   setError,
 } from "../app/cartSlice";
 import { useEffect, useMemo } from "react";
@@ -14,8 +15,7 @@ export default function ProductList() {
   const sessionId = useSelector(selectSessionId);
   const cartItems = useSelector(selectCartItems); // ✅ קבל את כל העגלה פעם אחת
   const { data: products = [], error, isLoading } = useGetProductsQuery();
-  const [
-    addToCartMutation, { isLoading: isAddingToCart }] =
+  const [addToCartMutation, { isLoading: isAddingToCart }] =
     useAddToCartMutation();
 
   // ✅ חישוב מיפוי מוצרים בעגלה
@@ -32,8 +32,7 @@ export default function ProductList() {
     }
   }, [dispatch, sessionId]);
 
-  const 
-  handleAddToCart = async (product: any) => {
+  const handleAddToCart = async (product: any) => {
     if (!sessionId) {
       dispatch(setError("Session not initialized"));
       return;
@@ -53,6 +52,7 @@ export default function ProductList() {
       };
       console.log("📤 Sending to server:", requestData);
 
+      // 🎯 Optimistic Update - עדכן מסך מיד
       dispatch(
         addItemOptimistic({
           productId: product._id,
@@ -67,6 +67,7 @@ export default function ProductList() {
         })
       );
 
+      // 📡 שלח לשרת
       const response = await addToCartMutation(requestData).unwrap();
 
       // 📥 לוג מה קיבלנו בחזרה
@@ -74,6 +75,11 @@ export default function ProductList() {
       console.log(`✅ Added ${product.name} to cart`);
     } catch (error: any) {
       console.error("Add to cart failed:", error);
+
+      // 🔄 החזר את השינוי האופטימי אם נכשל
+      dispatch(removeItemOptimistic({ productId: product._id }));
+
+      // ⚠️ הצג הודעת שגיאה
       dispatch(setError("Failed to add item to cart"));
     }
   };

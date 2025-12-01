@@ -1,12 +1,18 @@
 # 🗺️ Simple Shop - Complete Visual System Map
 
 ## 📋 Quick Navigation
-- [🏗️ System Architecture](#-system-architecture)
-- [🔐 Authentication Flow](#-authentication-flow-with-conditions)
-- [🛒 Cart Management](#-cart-flow-with-multiple-conditions)
-- [🎭 State Management](#-state-management-flow-with-redux)
-- [🔄 Component Lifecycle](#-complete-component-lifecycle-with-conditions)
-- [❌ Error Handling](#-error-handling-flow-map)
+- [🗺️ Simple Shop - Complete Visual System Map](#️-simple-shop---complete-visual-system-map)
+  - [📋 Quick Navigation](#-quick-navigation)
+  - [🏗️ System Architecture](#️-system-architecture)
+  - [🔐 Authentication Flow with Conditions](#-authentication-flow-with-conditions)
+  - [🛒 Cart Flow with Multiple Conditions](#-cart-flow-with-multiple-conditions)
+  - [📦 Orders System Flow](#-orders-system-flow)
+  - [👤 Profile Management Flow](#-profile-management-flow)
+  - [🔄 Cart Merge Flow (Login/Register)](#-cart-merge-flow-loginregister)
+  - [🎭 State Management Flow with Redux](#-state-management-flow-with-redux)
+  - [🔄 Complete Component Lifecycle with Conditions](#-complete-component-lifecycle-with-conditions)
+  - [❌ Error Handling Flow Map](#-error-handling-flow-map)
+  - [🎯 Summary](#-summary)
 
 ---
 
@@ -40,21 +46,24 @@ graph TB
     
     subgraph "🔙 BACKEND - Express Server"
         subgraph "🛣️ Routes Layer"
-            AuthRoutes["🔐 /api/auth/*<br/>POST /login<br/>POST /register<br/>GET /verify<br/>POST /logout"]
-            CartRoutes["🛒 /api/cart/*<br/>GET /<br/>POST /add<br/>PUT /update<br/>DELETE /remove"]
+            AuthRoutes["🔐 /api/auth/*<br/>POST /login<br/>POST /register<br/>GET /verify<br/>POST /logout<br/>GET /profile<br/>PUT /profile<br/>PUT /password"]
+            CartRoutes["🛒 /api/cart/*<br/>GET /<br/>POST /add<br/>PUT /update<br/>DELETE /remove<br/>POST /merge"]
             ProductRoutes["📦 /api/products/*<br/>GET /<br/>GET /:id"]
+            OrderRoutes["📦 /api/orders/*<br/>POST /<br/>GET /<br/>GET /:id<br/>POST /:id/cancel<br/>PUT /:id/status"]
         end
         
         subgraph "🎯 Controllers"
-            AuthController["🔐 AuthController<br/>login()<br/>register()<br/>verify()<br/>logout()"]
-            CartController["🛒 CartController<br/>addToCart()<br/>getCart()<br/>updateCart()<br/>clearCart()"]
+            AuthController["🔐 AuthController<br/>login()<br/>register()<br/>verify()<br/>logout()<br/>getProfile()<br/>updateProfile()<br/>changePassword()"]
+            CartController["🛒 CartController<br/>addToCart()<br/>getCart()<br/>updateCart()<br/>clearCart()<br/>mergeCart()"]
             ProductController["📦 ProductController<br/>getProducts()<br/>getProduct()"]
+            OrderController["📦 OrderController<br/>createOrder()<br/>getOrders()<br/>getOrder()<br/>cancelOrder()<br/>updateStatus()"]
         end
         
         subgraph "⚙️ Services Layer"
-            AuthService["🔐 AuthService<br/>User validation<br/>JWT generation<br/>Password hashing"]
+            AuthService["🔐 AuthService<br/>User validation<br/>JWT generation<br/>Password hashing<br/>Profile management"]
             CartService["🛒 CartService<br/>Cart operations<br/>Guest/User merge<br/>Session handling"]
             ProductService["📦 ProductService<br/>Product queries<br/>Stock management"]
+            OrderService["📦 OrderService<br/>Order creation<br/>Order tracking<br/>Status updates"]
         end
     end
     
@@ -63,6 +72,7 @@ graph TB
             Users["👤 users<br/>_id<br/>name<br/>email<br/>passwordHash"]
             Products["📦 products<br/>_id<br/>name<br/>price<br/>stock<br/>image"]
             Carts["🛒 carts<br/>userId<br/>sessionId<br/>items[]"]
+            Orders["📦 orders<br/>_id<br/>userId<br/>items[]<br/>total<br/>status<br/>createdAt"]
         end
         
         subgraph "⚡ Redis Cache"
@@ -94,16 +104,19 @@ graph TB
     HTTP --> AuthRoutes
     HTTP --> CartRoutes
     HTTP --> ProductRoutes
+    HTTP --> OrderRoutes
     
     %% Routes to Controllers
     AuthRoutes --> AuthController
     CartRoutes --> CartController
     ProductRoutes --> ProductController
+    OrderRoutes --> OrderController
     
     %% Controllers to Services
     AuthController --> AuthService
     CartController --> CartService
     ProductController --> ProductService
+    OrderController --> OrderService
     
     %% Services to Database
     AuthService --> Users
@@ -111,6 +124,8 @@ graph TB
     CartService --> Sessions
     ProductService --> Products
     ProductService --> Cache
+    OrderService --> Orders
+    OrderService --> Carts
 
     %% Styling
     classDef userLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -280,6 +295,236 @@ flowchart TD
     class LoggedInFlow,GuestFlow,CreateGuestSession,UseExistingSession,CreateUserCart,AddNewItem,UpdateQuantity,AddToGuestCart,UpdateUI,HideCartBadge,ShowSimpleBadge,ShowPlusBadge process
     class SaveToRedis,SaveToMongoDB,UpdateRedisCache database
     class Success success
+```
+
+---
+
+## 📦 Orders System Flow
+
+```mermaid
+flowchart TD
+    CreateOrder([👤 User clicks Create Order]) --> CheckAuth{🔐 User authenticated?}
+    
+    %% Authentication Check
+    CheckAuth -->|❌ No| RedirectLogin[🔑 Redirect to login]
+    CheckAuth -->|✅ Yes| CheckCart{🛒 Cart has items?}
+    
+    %% Cart Validation
+    CheckCart -->|❌ Empty| EmptyCartError[❌ Cart is empty error]
+    CheckCart -->|✅ Has items| ValidateStock{📊 Validate all items stock}
+    
+    %% Stock Validation
+    ValidateStock -->|❌ Out of stock| StockError[❌ Some items out of stock]
+    ValidateStock -->|✅ All available| CalculateTotal[💰 Calculate order total]
+    
+    %% Order Creation
+    CalculateTotal --> CreateOrderDoc[📝 Create order document]
+    CreateOrderDoc --> SaveToMongoDB[(💾 Save order to MongoDB)]
+    SaveToMongoDB --> OrderSaved{📋 Order saved?}
+    
+    OrderSaved -->|❌ Failed| OrderError[❌ Order creation failed]
+    OrderSaved -->|✅ Success| ClearUserCart[🗑️ Clear user cart]
+    
+    ClearUserCart --> DeleteFromMongoDB[(💾 Delete cart from MongoDB)]
+    DeleteFromMongoDB --> DeleteFromRedis[(⚡ Delete cart from Redis)]
+    DeleteFromRedis --> UpdateOrderUI[🖥️ Update UI with order]
+    
+    UpdateOrderUI --> ShowOrderConfirmation[✅ Show order confirmation]
+    ShowOrderConfirmation --> OrderSuccess[🎉 Order created successfully]
+    
+    %% View Orders
+    ViewOrders([👤 User views orders]) --> GetUserOrders[📋 Fetch user orders]
+    GetUserOrders --> QueryMongoDB[(💾 Query MongoDB)]
+    QueryMongoDB --> DisplayOrders[📱 Display orders list]
+    
+    %% Order Details
+    DisplayOrders --> UserSelectsOrder{👆 User clicks order?}
+    UserSelectsOrder -->|✅ Yes| ShowOrderDetails[📋 Show order details]
+    UserSelectsOrder -->|❌ No| DisplayOrders
+    
+    %% Cancel Order
+    ShowOrderDetails --> UserAction{👆 User action?}
+    UserAction -->|❌ Cancel order| CheckOrderStatus{📊 Order status?}
+    UserAction -->|📋 View details| ShowOrderDetails
+    UserAction -->|🔙 Back| DisplayOrders
+    
+    CheckOrderStatus -->|📦 Pending| AllowCancel[✅ Allow cancellation]
+    CheckOrderStatus -->|🚚 Shipped/Delivered| DenyCancel[❌ Cannot cancel]
+    
+    AllowCancel --> UpdateOrderStatus[📝 Update status to Cancelled]
+    UpdateOrderStatus --> SaveCancellation[(💾 Save to MongoDB)]
+    SaveCancellation --> ShowCancelConfirmation[✅ Show cancellation confirmation]
+    
+    DenyCancel --> ShowCannotCancelError[❌ Order cannot be cancelled]
+
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class CreateOrder,ViewOrders start
+    class CheckAuth,CheckCart,ValidateStock,OrderSaved,UserSelectsOrder,UserAction,CheckOrderStatus decision
+    class RedirectLogin,CalculateTotal,CreateOrderDoc,ClearUserCart,UpdateOrderUI,ShowOrderConfirmation,GetUserOrders,DisplayOrders,ShowOrderDetails,AllowCancel,DenyCancel,UpdateOrderStatus,ShowCancelConfirmation process
+    class EmptyCartError,StockError,OrderError,ShowCannotCancelError error
+    class OrderSuccess,ShowOrderConfirmation,ShowCancelConfirmation success
+    class SaveToMongoDB,DeleteFromMongoDB,DeleteFromRedis,QueryMongoDB,SaveCancellation database
+```
+
+---
+
+## 👤 Profile Management Flow
+
+```mermaid
+flowchart TD
+    ProfileAccess([👤 User accesses profile]) --> CheckAuth{🔐 User authenticated?}
+    
+    %% Authentication Check
+    CheckAuth -->|❌ No| RedirectLogin[🔑 Redirect to login]
+    CheckAuth -->|✅ Yes| LoadProfile[📋 Load user profile]
+    
+    LoadProfile --> QueryUserData[(💾 Query user from MongoDB)]
+    QueryUserData --> DisplayProfile[📱 Display profile page]
+    
+    %% Profile Actions
+    DisplayProfile --> UserAction{👆 User selects action?}
+    
+    UserAction -->|✏️ Edit Profile| EditProfile[📝 Show edit form]
+    UserAction -->|🔑 Change Password| ChangePassword[🔐 Show password form]
+    UserAction -->|📊 View Stats| ViewStats[📊 Show user statistics]
+    UserAction -->|🗑️ Delete Account| ConfirmDelete[⚠️ Show delete confirmation]
+    UserAction -->|🔙 Back| Dashboard[🏠 Back to dashboard]
+    
+    %% Edit Profile Flow
+    EditProfile --> EditForm{📋 User submits?}
+    EditForm -->|❌ Cancel| DisplayProfile
+    EditForm -->|✅ Submit| ValidateProfile{✅ Validate changes?}
+    
+    ValidateProfile -->|❌ Invalid| ShowProfileErrors[❌ Show validation errors]
+    ValidateProfile -->|✅ Valid| UpdateProfile[(💾 Update MongoDB)]
+    
+    ShowProfileErrors --> EditProfile
+    UpdateProfile --> RefreshProfile[🔄 Refresh profile data]
+    RefreshProfile --> ShowProfileSuccess[✅ Profile updated successfully]
+    ShowProfileSuccess --> DisplayProfile
+    
+    %% Change Password Flow
+    ChangePassword --> PasswordForm{📋 User submits?}
+    PasswordForm -->|❌ Cancel| DisplayProfile
+    PasswordForm -->|✅ Submit| ValidatePassword{✅ Validate password?}
+    
+    ValidatePassword -->|❌ Current wrong| ShowPasswordError[❌ Current password incorrect]
+    ValidatePassword -->|❌ Weak new| ShowWeakPassword[❌ New password too weak]
+    ValidatePassword -->|✅ Valid| HashPassword[🔐 Hash new password]
+    
+    ShowPasswordError --> ChangePassword
+    ShowWeakPassword --> ChangePassword
+    
+    HashPassword --> UpdatePassword[(💾 Update password in MongoDB)]
+    UpdatePassword --> LogoutAllSessions[🚪 Logout all sessions]
+    LogoutAllSessions --> ShowPasswordSuccess[✅ Password changed successfully]
+    ShowPasswordSuccess --> RedirectLogin
+    
+    %% View Stats Flow
+    ViewStats --> QueryStats[(💾 Query user statistics)]
+    QueryStats --> CalculateStats[📊 Calculate statistics]
+    CalculateStats --> DisplayStats[📱 Display stats page]
+    DisplayStats --> UserAction
+    
+    %% Delete Account Flow
+    ConfirmDelete --> UserConfirms{⚠️ User confirms deletion?}
+    UserConfirms -->|❌ Cancel| DisplayProfile
+    UserConfirms -->|✅ Confirm| DeactivateAccount[(💾 Deactivate account in MongoDB)]
+    
+    DeactivateAccount --> ClearUserData[🗑️ Clear sensitive data]
+    ClearUserData --> LogoutUser[🚪 Logout user]
+    LogoutUser --> ShowDeleteSuccess[✅ Account deleted successfully]
+    ShowDeleteSuccess --> RedirectHome[🏠 Redirect to home page]
+
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef warning fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class ProfileAccess start
+    class CheckAuth,UserAction,EditForm,ValidateProfile,PasswordForm,ValidatePassword,UserConfirms decision
+    class RedirectLogin,LoadProfile,DisplayProfile,EditProfile,ChangePassword,ViewStats,Dashboard,RefreshProfile,HashPassword,LogoutAllSessions,CalculateStats,DisplayStats,DeactivateAccount,ClearUserData,LogoutUser,RedirectHome process
+    class ShowProfileErrors,ShowPasswordError,ShowWeakPassword error
+    class ShowProfileSuccess,ShowPasswordSuccess,ShowDeleteSuccess success
+    class ConfirmDelete warning
+    class QueryUserData,UpdateProfile,UpdatePassword,QueryStats,DeactivateAccount database
+```
+
+---
+
+## 🔄 Cart Merge Flow (Login/Register)
+
+```mermaid
+flowchart TD
+    UserLogsIn([👤 User logs in/registers]) --> CheckGuestCart{🛒 Has guest cart?}
+    
+    %% Guest Cart Check
+    CheckGuestCart -->|❌ No| LoadUserCart[📋 Load existing user cart]
+    CheckGuestCart -->|✅ Yes| GetGuestCart[🔍 Get guest cart from session]
+    
+    %% Load User Cart
+    LoadUserCart --> QueryUserCart[(💾 Query user cart from MongoDB)]
+    QueryUserCart --> DisplayUserCart[📱 Display user cart]
+    DisplayUserCart --> MergeComplete[✅ Login complete]
+    
+    %% Guest Cart Handling
+    GetGuestCart --> GetSessionId[🔑 Get guest session ID]
+    GetSessionId --> LoadGuestItems[📦 Load guest cart items]
+    LoadGuestItems --> QueryUserCartForMerge[(💾 Query user cart from MongoDB)]
+    
+    QueryUserCartForMerge --> UserCartExists{🛒 User has existing cart?}
+    
+    %% Merge Logic
+    UserCartExists -->|❌ No| CreateUserCart[🆕 Create new user cart]
+    UserCartExists -->|✅ Yes| MergeLogic[🔄 Merge carts logic]
+    
+    CreateUserCart --> CopyGuestItems[📋 Copy all guest items]
+    CopyGuestItems --> SaveMergedCart
+    
+    %% Detailed Merge Logic
+    MergeLogic --> IterateGuestItems[🔄 For each guest item]
+    IterateGuestItems --> CheckItemExists{🔍 Item in user cart?}
+    
+    CheckItemExists -->|❌ No| AddNewItem[➕ Add item to user cart]
+    CheckItemExists -->|✅ Yes| CompareQuantities[🔢 Compare quantities]
+    
+    AddNewItem --> NextItem{📋 More items?}
+    CompareQuantities --> CombineQuantities[➕ Combine quantities]
+    CombineQuantities --> NextItem
+    
+    NextItem -->|✅ Yes| IterateGuestItems
+    NextItem -->|❌ No| SaveMergedCart
+    
+    %% Save Merged Result
+    SaveMergedCart[(💾 Save merged cart to MongoDB)] --> UpdateRedisCache[(⚡ Update Redis cache)]
+    UpdateRedisCache --> DeleteGuestSession[🗑️ Delete guest session]
+    DeleteGuestSession --> UpdateUI[🖥️ Update cart UI]
+    UpdateUI --> ShowMergeSuccess[✅ Carts merged successfully]
+    ShowMergeSuccess --> MergeComplete
+
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class UserLogsIn start
+    class CheckGuestCart,UserCartExists,CheckItemExists,NextItem decision
+    class LoadUserCart,DisplayUserCart,GetGuestCart,GetSessionId,LoadGuestItems,CreateUserCart,CopyGuestItems,MergeLogic,IterateGuestItems,AddNewItem,CompareQuantities,CombineQuantities,DeleteGuestSession,UpdateUI,ShowMergeSuccess process
+    class MergeComplete,ShowMergeSuccess success
+    class QueryUserCart,QueryUserCartForMerge,SaveMergedCart,UpdateRedisCache database
 ```
 
 ---
@@ -524,6 +769,9 @@ This visual map provides:
 
 ✅ **Complete System Overview** - All layers from UI to Database  
 ✅ **Detailed Condition Logic** - Every decision point mapped  
+✅ **Orders System** - Complete order creation, tracking, and cancellation flows  
+✅ **Profile Management** - User profile updates, password changes, account deletion  
+✅ **Cart Merging** - Guest to user cart merge on login/register  
 ✅ **Error Handling** - Comprehensive error recovery flows  
 ✅ **State Management** - Redux state transitions  
 ✅ **Component Lifecycle** - Full initialization to runtime  
