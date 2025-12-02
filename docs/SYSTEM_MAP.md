@@ -597,73 +597,49 @@ stateDiagram-v2
 ## 🔄 Complete Component Lifecycle with Conditions
 
 ```mermaid
-flowchart LR
-    subgraph "🏁 App Initialization"
-        AppStart([App.tsx mounts]) --> LoadReduxStore[📋 Initialize Redux Store]
-        LoadReduxStore --> CheckInitialAuth{🔐 Token in localStorage?}
-        
-        CheckInitialAuth -->|✅ Yes| DispatchVerify[🚀 dispatch verifyToken]
-        CheckInitialAuth -->|❌ No| GuestMode[👤 Continue as guest]
-        
-        DispatchVerify --> TokenResult{📊 Token verification result}
-        TokenResult -->|✅ Valid| SetAuthenticatedState[🔐 Set authenticated state]
-        TokenResult -->|❌ Invalid| ClearTokens[🗑️ Clear tokens] --> GuestMode
-    end
+flowchart TD
+    AppStart([App.tsx mounts]) --> LoadReduxStore[Initialize Redux Store]
+    LoadReduxStore --> CheckInitialAuth{Token in localStorage?}
     
-    subgraph "📱 Component Rendering"
-        SetAuthenticatedState --> RenderAuthenticatedUI[🖥️ Render authenticated UI]
-        GuestMode --> RenderGuestUI[🖥️ Render guest UI]
-        
-        RenderAuthenticatedUI --> ShowUserName[👤 Show user name in NavBar]
-        RenderAuthenticatedUI --> ShowUserMenu[📋 Show user menu]
-        RenderAuthenticatedUI --> LoadUserCart[🛒 Load user cart]
-        
-        RenderGuestUI --> ShowLoginButtons[🔑 Show login/register buttons]
-        RenderGuestUI --> LoadGuestCart[🛒 Load guest cart from session]
-    end
+    CheckInitialAuth -->|Yes| DispatchVerify[dispatch verifyToken]
+    CheckInitialAuth -->|No| GuestMode[Continue as guest]
     
-    subgraph "🔄 Runtime State Changes"
-        ShowUserName --> UserInteraction{👆 User interaction?}
-        ShowLoginButtons --> UserInteraction
-        
-        UserInteraction -->|🔑 Login clicked| ShowLoginModal[📝 Show login modal]
-        UserInteraction -->|📝 Register clicked| ShowRegisterModal[📝 Show register modal]
-        UserInteraction -->|🚪 Logout clicked| ProcessLogout[🚀 dispatch logout]
-        UserInteraction -->|🛒 Add to cart| ProcessAddToCart[🚀 Add to cart flow]
-        UserInteraction -->|📦 Browse products| ContinueBrowsing[👀 Continue browsing]
-        
-        ShowLoginModal --> AuthResult{📊 Auth result?}
-        ShowRegisterModal --> AuthResult
-        
-        AuthResult -->|✅ Success| MergeCartsFlow[🔄 Merge guest + user carts]
-        AuthResult -->|❌ Error| ShowError[❌ Display error message]
-        
-        ShowError --> UserInteraction
-        MergeCartsFlow --> RenderAuthenticatedUI
-        
-        ProcessLogout --> ClearAllState[🗑️ Clear all auth state]
-        ClearAllState --> RenderGuestUI
-        
-        ProcessAddToCart --> UpdateCartUI[🛒 Update cart display]
-        UpdateCartUI --> UserInteraction
-        
-        ContinueBrowsing --> UserInteraction
-    end
-
-    %% Styling
-    classDef initialization fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef rendering fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
-    classDef runtime fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
-    classDef decision fill:#fff8e1,stroke:#f57c00,stroke-width:2px
-
-    class AppStart,LoadReduxStore,DispatchVerify,ClearTokens initialization
-    class RenderAuthenticatedUI,RenderGuestUI,ShowUserName,ShowUserMenu,LoadUserCart,ShowLoginButtons,LoadGuestCart rendering
-    class ShowLoginModal,ShowRegisterModal,ProcessLogout,ProcessAddToCart,ContinueBrowsing,MergeCartsFlow,ClearAllState,UpdateCartUI runtime
-    class SetAuthenticatedState,MergeCartsFlow success
-    class ShowError error
-    class CheckInitialAuth,TokenResult,UserInteraction,AuthResult decision
+    DispatchVerify --> TokenResult{Token valid?}
+    TokenResult -->|Valid| SetAuthenticatedState[Set authenticated state]
+    TokenResult -->|Invalid| ClearTokens[Clear tokens]
+    ClearTokens --> GuestMode
+    
+    SetAuthenticatedState --> RenderAuthenticatedUI[Render authenticated UI]
+    GuestMode --> RenderGuestUI[Render guest UI]
+    
+    RenderAuthenticatedUI --> ShowUserName[Show user name in NavBar]
+    RenderAuthenticatedUI --> LoadUserCart[Load user cart]
+    
+    RenderGuestUI --> ShowLoginButtons[Show login/register buttons]
+    RenderGuestUI --> LoadGuestCart[Load guest cart from session]
+    
+    ShowUserName --> UserInteraction{User interaction}
+    ShowLoginButtons --> UserInteraction
+    
+    UserInteraction -->|Login| ShowLoginModal[Show login modal]
+    UserInteraction -->|Register| ShowRegisterModal[Show register modal]
+    UserInteraction -->|Logout| ProcessLogout[dispatch logout]
+    UserInteraction -->|Add to cart| ProcessAddToCart[Add to cart flow]
+    
+    ShowLoginModal --> AuthResult{Auth successful?}
+    ShowRegisterModal --> AuthResult
+    
+    AuthResult -->|Success| MergeCartsFlow[Merge guest + user carts]
+    AuthResult -->|Error| ShowError[Display error message]
+    
+    ShowError --> UserInteraction
+    MergeCartsFlow --> RenderAuthenticatedUI
+    
+    ProcessLogout --> ClearAllState[Clear all auth state]
+    ClearAllState --> RenderGuestUI
+    
+    ProcessAddToCart --> UpdateCartUI[Update cart display]
+    UpdateCartUI --> UserInteraction
 ```
 
 ---
