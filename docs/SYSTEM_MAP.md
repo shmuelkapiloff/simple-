@@ -648,93 +648,78 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    ErrorOccurs([❌ Error occurs in app]) --> ErrorType{🔍 Error type?}
+    ErrorOccurs([Error occurs]) --> ErrorType{Error type?}
     
     %% Network Errors
-    ErrorType -->|🌐 Network Error| NetworkErrorFlow[📡 Network error handling]
-    NetworkErrorFlow --> IsOnline{📶 Is online?}
-    IsOnline -->|✅ Yes| RetryRequest[🔄 Retry request]
-    IsOnline -->|❌ No| ShowOfflineMode[📴 Show offline mode]
+    ErrorType -->|Network Error| NetworkErrorFlow[Network error handling]
+    NetworkErrorFlow --> IsOnline{Is online?}
+    IsOnline -->|Yes| RetryRequest[Retry request]
+    IsOnline -->|No| ShowOfflineMode[Show offline mode]
     
-    RetryRequest --> RetryCount{🔢 Retry attempts?}
-    RetryCount -->|< 3| WaitAndRetry[⏱️ Wait exponentially & retry]
-    RetryCount -->|≥ 3| ShowNetworkError[❌ Show persistent network error]
+    RetryRequest --> RetryCount{Retry count?}
+    RetryCount -->|Less than 3| WaitAndRetry[Wait & retry]
+    RetryCount -->|3 or more| ShowNetworkError[Show network error]
     
     WaitAndRetry --> NetworkErrorFlow
     
     %% Authentication Errors
-    ErrorType -->|🔐 Auth Error| AuthErrorFlow[🔑 Auth error handling]
-    AuthErrorFlow --> AuthErrorType{🔍 Auth error type?}
+    ErrorType -->|Auth Error| AuthErrorFlow[Auth error handling]
+    AuthErrorFlow --> AuthErrorType{Auth error type?}
     
-    AuthErrorType -->|401 Unauthorized| HandleUnauthorized[🚫 Handle unauthorized]
-    AuthErrorType -->|403 Forbidden| HandleForbidden[🚫 Handle forbidden]
-    AuthErrorType -->|Token Expired| HandleTokenExpired[⏰ Handle expired token]
+    AuthErrorType -->|401| HandleUnauthorized[Handle unauthorized]
+    AuthErrorType -->|403| HandleForbidden[Handle forbidden]
+    AuthErrorType -->|Token Expired| HandleTokenExpired[Handle expired token]
     
-    HandleUnauthorized --> ClearAuthAndRedirect[🗑️ Clear auth & redirect to login]
-    HandleForbidden --> ShowAccessDenied[🚫 Show access denied message]
-    HandleTokenExpired --> TryRefreshToken{🔄 Try refresh token?}
+    HandleUnauthorized --> ClearAuthAndRedirect[Clear auth & redirect]
+    HandleForbidden --> ShowAccessDenied[Show access denied]
+    HandleTokenExpired --> TryRefreshToken{Try refresh?}
     
-    TryRefreshToken -->|✅ Success| UpdateToken[📝 Update token & continue]
-    TryRefreshToken -->|❌ Failed| ClearAuthAndRedirect
+    TryRefreshToken -->|Success| UpdateToken[Update token]
+    TryRefreshToken -->|Failed| ClearAuthAndRedirect
     
     %% Validation Errors
-    ErrorType -->|📋 Validation Error| ValidationErrorFlow[✅ Validation error handling]
-    ValidationErrorFlow --> ShowFieldErrors[📝 Show field-specific errors]
-    ShowFieldErrors --> HighlightFields[🎨 Highlight error fields]
-    HighlightFields --> EnableRetry[🔄 Enable user to retry]
+    ErrorType -->|Validation Error| ValidationErrorFlow[Validation error handling]
+    ValidationErrorFlow --> ShowFieldErrors[Show field errors]
+    ShowFieldErrors --> HighlightFields[Highlight error fields]
+    HighlightFields --> EnableRetry[Enable retry]
     
     %% Server Errors
-    ErrorType -->|🔙 Server Error| ServerErrorFlow[🖥️ Server error handling]
-    ServerErrorFlow --> ServerErrorCode{🔢 Server error code?}
+    ErrorType -->|Server Error| ServerErrorFlow[Server error handling]
+    ServerErrorFlow --> ServerErrorCode{Error code?}
     
-    ServerErrorCode -->|500| ShowGenericError[❌ Show generic server error]
-    ServerErrorCode -->|503| ShowMaintenanceMode[🔧 Show maintenance mode]
-    ServerErrorCode -->|404| ShowNotFound[🔍 Show not found]
+    ServerErrorCode -->|500| ShowGenericError[Show server error]
+    ServerErrorCode -->|503| ShowMaintenanceMode[Show maintenance]
+    ServerErrorCode -->|404| ShowNotFound[Show not found]
     
     %% Client Errors
-    ErrorType -->|💻 Client Error| ClientErrorFlow[📱 Client error handling]
-    ClientErrorFlow --> LogError[📝 Log error to console]
-    LogError --> ShowUserFriendlyError[😊 Show user-friendly message]
+    ErrorType -->|Client Error| ClientErrorFlow[Client error handling]
+    ClientErrorFlow --> LogError[Log to console]
+    LogError --> ShowUserFriendlyError[Show friendly message]
     
     %% Recovery Actions
-    ShowOfflineMode --> WaitForConnection[⏱️ Wait for connection]
-    WaitForConnection --> CheckConnection{📶 Connection restored?}
-    CheckConnection -->|✅ Yes| RetryOriginalAction[🔄 Retry original action]
-    CheckConnection -->|❌ No| WaitForConnection
+    ShowOfflineMode --> WaitForConnection[Wait for connection]
+    WaitForConnection --> CheckConnection{Connection restored?}
+    CheckConnection -->|Yes| RetryOriginalAction[Retry action]
+    CheckConnection -->|No| WaitForConnection
     
-    EnableRetry --> UserRetry{👤 User retries?}
-    UserRetry -->|✅ Yes| ValidationErrorFlow
-    UserRetry -->|❌ No| StayOnPage[📄 Stay on current page]
+    EnableRetry --> UserRetry{User retries?}
+    UserRetry -->|Yes| ValidationErrorFlow
+    UserRetry -->|No| StayOnPage[Stay on page]
     
     %% Success Recovery
-    RetryOriginalAction --> Success[✅ Action successful]
+    RetryOriginalAction --> Success[Action successful]
     UpdateToken --> Success
     
     %% Final states
-    Success --> NormalFlow[🎯 Return to normal flow]
-    ShowNetworkError --> ErrorPage[📄 Error page]
-    ClearAuthAndRedirect --> LoginPage[🔑 Login page]
+    Success --> NormalFlow[Return to normal flow]
+    ShowNetworkError --> ErrorPage[Error page]
+    ClearAuthAndRedirect --> LoginPage[Login page]
     ShowAccessDenied --> ErrorPage
     ShowGenericError --> ErrorPage
-    ShowMaintenanceMode --> MaintenancePage[🔧 Maintenance page]
-    ShowNotFound --> NotFoundPage[🔍 404 page]
+    ShowMaintenanceMode --> MaintenancePage[Maintenance page]
+    ShowNotFound --> NotFoundPage[404 page]
     ShowUserFriendlyError --> ErrorPage
-    StayOnPage --> CurrentPage[📄 Current page with errors]
-
-    %% Styling
-    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
-    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
-    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef warning fill:#fff8e1,stroke:#f57c00,stroke-width:2px
-    classDef final fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-
-    class ErrorOccurs error
-    class Success success
-    class NetworkErrorFlow,AuthErrorFlow,ValidationErrorFlow,ServerErrorFlow,ClientErrorFlow,RetryRequest,WaitAndRetry,HandleUnauthorized,HandleForbidden,HandleTokenExpired,ClearAuthAndRedirect,UpdateToken,ShowFieldErrors,HighlightFields,EnableRetry,LogError,ShowUserFriendlyError,WaitForConnection,RetryOriginalAction process
-    class ErrorType,IsOnline,RetryCount,AuthErrorType,TryRefreshToken,ServerErrorCode,CheckConnection,UserRetry decision
-    class ShowOfflineMode,ShowNetworkError,ShowAccessDenied,ShowMaintenanceMode warning
-    class NormalFlow,ErrorPage,LoginPage,MaintenancePage,NotFoundPage,CurrentPage final
+    StayOnPage --> CurrentPage[Current page]
 ```
 
 ---
