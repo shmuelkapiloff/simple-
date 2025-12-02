@@ -56,8 +56,8 @@ graph TD
     H --> K[Product Service]
     I --> L[Cart Service]
     
-    K --> M[(MongoDB)]
-    L --> N[(Redis Cache)]
+    K --> M[MongoDB]
+    L --> N[Redis Cache]
     L --> M
     
     J --> O[Response]
