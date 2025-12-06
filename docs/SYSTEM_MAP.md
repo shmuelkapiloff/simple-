@@ -532,64 +532,51 @@ flowchart TD
 ## 🎭 State Management Flow with Redux
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Initializing : App starts
-
-    state Initializing {
-        [*] --> CheckingToken
-        CheckingToken --> TokenFound : localStorage has token
-        CheckingToken --> NoToken : no token found
-        TokenFound --> VerifyingToken : dispatch verifyToken
-        NoToken --> GuestMode
-    }
-
-    state VerifyingToken {
-        [*] --> Pending
-        Pending --> ValidToken : server returns user data
-        Pending --> InvalidToken : server returns 401
-        ValidToken --> AuthenticatedMode
-        InvalidToken --> GuestMode
-    }
-
-    state GuestMode {
-        [*] --> BrowsingAsGuest
-        BrowsingAsGuest --> LoginModal : user clicks login
-        BrowsingAsGuest --> RegisterModal : user clicks register
-        BrowsingAsGuest --> AddingToGuestCart : user adds to cart
-        AddingToGuestCart --> BrowsingAsGuest
-        
-        state LoginModal {
-            [*] --> EnteringCredentials
-            EnteringCredentials --> LoginPending : submit form
-            LoginPending --> LoginSuccess : valid credentials
-            LoginPending --> LoginError : invalid credentials
-            LoginError --> EnteringCredentials : try again
-        }
-        
-        state RegisterModal {
-            [*] --> EnteringDetails
-            EnteringDetails --> RegisterPending : submit form
-            RegisterPending --> RegisterSuccess : valid data
-            RegisterPending --> RegisterError : validation failed
-            RegisterError --> EnteringDetails : try again
-        }
-    }
-
-    state AuthenticatedMode {
-        [*] --> BrowsingAsUser
-        BrowsingAsUser --> AddingToUserCart : user adds to cart
-        BrowsingAsUser --> ViewingProfile : user clicks profile
-        BrowsingAsUser --> LoggingOut : user clicks logout
-        
-        AddingToUserCart --> BrowsingAsUser
-        ViewingProfile --> BrowsingAsUser
-    }
-
-    %% Main transitions
-    LoginSuccess --> AuthenticatedMode
-    RegisterSuccess --> AuthenticatedMode
-    LoggingOut --> GuestMode
-    AuthenticatedMode --> GuestMode : token expires
+flowchart TD
+    Start([App starts]) --> CheckToken{Token in localStorage?}
+    
+    CheckToken -->|Yes| VerifyToken[Verify token with server]
+    CheckToken -->|No| GuestMode[Guest Mode]
+    
+    VerifyToken --> TokenValid{Token valid?}
+    TokenValid -->|Yes| AuthMode[Authenticated Mode]
+    TokenValid -->|No| GuestMode
+    
+    GuestMode --> GuestActions{User action}
+    GuestActions -->|Browse| GuestBrowse[Browse as guest]
+    GuestActions -->|Add to cart| GuestCart[Add to guest cart]
+    GuestActions -->|Click login| ShowLogin[Show login modal]
+    GuestActions -->|Click register| ShowRegister[Show register modal]
+    
+    GuestBrowse --> GuestActions
+    GuestCart --> GuestActions
+    
+    ShowLogin --> LoginForm[Enter credentials]
+    LoginForm --> SubmitLogin[Submit login]
+    SubmitLogin --> LoginResult{Login successful?}
+    LoginResult -->|Yes| AuthMode
+    LoginResult -->|No| LoginError[Show error]
+    LoginError --> LoginForm
+    
+    ShowRegister --> RegisterForm[Enter details]
+    RegisterForm --> SubmitRegister[Submit registration]
+    SubmitRegister --> RegisterResult{Registration successful?}
+    RegisterResult -->|Yes| AuthMode
+    RegisterResult -->|No| RegisterError[Show error]
+    RegisterError --> RegisterForm
+    
+    AuthMode --> AuthActions{User action}
+    AuthActions -->|Browse| AuthBrowse[Browse as user]
+    AuthActions -->|Add to cart| AuthCart[Add to user cart]
+    AuthActions -->|View profile| ShowProfile[Show profile]
+    AuthActions -->|Logout| DoLogout[Logout]
+    
+    AuthBrowse --> AuthActions
+    AuthCart --> AuthActions
+    ShowProfile --> AuthActions
+    DoLogout --> GuestMode
+    
+    AuthMode -->|Token expires| GuestMode
 ```
 
 ---
