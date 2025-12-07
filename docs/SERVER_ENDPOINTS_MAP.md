@@ -1,43 +1,129 @@
-# 🎯 Server Endpoints - Complete Visual Map
+# 🎯 Server Endpoints - מדריך חזותי מלא
+
+> **📖 מדריך זה מציג את כל ה-endpoints של השרת עם דיאגרמות חזותיות מפורטות**  
+> כל endpoint כולל: זרימת נתונים, תנאים, שגיאות, ודוגמאות Request/Response
+
+## 🚀 קישורים מהירים
+
+- **התחל כאן:** [Health Check](#-health-endpoints) - בדיקה שהשרת עובד
+- **Authentication:** [Auth Endpoints](#-authentication-endpoints) - הרשמה והתחברות
+- **קניות:** [Cart System](#-cart-endpoints) - עגלת קניות
+- **מוצרים:** [Products](#-product-endpoints) - קטלוג
+- **הזמנות:** [Orders](#-order-endpoints) - ניהול הזמנות
+- **Best Practices:** [למטה ↓](#-best-practices) - המלצות ודוגמאות
+
+## 💡 איך להשתמש במדריך?
+
+### לפי תפקיד:
+
+**👨‍💻 Frontend Developer:**
+1. ראה את ה-Request/Response examples
+2. שים לב ל-Error tables (מה לטפל בצד לקוח)
+3. בדוק Authentication requirements
+
+**🔧 Backend Developer:**
+1. עקוב אחרי הדיאגרמות - שלב אחרי שלב
+2. שים לב ל-Side Effects (stock, cart, emails)
+3. הבן את ההבדל בין MongoDB ו-Redis
+
+**🧪 QA/Tester:**
+1. השתמש ב-Error tables לבדיקות
+2. תכנן test cases לפי הזרימות
+3. בדוק את כל התנאים בדיאגרמות
+
+**📚 מתכנת מתחיל:**
+1. התחל ב-[Common Workflows](#-common-workflows)
+2. קרא את הדיאגרמות משמאל לימין
+3. עקוב אחרי הצבעים (כחול→ירוק=הצלחה)
+
+---
+
+## 🎨 מקרא צבעים מהיר
+
+| צבע | משמעות | דוגמה |
+|-----|--------|-------|
+| 🔵 **כחול** | נקודת כניסה - Request | `POST /api/auth/login` |
+| 🟢 **ירוק** | הצלחה - Response 200/201 | `✅ 200: Success` |
+| 🔴 **אדום** | שגיאה - Errors 400/401/404/409 | `❌ 401: Unauthorized` |
+| 🟡 **צהוב** | MongoDB - מסד נתונים ראשי | `Find user in MongoDB` |
+| 🟠 **כתום** | Redis - Cache מהיר | `Get cart from Redis` |
+
+---
 
 ## 📋 Table of Contents
-- [🔐 Authentication Endpoints](#-authentication-endpoints)
-  - [POST /api/auth/register](#post-apiauthregister)
-  - [POST /api/auth/login](#post-apiauthlogin)
-  - [POST /api/auth/logout](#post-apiauthlogout)
-  - [GET /api/auth/verify](#get-apiauthverify)
-  - [GET /api/auth/profile](#get-apiauthprofile)
-  - [PUT /api/auth/profile](#put-apiauthprofile)
-  - [PUT /api/auth/password](#put-apiauthpassword)
-  - [DELETE /api/auth/account](#delete-apiauthaccount)
-  - [GET /api/auth/stats](#get-apiauthstats)
-- [🛒 Cart Endpoints](#-cart-endpoints)
-  - [GET /api/cart](#get-apicart)
-  - [POST /api/cart/add](#post-apicartadd)
-  - [PUT /api/cart/update](#put-apicartupdate)
-  - [DELETE /api/cart/remove](#delete-apicartremove)
-  - [DELETE /api/cart/clear](#delete-apicartclear)
-  - [GET /api/cart/count](#get-apicartcount)
-  - [POST /api/cart/merge](#post-apicartmerge)
-- [📦 Product Endpoints](#-product-endpoints)
-  - [GET /api/products](#get-apiproducts)
-  - [GET /api/products/:id](#get-apiproductsid)
-- [📋 Order Endpoints](#-order-endpoints)
-  - [POST /api/orders](#post-apiorders)
-  - [GET /api/orders](#get-apiorders)
-  - [GET /api/orders/:id](#get-apiordersid)
-  - [POST /api/orders/:id/cancel](#post-apiordersidcancel)
-  - [PUT /api/orders/:id/status](#put-apiordersidstatus)
-  - [GET /api/orders/stats](#get-apiordersstats)
-- [❤️ Health Endpoints](#-health-endpoints)
-  - [GET /api/health](#get-apihealth)
-  - [GET /api/health/ping](#get-apihealthping)
+- [🎯 Server Endpoints - מדריך חזותי מלא](#-server-endpoints---מדריך-חזותי-מלא)
+  - [🚀 קישורים מהירים](#-קישורים-מהירים)
+  - [💡 איך להשתמש במדריך?](#-איך-להשתמש-במדריך)
+    - [לפי תפקיד:](#לפי-תפקיד)
+  - [🎨 מקרא צבעים מהיר](#-מקרא-צבעים-מהיר)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [🔐 Authentication Endpoints](#-authentication-endpoints)
+    - [POST /api/auth/register](#post-apiauthregister)
+    - [POST /api/auth/login](#post-apiauthlogin)
+    - [POST /api/auth/logout](#post-apiauthlogout)
+    - [GET /api/auth/verify](#get-apiauthverify)
+    - [GET /api/auth/profile](#get-apiauthprofile)
+    - [PUT /api/auth/profile](#put-apiauthprofile)
+    - [PUT /api/auth/password](#put-apiauthpassword)
+    - [DELETE /api/auth/account](#delete-apiauthaccount)
+    - [GET /api/auth/stats](#get-apiauthstats)
+  - [🛒 Cart Endpoints](#-cart-endpoints)
+    - [📊 סיכום מהיר - Cart Operations](#-סיכום-מהיר---cart-operations)
+    - [GET /api/cart](#get-apicart)
+    - [POST /api/cart/add](#post-apicartadd)
+    - [PUT /api/cart/update](#put-apicartupdate)
+    - [DELETE /api/cart/remove](#delete-apicartremove)
+    - [DELETE /api/cart/clear](#delete-apicartclear)
+    - [GET /api/cart/count](#get-apicartcount)
+    - [POST /api/cart/merge](#post-apicartmerge)
+  - [📦 Product Endpoints](#-product-endpoints)
+    - [📊 סיכום מהיר - Product Operations](#-סיכום-מהיר---product-operations)
+    - [GET /api/products](#get-apiproducts)
+    - [GET /api/products/:id](#get-apiproductsid)
+  - [📋 Order Endpoints](#-order-endpoints)
+    - [📊 סיכום מהיר - Order Operations](#-סיכום-מהיר---order-operations)
+    - [POST /api/orders](#post-apiorders)
+    - [GET /api/orders](#get-apiorders)
+    - [GET /api/orders/:id](#get-apiordersid)
+    - [POST /api/orders/:id/cancel](#post-apiordersidcancel)
+    - [PUT /api/orders/:id/status](#put-apiordersidstatus)
+    - [GET /api/orders/stats](#get-apiordersstats)
+  - [❤️ Health Endpoints](#️-health-endpoints)
+    - [GET /api/health](#get-apihealth)
+    - [GET /api/health/ping](#get-apihealthping)
+  - [🎯 Legend](#-legend)
+    - [Color Coding:](#color-coding)
+    - [Common HTTP Status Codes:](#common-http-status-codes)
+    - [Middleware Flow:](#middleware-flow)
+  - [📚 Summary](#-summary)
+  - [🎯 Common Workflows](#-common-workflows)
+    - [🛒 תהליך קנייה מלא (Guest → User)](#-תהליך-קנייה-מלא-guest--user)
+    - [🔐 תהליך Authentication מלא](#-תהליך-authentication-מלא)
+    - [📦 תהליך ניהול מלאי](#-תהליך-ניהול-מלאי)
+  - [💡 Best Practices](#-best-practices)
+    - [🔒 Security](#-security)
+    - [⚡ Performance](#-performance)
+    - [🐛 Error Handling](#-error-handling)
+    - [📊 Data Consistency](#-data-consistency)
+  - [🎓 למידה והבנה](#-למידה-והבנה)
+    - [קריאה מומלצת לפי נושא:](#קריאה-מומלצת-לפי-נושא)
 
 ---
 
 ## 🔐 Authentication Endpoints
 
+> **מטרה:** ניהול משתמשים - הרשמה, התחברות, ניהול פרופיל  
+> **Authentication:** JWT Token ב-httpOnly cookie  
+> **Rate Limiting:** מוגבל ל-5 ניסיונות לדקה
+
+---
+
 ### POST /api/auth/register
+**📝 תיאור:** יצירת משתמש חדש במערכת
+
+**🔒 Security:** Password מוצפן ב-bcrypt, Token נשמר ב-httpOnly cookie
+
+**⏱️ Rate Limit:** 5 בקשות לדקה
 
 ```mermaid
 flowchart TD
@@ -76,7 +162,7 @@ flowchart TD
     style SaveMongo fill:#fff9c4
 ```
 
-**Request:**
+**📥 Request Example:**
 ```json
 {
   "name": "John Doe",
@@ -85,7 +171,7 @@ flowchart TD
 }
 ```
 
-**Response (201):**
+**✅ Success Response (201):**
 ```json
 {
   "status": "success",
@@ -100,9 +186,21 @@ flowchart TD
 }
 ```
 
+**❌ Possible Errors:**
+| Status | Message | Cause |
+|--------|---------|-------|
+| 400 | Name, email, password required | חסרים שדות חובה |
+| 400 | Invalid email format | פורמט email לא תקין |
+| 400 | Password must be 6+ chars | סיסמה קצרה מדי |
+| 409 | Email already registered | Email כבר קיים במערכת |
+| 429 | Too Many Requests | יותר מדי ניסיונות |
+
 ---
 
 ### POST /api/auth/login
+**📝 תיאור:** התחברות למערכת עם email וסיסמה
+
+**🔒 Security:** bcrypt password comparison, JWT token generation
 
 ```mermaid
 flowchart TD
@@ -138,15 +236,7 @@ flowchart TD
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
     style Return429 fill:#ffcdd2
-    style Return400 fill:#ffcdd2
-    style Return400Email fill:#ffcdd2
-    style Return401User fill:#ffcdd2
-    style Return401Pass fill:#ffcdd2
-    style Return403 fill:#ffcdd2
-    style FindUser fill:#fff9c4
-```
-
-**Request:**
+**📥 Request Example:**
 ```json
 {
   "email": "john@example.com",
@@ -154,7 +244,7 @@ flowchart TD
 }
 ```
 
-**Response (200):**
+**✅ Success Response (200):**
 ```json
 {
   "status": "success",
@@ -164,6 +254,26 @@ flowchart TD
       "name": "John Doe",
       "email": "john@example.com"
     },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**❌ Possible Errors:**
+| Status | Message | Cause |
+|--------|---------|-------|
+| 400 | Email and password required | חסרים שדות חובה |
+| 400 | Invalid email format | פורמט email לא תקין |
+| 401 | Invalid credentials | Email או סיסמה שגויים |
+| 403 | Account deactivated | החשבון מושבת |
+| 429 | Too Many Requests | יותר מדי ניסיונות התחברות |
+
+---
+
+### POST /api/auth/logout
+**📝 תיאור:** התנתקות מהמערכת - מחיקת session cookie
+
+**🔒 Security:** מחיקת httpOnly cookie מהדפדפן
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
@@ -180,17 +290,22 @@ flowchart TD
     OptionalAuth --> RouteHandler[authRoutes.post /logout]
     
     RouteHandler --> Controller[AuthController.logout]
-    Controller --> ClearCookie[Clear token cookie]
-    ClearCookie --> Return200["✅ 200: Logged out successfully"]
-    
-    
-    style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
-```
-
-**Response (200):**
+**✅ Success Response (200):**
 ```json
 {
+  "status": "success",
+  "message": "Logged out successfully"
+}
+```
+
+**💡 Note:** ה-logout עובד גם עבור משתמשים לא מחוברים (optionalAuth)
+
+---
+
+### GET /api/auth/verify
+**📝 תיאור:** בדיקת תקינות Token - מוודא שהמשתמש מחובר
+
+**🔒 Security:** מחייב JWT token תקף
   "status": "success",
   "message": "Logged out successfully"
 }
@@ -221,15 +336,7 @@ flowchart TD
     Controller --> Return200["✅ 200: Token valid + user data"]
     
     
-    style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
-    style Return401 fill:#ffcdd2
-    style Return401Invalid fill:#ffcdd2
-    style Return401User fill:#ffcdd2
-    style FindUser fill:#fff9c4
-```
-
-**Response (200):**
+**✅ Success Response (200):**
 ```json
 {
   "status": "success",
@@ -238,6 +345,24 @@ flowchart TD
       "_id": "507f1f77bcf86cd799439011",
       "name": "John Doe",
       "email": "john@example.com"
+    }
+  }
+}
+```
+
+**❌ Possible Errors:**
+| Status | Message | Cause |
+|--------|---------|-------|
+| 401 | No token provided | אין cookie/token בבקשה |
+| 401 | Invalid token | Token לא תקף או פג תוקף |
+| 401 | User not found | המשתמש נמחק מהמערכת |
+
+---
+
+### GET /api/auth/profile
+**📝 תיאור:** קבלת פרטי המשתמש המחובר
+
+**🔒 Security:** מחייב התחברות (requireAuth)ple.com"
     }
   }
 }
@@ -262,15 +387,7 @@ flowchart TD
     UserExists -->|No| Return404["❌ 404: User not found"]
     UserExists -->|Yes| PrepareResponse[Prepare user object - exclude password]
     PrepareResponse --> Return200["✅ 200: User profile data"]
-    
-    style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
-    style Return401 fill:#ffcdd2
-    style Return404 fill:#ffcdd2
-    style FindUser fill:#fff9c4
-```
-
-**Response (200):**
+**✅ Success Response (200):**
 ```json
 {
   "status": "success",
@@ -280,6 +397,23 @@ flowchart TD
       "name": "John Doe",
       "email": "john@example.com",
       "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  }
+}
+```
+
+**❌ Possible Errors:**
+| Status | Message | Cause |
+|--------|---------|-------|
+| 401 | Unauthorized | לא מחובר |
+| 404 | User not found | המשתמש לא נמצא |
+
+---
+
+### PUT /api/auth/profile
+**📝 תיאור:** עדכון פרטי המשתמש (שם ו-email)
+
+**🔒 Security:** מחייב התחברות, בודק ש-email חדש לא תפוס01-15T10:30:00.000Z"
     }
   }
 }
@@ -476,7 +610,30 @@ flowchart TD
 
 ## 🛒 Cart Endpoints
 
+> **מטרה:** ניהול עגלת קניות - תמיכה במשתמשים מחוברים ואורחים  
+> **Storage:**  
+> - משתמשים מחוברים → MongoDB (קבוע)  
+> - משתמשים אורחים → Redis (זמני, 24 שעות TTL)  
+> **Session:** Cookie עם sessionId לאורחים
+
+### 📊 סיכום מהיר - Cart Operations
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/cart` | GET | Optional | קבלת עגלה |
+| `/api/cart/add` | POST | Optional | הוספת מוצר |
+| `/api/cart/update` | PUT | Optional | עדכון כמות |
+| `/api/cart/remove` | DELETE | Optional | הסרת מוצר |
+| `/api/cart/clear` | DELETE | Optional | ריקון עגלה |
+| `/api/cart/count` | GET | Optional | ספירת פריטים |
+| `/api/cart/merge` | POST | Required | מיזוג עגלה אורח→משתמש |
+
+---
+
 ### GET /api/cart
+**📝 תיאור:** קבלת עגלת הקניות - עובד גם למשתמשים מחוברים וגם לאורחים
+
+**🔑 Key Feature:** Auto-populate product details (name, price, image)
 
 ```mermaid
 flowchart TD
@@ -899,7 +1056,29 @@ flowchart TD
 
 ## 📦 Product Endpoints
 
+> **מטרה:** קטלוג מוצרים - חיפוש, סינון, הצגת פרטים  
+> **Database:** MongoDB - products collection  
+> **Features:** Text search, category filter, price range, sorting
+
+### 📊 סיכום מהיר - Product Operations
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/products` | GET | None | רשימת מוצרים + filters |
+| `/api/products/:id` | GET | None | פרטי מוצר בודד |
+
+**🔍 Available Filters:**
+- `search` - חיפוש טקסט בשם/תיאור
+- `category` - סינון לפי קטגוריה
+- `minPrice` / `maxPrice` - טווח מחירים
+- `sort` - מיון (price_asc, price_desc, name, newest)
+
+---
+
 ### GET /api/products
+**📝 תיאור:** קבלת רשימת מוצרים עם אפשרויות סינון וחיפוש
+
+**🎯 Use Cases:** דף ראשי, חיפוש, קטגוריות
 
 ```mermaid
 flowchart TD
@@ -1003,7 +1182,35 @@ flowchart TD
 
 ## 📋 Order Endpoints
 
+> **מטרה:** ניהול הזמנות - יצירה, צפייה, ביטול, עדכון סטטוס  
+> **Auth:** כל הפעולות דורשות התחברות (חוץ מעדכון סטטוס = Admin only)  
+> **Database:** MongoDB - orders collection  
+> **Side Effects:** עדכון stock, מחיקת cart, שליחת emails
+
+### 📊 סיכום מהיר - Order Operations
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/orders` | POST | Required | יצירת הזמנה חדשה |
+| `/api/orders` | GET | Required | רשימת הזמנות שלי |
+| `/api/orders/:id` | GET | Required | פרטי הזמנה |
+| `/api/orders/:id/cancel` | POST | Required | ביטול הזמנה |
+| `/api/orders/:id/status` | PUT | Admin | עדכון סטטוס (admin) |
+| `/api/orders/stats` | GET | Required | סטטיסטיקות |
+
+**📦 Order Statuses:**
+- `pending` - ממתינה לעיבוד
+- `processing` - בעיבוד
+- `shipped` - נשלחה
+- `delivered` - נמסרה
+- `cancelled` - בוטלה
+
+---
+
 ### POST /api/orders
+**📝 תיאור:** יצירת הזמנה חדשה מהעגלה
+
+**⚠️ Important:** פעולה זו מורידה stock ומוחקת את העגלה!
 
 ```mermaid
 flowchart TD
@@ -1474,19 +1681,159 @@ flowchart TD
 
 ## 📚 Summary
 
-This document provides **complete visual maps** for all server endpoints including:
+מסמך זה מספק **מפות חזותיות מלאות** לכל ה-endpoints של השרת:
 
-✅ **All 28 endpoints** mapped in detail  
-✅ **Every layer** - Middleware → Routes → Controllers → Services → Database  
-✅ **All conditions** - Success and error paths  
-✅ **Authentication flows** - optionalAuth vs requireAuth  
-✅ **Database operations** - MongoDB and Redis interactions  
-✅ **Request/Response examples** - Real JSON payloads  
-✅ **Color-coded diagrams** - Easy visual parsing  
+✅ **כל 28 ה-endpoints** ממופים בפירוט  
+✅ **כל השכבות** - Middleware → Routes → Controllers → Services → Database  
+✅ **כל התנאים** - נתיבי הצלחה ושגיאה  
+✅ **זרימות Authentication** - optionalAuth vs requireAuth  
+✅ **פעולות Database** - אינטראקציות MongoDB ו-Redis  
+✅ **דוגמאות Request/Response** - JSON payloads אמיתיים  
+✅ **דיאגרמות עם צבעים** - קל לזהות את כל השלבים  
+
+---
+
+## 🎯 Common Workflows
+
+### 🛒 תהליך קנייה מלא (Guest → User)
+
+```
+1. אורח מוסיף מוצרים לעגלה
+   POST /api/cart/add (Guest - Redis)
+   
+2. אורח רואה את העגלה
+   GET /api/cart (Guest - Redis)
+   
+3. אורח מחליט להירשם
+   POST /api/auth/register
+   
+4. מיזוג עגלת אורח לעגלת משתמש
+   POST /api/cart/merge (Redis → MongoDB)
+   
+5. יצירת הזמנה
+   POST /api/orders
+   → Stock מתעדכן
+   → Cart נמחק
+   → Email נשלח
+   
+6. צפייה בהזמנה
+   GET /api/orders/:id
+```
+
+### 🔐 תהליך Authentication מלא
+
+```
+1. הרשמה
+   POST /api/auth/register
+   → Password מוצפן (bcrypt)
+   → JWT Token נוצר
+   → Cookie נשמר
+   
+2. בדיקת סטטוס
+   GET /api/auth/verify
+   → Token תקף
+   
+3. עדכון פרופיל
+   PUT /api/auth/profile
+   
+4. שינוי סיסמה
+   PUT /api/auth/password
+   → Password ישן מאומת
+   → Password חדש מוצפן
+   
+5. התנתקות
+   POST /api/auth/logout
+   → Cookie נמחק
+```
+
+### 📦 תהליך ניהול מלאי
+
+```
+1. הצגת מוצרים
+   GET /api/products?category=electronics
+   
+2. לקוח מוסיף לעגלה
+   POST /api/cart/add
+   → בדיקת stock
+   
+3. יצירת הזמנה
+   POST /api/orders
+   → stock מתעדכן: stock -= quantity
+   
+4. ביטול הזמנה
+   POST /api/orders/:id/cancel
+   → stock מוחזר: stock += quantity
+```
+
+---
+
+## 💡 Best Practices
+
+### 🔒 Security
+
+1. **Always verify JWT** - כל הפעולות הרגישות דורשות requireAuth
+2. **Rate Limiting** - Auth endpoints מוגבלים ל-5 ניסיונות/דקה
+3. **httpOnly Cookies** - Tokens לא נגישים ל-JavaScript
+4. **Password Hashing** - bcrypt עם salt
+5. **Input Validation** - כל ה-inputs עוברים validation לפני שימוש
+
+### ⚡ Performance
+
+1. **Redis for Guest Carts** - מהיר פי 10 מ-MongoDB
+2. **Debounced MongoDB Saves** - Cart saves מתבצעים כל 5 שניות
+3. **Product Population** - Lazy loading של פרטי מוצרים
+4. **Index על fields חשובים** - email, userId, sessionId
+
+### 🐛 Error Handling
+
+1. **Specific Error Messages** - כל שגיאה עם הסבר ברור
+2. **HTTP Status Codes** - שימוש נכון ב-status codes
+3. **Validation Errors** - 400 עם פירוט השדות החסרים
+4. **Not Found** - 404 למשאבים שלא קיימים
+5. **Unauthorized** - 401 כשאין token, 403 כשאין הרשאה
+
+### 📊 Data Consistency
+
+1. **Transaction-like Operations** - בהזמנה: stock מתעדכן רק אם הכל תקין
+2. **Stock Validation** - בדיקה לפני כל פעולת cart
+3. **Cart Cleanup** - עגלות אורח נמחקות אחרי 24 שעות
+4. **Orphan Prevention** - מחיקת cart אחרי יצירת הזמנה
+
+---
+
+## 🎓 למידה והבנה
+
+### קריאה מומלצת לפי נושא:
+
+**מתחילים? התחל כאן:**
+1. GET /api/health/ping - הכי פשוט
+2. GET /api/products - בלי auth
+3. POST /api/auth/register - הבן JWT
+4. GET /api/cart - הבן User vs Guest
+
+**רוצה להבין Authentication?**
+1. POST /api/auth/register - יצירת משתמש
+2. POST /api/auth/login - התחברות
+3. GET /api/auth/verify - בדיקת token
+4. POST /api/auth/logout - התנתקות
+
+**רוצה להבין Cart System?**
+1. GET /api/cart - הבדל User/Guest
+2. POST /api/cart/add - הוספה
+3. POST /api/cart/merge - מיזוג
+4. DELETE /api/cart/clear - ניקוי
+
+**רוצה להבין Orders?**
+1. POST /api/orders - יצירה + side effects
+2. GET /api/orders - רשימה
+3. POST /api/orders/:id/cancel - ביטול + stock restore
+
+---
 
 **Perfect for:**
-- 🔍 Understanding exact endpoint behavior
-- 🐛 Debugging API issues
-- 📖 API documentation reference
-- 🧪 Writing tests
-- 👥 Team onboarding
+- 🔍 הבנת התנהגות endpoints מדויקת
+- 🐛 איתור באגים ב-API
+- 📖 תיעוד API למפתחים
+- 🧪 כתיבת טסטים
+- 👥 Onboarding לצוות חדש
+- 🎓 למידה ו-הוראה
