@@ -781,34 +781,25 @@ flowchart TD
     Request([DELETE /api/cart/clear]) --> OptionalAuth[optionalAuth middleware]
     OptionalAuth --> CheckAuth{User authenticated?}
     
-    CheckAuth -->|Yes| GetUserId[Get userId]
-    CheckAuth -->|No| GetSessionId[Get sessionId]
+    CheckAuth -->|Yes - User| UserPath[User path]
+    CheckAuth -->|No - Guest| GuestPath[Guest path]
     
-    GetUserId --> RouteHandler[cartRoutes.delete /clear]
-    GetSessionId --> RouteHandler
+    UserPath --> FindUserCart[(Find cart in MongoDB)]
+    FindUserCart --> ClearUserItems[Clear items]
+    ClearUserItems --> SaveMongo[(Save to MongoDB)]
+    SaveMongo --> ReturnUser["✅ 200: Cart cleared"]
     
-    RouteHandler --> Controller[CartController.clearCart]
-    Controller --> ServiceCall{User or Guest?}
-    
-    ServiceCall -->|User| FindUserCart[(Find cart in MongoDB)]
-    ServiceCall -->|Guest| FindGuestCartRedis[(Find cart in Redis)]
-    
-    FindUserCart --> ClearItems[Set items = empty array]
-    FindGuestCartRedis --> ClearItems
-    
-    ClearItems --> SaveChanges{User or Guest?}
-    SaveChanges -->|User| SaveMongo[(Save to MongoDB)]
-    SaveChanges -->|Guest| DeleteRedis[(Delete from Redis)]
-    
-    SaveMongo --> Return200["✅ 200: Cart cleared"]
-    DeleteRedis --> Return200
-    
+    GuestPath --> FindGuestCart[(Find cart in Redis)]
+    FindGuestCart --> ClearGuestItems[Clear items]
+    ClearGuestItems --> DeleteRedis[(Delete from Redis)]
+    DeleteRedis --> ReturnGuest["✅ 200: Cart cleared"]
     
     style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
+    style ReturnUser fill:#c8e6c9
+    style ReturnGuest fill:#c8e6c9
     style FindUserCart fill:#fff9c4
     style SaveMongo fill:#fff9c4
-    style FindGuestCartRedis fill:#ffe0b2
+    style FindGuestCart fill:#ffe0b2
     style DeleteRedis fill:#ffe0b2
 ```
 
@@ -829,32 +820,28 @@ flowchart TD
     Request([GET /api/cart/count]) --> OptionalAuth[optionalAuth middleware]
     OptionalAuth --> CheckAuth{User authenticated?}
     
-    CheckAuth -->|Yes| GetUserId[Get userId]
-    CheckAuth -->|No| GetSessionId[Get sessionId]
+    CheckAuth -->|Yes - User| UserPath[User path]
+    CheckAuth -->|No - Guest| GuestPath[Guest path]
     
-    GetUserId --> RouteHandler[cartRoutes.get /count]
-    GetSessionId --> RouteHandler
+    UserPath --> FindUserCart[(Find cart in MongoDB)]
+    FindUserCart --> UserCartExists{Cart exists?}
+    UserCartExists -->|No| ReturnZeroUser["✅ 200: count = 0"]
+    UserCartExists -->|Yes| CountUser[Sum quantities]
+    CountUser --> ReturnCountUser["✅ 200: Total count"]
     
-    RouteHandler --> Controller[CartController.getCartCount]
-    Controller --> ServiceCall{User or Guest?}
-    
-    ServiceCall -->|User| FindUserCart[(Find cart in MongoDB)]
-    ServiceCall -->|Guest| FindGuestCartRedis[(Find cart in Redis)]
-    
-    FindUserCart --> CartExists{Cart exists?}
-    FindGuestCartRedis --> CartExists
-    
-    CartExists -->|No| ReturnZero["✅ 200: count = 0"]
-    CartExists -->|Yes| CountItems[Sum all item quantities]
-    
-    CountItems --> Return200["✅ 200: Total count"]
-    
+    GuestPath --> FindGuestCart[(Find cart in Redis)]
+    FindGuestCart --> GuestCartExists{Cart exists?}
+    GuestCartExists -->|No| ReturnZeroGuest["✅ 200: count = 0"]
+    GuestCartExists -->|Yes| CountGuest[Sum quantities]
+    CountGuest --> ReturnCountGuest["✅ 200: Total count"]
     
     style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
-    style ReturnZero fill:#c8e6c9
+    style ReturnCountUser fill:#c8e6c9
+    style ReturnCountGuest fill:#c8e6c9
+    style ReturnZeroUser fill:#c8e6c9
+    style ReturnZeroGuest fill:#c8e6c9
     style FindUserCart fill:#fff9c4
-    style FindGuestCartRedis fill:#ffe0b2
+    style FindGuestCart fill:#ffe0b2
 ```
 
 **Response (200):**
@@ -875,44 +862,35 @@ flowchart TD
 flowchart TD
     Request([POST /api/cart/merge]) --> OptionalAuth[optionalAuth middleware]
     OptionalAuth --> CheckAuth{User authenticated?}
-    CheckAuth -->|No| Return401["❌ 401: Must be logged in to merge"]
-    CheckAuth -->|Yes| RouteHandler[cartRoutes.post /merge]
+    CheckAuth -->|No| Return401["❌ 401: Must be logged in"]
+    CheckAuth -->|Yes| Controller[CartController.mergeGuestCart]
     
-    RouteHandler --> Controller[CartController.mergeGuestCart]
     Controller --> ValidateInput{Validate input}
-    ValidateInput -->|Missing guestCart| Return400["❌ 400: Guest cart data required"]
-    ValidateInput -->|Valid| GetUserId[Get userId from req.user]
+    ValidateInput -->|Missing| Return400["❌ 400: Cart data required"]
+    ValidateInput -->|Valid| FindUserCart[(Find user cart in MongoDB)]
     
-    GetUserId --> FindUserCart[(Find user cart in MongoDB)]
-    FindUserCart --> GetGuestItems[Extract items from guestCart body]
-    
+    FindUserCart --> GetGuestItems[Extract guest items]
     GetGuestItems --> UserCartExists{User cart exists?}
-    UserCartExists -->|No| CreateUserCart[Create new user cart]
-    UserCartExists -->|Yes| MergeLogic[Start merge logic]
     
-    CreateUserCart --> MergeLogic
-    MergeLogic --> LoopItems[Loop through guest items]
+    UserCartExists -->|No| CreateCart[Create new cart]
+    UserCartExists -->|Yes| MergeItems[Merge items]
     
-    LoopItems --> CheckItem{Item in user cart?}
-    CheckItem -->|Yes| AddQuantities[Add quantities together]
-    CheckItem -->|No| AddNewItem[Add as new item]
+    CreateCart --> AddGuestItems[Add guest items]
+    MergeItems --> ProcessDuplicates[Handle duplicates - add quantities]
     
-    AddQuantities --> NextItem{More items?}
-    AddNewItem --> NextItem
-    NextItem -->|Yes| LoopItems
-    NextItem -->|No| SaveMerged[(Save merged cart to MongoDB)]
+    AddGuestItems --> SaveCart[(Save to MongoDB)]
+    ProcessDuplicates --> SaveCart
     
-    SaveMerged --> DeleteGuestSession[(Delete guest sessionId from Redis)]
-    DeleteGuestSession --> Return200["✅ 200: Carts merged successfully"]
-    
+    SaveCart --> CleanupRedis[(Delete guest session from Redis)]
+    CleanupRedis --> Return200["✅ 200: Carts merged"]
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
     style Return401 fill:#ffcdd2
     style Return400 fill:#ffcdd2
     style FindUserCart fill:#fff9c4
-    style SaveMerged fill:#fff9c4
-    style DeleteGuestSession fill:#ffe0b2
+    style SaveCart fill:#fff9c4
+    style CleanupRedis fill:#ffe0b2
 ```
 
 **Request:**
@@ -956,38 +934,25 @@ flowchart TD
 ```mermaid
 flowchart TD
     Request([GET /api/products]) --> ParseQuery[Parse query parameters]
-    ParseQuery --> RouteHandler[productRoutes.get /]
+    ParseQuery --> Controller[ProductController.getProducts]
     
-    RouteHandler --> Controller[ProductController.getProducts]
-    Controller --> BuildQuery[Build MongoDB query object]
+    Controller --> BuildQuery[Build MongoDB query]
+    BuildQuery --> ApplyFilters[Apply all filters]
     
-    BuildQuery --> HasSearch{Has search param?}
-    HasSearch -->|Yes| AddTextSearch[Add text search on name/description]
-    HasSearch -->|No| HasCategory
+    ApplyFilters --> SortOptions{Sort option?}
+    SortOptions -->|price_asc| SortPA[Sort by price asc]
+    SortOptions -->|price_desc| SortPD[Sort by price desc]
+    SortOptions -->|name| SortN[Sort by name]
+    SortOptions -->|newest| SortD[Sort by date]
+    SortOptions -->|none| SortDefault[Default sort]
     
-    AddTextSearch --> HasCategory{Has category param?}
-    HasCategory -->|Yes| FilterCategory[Add category filter]
-    HasCategory -->|No| HasPrice
-    
-    FilterCategory --> HasPrice{Has price range?}
-    HasPrice -->|Yes| FilterPrice[Add min/max price filter]
-    HasPrice -->|No| HasSort
-    
-    FilterPrice --> HasSort{Has sort param?}
-    HasSort -->|price_asc| SortPriceAsc[Sort by price ascending]
-    HasSort -->|price_desc| SortPriceDesc[Sort by price descending]
-    HasSort -->|name| SortName[Sort by name]
-    HasSort -->|newest| SortDate[Sort by createdAt desc]
-    HasSort -->|No sort| DefaultSort[Default sort]
-    
-    SortPriceAsc --> ExecuteQuery[(Execute MongoDB find)]
-    SortPriceDesc --> ExecuteQuery
-    SortName --> ExecuteQuery
-    SortDate --> ExecuteQuery
-    DefaultSort --> ExecuteQuery
+    SortPA --> ExecuteQuery[(Execute MongoDB find)]
+    SortPD --> ExecuteQuery
+    SortN --> ExecuteQuery
+    SortD --> ExecuteQuery
+    SortDefault --> ExecuteQuery
     
     ExecuteQuery --> Return200["✅ 200: Products array"]
-    
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1027,18 +992,16 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Request([GET /api/products/:id]) --> ExtractId[Extract :id from URL params]
-    ExtractId --> RouteHandler[productRoutes.get /:id]
+    Request([GET /api/products/:id]) --> ExtractId[Extract product ID]
+    ExtractId --> Controller[ProductController.getProduct]
     
-    RouteHandler --> Controller[ProductController.getProduct]
     Controller --> ValidateId{Valid ObjectId?}
-    ValidateId -->|No| Return400["❌ 400: Invalid product ID format"]
-    ValidateId -->|Yes| FindProduct[(Find product by _id in MongoDB)]
+    ValidateId -->|No| Return400["❌ 400: Invalid ID"]
+    ValidateId -->|Yes| FindProduct[(Find in MongoDB)]
     
     FindProduct --> ProductExists{Product found?}
-    ProductExists -->|No| Return404["❌ 404: Product not found"]
+    ProductExists -->|No| Return404["❌ 404: Not found"]
     ProductExists -->|Yes| Return200["✅ 200: Product details"]
-    
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
