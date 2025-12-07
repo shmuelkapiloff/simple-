@@ -675,6 +675,19 @@ flowchart TD
     DoLogout --> GuestMode
     
     AuthMode -->|Token expires| GuestMode
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class Start start
+    class CheckToken,TokenValid,GuestActions,LoginResult,RegisterResult,AuthActions decision
+    class VerifyToken,GuestMode,GuestBrowse,GuestCart,ShowLogin,ShowRegister,LoginForm,SubmitLogin,RegisterForm,SubmitRegister,AuthMode,AuthBrowse,AuthCart,ShowProfile,DoLogout process
+    class AuthMode success
+    class LoginError,RegisterError error
 ```
 
 ---
@@ -733,6 +746,19 @@ flowchart TD
     
     ProcessAddToCart --> UpdateCartUI[Update cart display]
     UpdateCartUI --> UserInteraction
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class AppStart start
+    class CheckInitialAuth,TokenResult,UserInteraction,AuthResult decision
+    class LoadReduxStore,GuestMode,DispatchVerify,SetAuthenticatedState,ClearTokens,RenderAuthenticatedUI,RenderGuestUI,ShowUserName,LoadUserCart,ShowLoginButtons,LoadGuestCart,ShowLoginModal,ShowRegisterModal,ProcessLogout,ProcessAddToCart,MergeCartsFlow,ClearAllState,UpdateCartUI process
+    class RenderAuthenticatedUI,MergeCartsFlow success
+    class ShowError error
 ```
 
 ---
@@ -821,6 +847,20 @@ flowchart TD
     ShowNotFound --> NotFoundPage[404 page]
     ShowUserFriendlyError --> ErrorPage
     StayOnPage --> CurrentPage[Current page]
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef warning fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class ErrorOccurs start
+    class ErrorType,IsOnline,RetryCount,AuthErrorType,ServerErrorCode,CheckConnection,UserRetry,TryRefreshToken decision
+    class NetworkErrorFlow,RetryRequest,ShowOfflineMode,WaitAndRetry,AuthErrorFlow,HandleUnauthorized,HandleForbidden,HandleTokenExpired,ClearAuthAndRedirect,ShowAccessDenied,UpdateToken,ValidationErrorFlow,ShowFieldErrors,HighlightFields,EnableRetry,ServerErrorFlow,ClientErrorFlow,LogError,WaitForConnection,RetryOriginalAction,NormalFlow,ErrorPage,LoginPage,MaintenancePage,NotFoundPage,CurrentPage process
+    class ShowNetworkError,ShowGenericError,ShowMaintenanceMode,ShowNotFound,ShowUserFriendlyError,StayOnPage error
+    class Success,NormalFlow success
 ```
 
 ---
@@ -963,6 +1003,19 @@ flowchart TD
     Return404 --> End
     Return401 --> End
     Return400 --> End
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class Request start
+    class RateLimit,CORS,RouteMatch,CheckAuthRequired,CheckToken,TokenValid,MustHaveToken,RequiredValid,ValidateInput,HandlerError,DetermineStatus decision
+    class ParseBody,OptionalAuth,RequireAuth,VerifyToken,AttachUser,ContinueAsGuest,VerifyRequired,ExecuteHandler,ErrorMiddleware,LogError,SendErrorResponse,SendResponse process
+    class SendResponse,End success
+    class Return429,Return403,Return404,Return401,Return400 error
 ```
 
 ---
@@ -1033,6 +1086,19 @@ flowchart TD
     UpdateUI --> ShowResults[Display filtered products]
     
     ShowResults --> UserBrowse
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class UserBrowse start
+    class SearchOrFilter,ApplySearch,ApplyCategory,ApplyPrice,ApplySort,CheckResults decision
+    class SearchInput,CategoryFilter,PriceRange,SortOption,BuildQuery,SendRequest,ServerReceive,ParseParams,BuildMongoQuery,TextSearch,FilterCategory,FilterPrice,SortPriceAsc,SortPriceDesc,SortNewest,SortName,DefaultSort,ReturnProducts,ReturnEmpty,ClientReceive,UpdateUI,ShowResults process
+    class ReturnProducts,ShowResults success
+    class ExecuteQuery,BuildMongoQuery database
 ```
 
 ---
@@ -1087,6 +1153,19 @@ flowchart TD
     
     EmailSent --> End([Complete])
     NotifyAdmin --> End
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class TriggerEvent start
+    class EventType,SendViaService,CheckSendStatus,RetryLater decision
+    class WelcomeEmail,OrderConfirm,ShippingNotify,ResetEmail,DeactivateEmail,PrepareEmail,LoadTemplate,InjectData,BuildHTML,LogToConsole,SendSMTP,LogFailure,RetryQueue,WaitAndRetry,NotifyAdmin process
+    class EmailSent,End success
+    class MarkFailed error
 ```
 
 ---
@@ -1172,6 +1251,20 @@ flowchart TD
     RefreshOrders --> ShowDashboard
     ShowError --> AdminAction
     DenyAccess --> End([End])
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class AdminLogin start
+    class CheckRole,AdminAction,UploadImage,ValidateProduct,ValidateUpdate,ConfirmDelete,CheckInOrders,FilterOrders,ConfirmUpdate decision
+    class ShowDashboard,ListProducts,ShowAddForm,ShowEditForm,ListOrders,UpdateStatus,ListUsers,GetStats,FillDetails,UploadToCloud,SubmitProduct,CreateProduct,RefreshList,LoadProduct,ModifyDetails,SaveChanges,UpdateProduct,DeleteProduct,SoftDelete,HardDelete,FilterStatus,FilterDate,FilterUser,ShowAllOrders,DisplayOrders,SelectStatus,UpdateOrderStatus,SendNotification,RefreshOrders,FetchStatistics,Calculate,DisplayCharts process
+    class ShowDashboard,RefreshList,RefreshOrders success
+    class DenyAccess,ShowError error
 ```
 
 ---
@@ -1230,6 +1323,21 @@ flowchart TD
     ShowSuccess --> End
     ReturnToCart --> End
     ShowEmptyCart --> End
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class Checkout start
+    class ValidateCart,SelectPayment,PaymentResult,RetryOption decision
+    class ShowEmptyCart,ShowCheckoutForm,FillShipping,CardForm,PayPalRedirect,PayPalAuth,PayPalReturn,OtherGateway,SubmitPayment,CreateIntent,SendToGateway,GatewayProcess,RecordPayment,CreateOrder,ClearCart,SendConfirmation,ReturnToCart,ContactSupport process
+    class ShowSuccess,End success
+    class ShowDeclined,ShowPaymentError error
+    class RecordPayment,CreateOrder database
 ```
 
 ---
@@ -1275,6 +1383,19 @@ flowchart TD
     
     SendResponse --> End([End])
     RedirectLogin --> End
+    
+    %% Styling
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class ApiCall start
+    class TokenStatus,CheckRefreshToken,RefreshValid decision
+    class SendRequest,ServerCheck,ProcessRequest,ValidateRefreshToken,GenerateNewTokens,SendNewTokens,UpdateClient,RetryOriginalRequest,SendResponse,ClientReceives401,ClearAuth,RedirectLogin process
+    class SendResponse,End success
+    class Return401 error
 ```
 
 ---
