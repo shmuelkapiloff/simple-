@@ -66,13 +66,6 @@ flowchart TD
     SetCookie --> PrepareResponse[Prepare response object]
     PrepareResponse --> Return201["✅ 201: User created + token + user data"]
     
-    Return429 --> End([Response sent])
-    Return400 --> End
-    Return400Email --> End
-    Return400Pass --> End
-    Return409 --> End
-    Return201 --> End
-    
     style Request fill:#e3f2fd
     style Return201 fill:#c8e6c9
     style Return429 fill:#ffcdd2
@@ -141,12 +134,6 @@ flowchart TD
     SetCookie --> PrepareResponse[Prepare response object]
     PrepareResponse --> Return200["✅ 200: Login successful + token + user data"]
     
-    Return429 --> End([Response sent])
-    Return400 --> End
-    Return400Email --> End
-    Return401 --> End
-    Return403 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -195,7 +182,6 @@ flowchart TD
     Controller --> ClearCookie[Clear token cookie]
     ClearCookie --> Return200["✅ 200: Logged out successfully"]
     
-    Return200 --> End([Response sent])
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -233,10 +219,6 @@ flowchart TD
     RouteHandler --> Controller[AuthController.verifyToken]
     Controller --> Return200["✅ 200: Token valid + user data"]
     
-    Return401 --> End([Response sent])
-    Return401Invalid --> End
-    Return401User --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -280,9 +262,6 @@ flowchart TD
     UserExists -->|Yes| PrepareResponse[Prepare user object - exclude password]
     PrepareResponse --> Return200["✅ 200: User profile data"]
     
-    Return401 --> End([Response sent])
-    Return404 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -332,11 +311,6 @@ flowchart TD
     UpdateUser --> SaveChanges[(Save to MongoDB)]
     SaveChanges --> Return200["✅ 200: Profile updated"]
     
-    Return401 --> End([Response sent])
-    Return400 --> End
-    Return400Email --> End
-    Return409 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -395,11 +369,6 @@ flowchart TD
     HashNew --> UpdatePassword[(Update passwordHash in MongoDB)]
     UpdatePassword --> Return200["✅ 200: Password changed successfully"]
     
-    Return401 --> End([Response sent])
-    Return400 --> End
-    Return400Weak --> End
-    Return401Pass --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -445,8 +414,6 @@ flowchart TD
     UpdateUser --> ClearCookie[Clear authentication cookie]
     ClearCookie --> Return200["✅ 200: Account deactivated"]
     
-    Return401 --> End([Response sent])
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -480,8 +447,6 @@ flowchart TD
     CountOrders --> CalculateTotal[(Calculate total spent from orders)]
     CalculateTotal --> Return200["✅ 200: User statistics"]
     
-    Return401 --> End([Response sent])
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -540,8 +505,6 @@ flowchart TD
     
     CalculateTotal --> Return200["✅ 200: Cart with items"]
     
-    ReturnEmpty --> End([Response sent])
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -619,11 +582,6 @@ flowchart TD
     
     ScheduleFlush --> Return200
     
-    Return400 --> End([Response sent])
-    Return400Qty --> End
-    Return404 --> End
-    Return409 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -710,12 +668,6 @@ flowchart TD
     SaveMongo --> Return200["✅ 200: Quantity updated"]
     SaveRedis --> Return200
     
-    Return400 --> End([Response sent])
-    Return400Qty --> End
-    Return404 --> End
-    Return404Item --> End
-    Return409 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -794,9 +746,6 @@ flowchart TD
     SaveMongo --> Return200["✅ 200: Item removed"]
     SaveRedis --> Return200
     
-    Return400 --> End([Response sent])
-    Return404 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -854,7 +803,6 @@ flowchart TD
     SaveMongo --> Return200["✅ 200: Cart cleared"]
     DeleteRedis --> Return200
     
-    Return200 --> End([Response sent])
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -901,8 +849,6 @@ flowchart TD
     
     CountItems --> Return200["✅ 200: Total count"]
     
-    ReturnZero --> End([Response sent])
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -959,9 +905,6 @@ flowchart TD
     SaveMerged --> DeleteGuestSession[(Delete guest sessionId from Redis)]
     DeleteGuestSession --> Return200["✅ 200: Carts merged successfully"]
     
-    Return401 --> End([Response sent])
-    Return400 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1045,7 +988,6 @@ flowchart TD
     
     ExecuteQuery --> Return200["✅ 200: Products array"]
     
-    Return200 --> End([Response sent])
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1097,9 +1039,6 @@ flowchart TD
     ProductExists -->|No| Return404["❌ 404: Product not found"]
     ProductExists -->|Yes| Return200["✅ 200: Product details"]
     
-    Return400 --> End([Response sent])
-    Return404 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1163,13 +1102,6 @@ flowchart TD
     ClearCart --> SendEmail[Send order confirmation email]
     SendEmail --> Return201["✅ 201: Order created"]
     
-    Return401 --> End([Response sent])
-    Return400 --> End
-    Return400Empty --> End
-    Return400Addr --> End
-    Return404 --> End
-    Return409 --> End
-    Return201 --> End
     
     style Request fill:#e3f2fd
     style Return201 fill:#c8e6c9
@@ -1247,8 +1179,6 @@ flowchart TD
     FindOrders --> SortOrders[Sort by createdAt descending]
     SortOrders --> Return200["✅ 200: Orders array"]
     
-    Return401 --> End([Response sent])
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1299,11 +1229,6 @@ flowchart TD
     CheckOwnership -->|No| Return403["❌ 403: Not your order"]
     CheckOwnership -->|Yes| Return200["✅ 200: Order details"]
     
-    Return401 --> End([Response sent])
-    Return400 --> End
-    Return404 --> End
-    Return403 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1363,12 +1288,6 @@ flowchart TD
     SaveOrder --> SendEmail[Send cancellation email]
     SendEmail --> Return200["✅ 200: Order cancelled"]
     
-    Return401 --> End([Response sent])
-    Return404 --> End
-    Return403 --> End
-    Return400 --> End
-    Return400Late --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1425,12 +1344,6 @@ flowchart TD
     SaveOrder --> SendEmail[Send status update email]
     SendEmail --> Return200["✅ 200: Status updated"]
     
-    Return401 --> End([Response sent])
-    Return403 --> End
-    Return400 --> End
-    Return400Invalid --> End
-    Return404 --> End
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1484,8 +1397,6 @@ flowchart TD
     CalculateTotals --> FindRecent[Find recent orders]
     FindRecent --> Return200["✅ 200: Order statistics"]
     
-    Return401 --> End([Response sent])
-    Return200 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1543,8 +1454,6 @@ flowchart TD
     DetermineStatus -->|Yes| Return200["✅ 200: All systems healthy"]
     DetermineStatus -->|No| Return503["⚠️ 503: Degraded service"]
     
-    Return200 --> End([Response sent])
-    Return503 --> End
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
@@ -1579,7 +1488,6 @@ flowchart TD
     RouteHandler --> Controller[HealthController.ping]
     Controller --> Return200["✅ 200: pong"]
     
-    Return200 --> End([Response sent])
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
