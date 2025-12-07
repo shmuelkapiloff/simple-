@@ -12,6 +12,13 @@
   - [🎭 State Management Flow with Redux](#-state-management-flow-with-redux)
   - [🔄 Complete Component Lifecycle with Conditions](#-complete-component-lifecycle-with-conditions)
   - [❌ Error Handling Flow Map](#-error-handling-flow-map)
+  - [🗄️ Database Relationships (ERD)](#️-database-relationships-erd)
+  - [🔒 Security & Middleware Flow](#-security--middleware-flow)
+  - [🔍 Search & Filter Flow](#-search--filter-flow)
+  - [📧 Notification & Email Flow](#-notification--email-flow)
+  - [👨‍💼 Admin Dashboard Flow (Future)](#-admin-dashboard-flow-future)
+  - [💳 Payment Flow (Future Integration)](#-payment-flow-future-integration)
+  - [🔄 Token Refresh & Session Management](#-token-refresh--session-management)
   - [🎯 Summary](#-summary)
 
 ---
@@ -711,6 +718,404 @@ flowchart TD
 
 ---
 
+## 🗄️ Database Relationships (ERD)
+
+```mermaid
+erDiagram
+    USER ||--o| CART : "has"
+    USER ||--o{ ORDER : "places"
+    USER {
+        ObjectId _id PK
+        string name
+        string email UK
+        string passwordHash
+        date createdAt
+        date updatedAt
+        boolean isActive
+    }
+    
+    CART ||--|{ CART_ITEM : "contains"
+    CART {
+        ObjectId _id PK
+        ObjectId userId FK
+        string sessionId
+        date createdAt
+        date updatedAt
+    }
+    
+    CART_ITEM }o--|| PRODUCT : "references"
+    CART_ITEM {
+        ObjectId productId FK
+        int quantity
+        number price
+    }
+    
+    PRODUCT {
+        ObjectId _id PK
+        string name
+        string description
+        number price
+        int stock
+        string imageUrl
+        string category
+        date createdAt
+    }
+    
+    ORDER ||--|{ ORDER_ITEM : "contains"
+    ORDER {
+        ObjectId _id PK
+        ObjectId userId FK
+        string status
+        number totalAmount
+        object shippingAddress
+        date createdAt
+        date updatedAt
+    }
+    
+    ORDER_ITEM }o--|| PRODUCT : "references"
+    ORDER_ITEM {
+        ObjectId productId FK
+        string productName
+        number price
+        int quantity
+        number subtotal
+    }
+```
+
+---
+
+## 🔒 Security & Middleware Flow
+
+```mermaid
+flowchart TD
+    Request([HTTP Request]) --> RateLimit{Rate limit check}
+    RateLimit -->|Exceeded| Return429[Return 429 Too Many Requests]
+    RateLimit -->|OK| CORS{CORS validation}
+    
+    CORS -->|Invalid origin| Return403[Return 403 Forbidden]
+    CORS -->|Valid| ParseBody[Parse JSON body]
+    
+    ParseBody --> RouteMatch{Match route?}
+    RouteMatch -->|No match| Return404[Return 404 Not Found]
+    RouteMatch -->|Match| CheckAuthRequired{Auth required?}
+    
+    CheckAuthRequired -->|No| ExecuteHandler[Execute handler]
+    CheckAuthRequired -->|Optional| OptionalAuth[optionalAuth middleware]
+    CheckAuthRequired -->|Required| RequireAuth[requireAuth middleware]
+    
+    OptionalAuth --> CheckToken{Token present?}
+    CheckToken -->|No| ContinueAsGuest[Continue as guest]
+    CheckToken -->|Yes| VerifyToken[Verify JWT]
+    
+    VerifyToken --> TokenValid{Token valid?}
+    TokenValid -->|Yes| AttachUser[Attach user to request]
+    TokenValid -->|No| ContinueAsGuest
+    
+    RequireAuth --> MustHaveToken{Token present?}
+    MustHaveToken -->|No| Return401[Return 401 Unauthorized]
+    MustHaveToken -->|Yes| VerifyRequired[Verify JWT]
+    
+    VerifyRequired --> RequiredValid{Token valid?}
+    RequiredValid -->|No| Return401
+    RequiredValid -->|Yes| AttachUser
+    
+    ContinueAsGuest --> ExecuteHandler
+    AttachUser --> ValidateInput{Input validation}
+    
+    ValidateInput -->|Invalid| Return400[Return 400 Bad Request]
+    ValidateInput -->|Valid| ExecuteHandler
+    
+    ExecuteHandler --> HandlerError{Handler throws error?}
+    HandlerError -->|Yes| ErrorMiddleware[Error middleware]
+    HandlerError -->|No| SendResponse[Send response]
+    
+    ErrorMiddleware --> LogError[Log error]
+    LogError --> DetermineStatus{Determine status code}
+    DetermineStatus --> SendErrorResponse[Send error response]
+    
+    SendResponse --> End([Response sent])
+    SendErrorResponse --> End
+    Return429 --> End
+    Return403 --> End
+    Return404 --> End
+    Return401 --> End
+    Return400 --> End
+```
+
+---
+
+## 🔍 Search & Filter Flow
+
+```mermaid
+flowchart TD
+    UserBrowse([User on products page]) --> SearchOrFilter{User action}
+    
+    SearchOrFilter -->|Type in search| SearchInput[Enter search query]
+    SearchOrFilter -->|Select category| CategoryFilter[Select category]
+    SearchOrFilter -->|Adjust price| PriceRange[Set min/max price]
+    SearchOrFilter -->|Change sort| SortOption[Select sort order]
+    
+    SearchInput --> BuildQuery[Build search query]
+    CategoryFilter --> BuildQuery
+    PriceRange --> BuildQuery
+    SortOption --> BuildQuery
+    
+    BuildQuery --> SendRequest[Send GET /api/products with params]
+    SendRequest --> ServerReceive[Server receives request]
+    
+    ServerReceive --> ParseParams[Parse query parameters]
+    ParseParams --> BuildMongoQuery[Build MongoDB query]
+    
+    BuildMongoQuery --> ApplySearch{Has search term?}
+    ApplySearch -->|Yes| TextSearch[Apply text search on name/description]
+    ApplySearch -->|No| ApplyCategory
+    
+    TextSearch --> ApplyCategory{Has category?}
+    ApplyCategory -->|Yes| FilterCategory[Filter by category]
+    ApplyCategory -->|No| ApplyPrice
+    
+    FilterCategory --> ApplyPrice{Has price range?}
+    ApplyPrice -->|Yes| FilterPrice[Filter by min/max price]
+    ApplyPrice -->|No| ApplySort
+    
+    FilterPrice --> ApplySort{Has sort option?}
+    ApplySort -->|Price low-high| SortPriceAsc[Sort by price ascending]
+    ApplySort -->|Price high-low| SortPriceDesc[Sort by price descending]
+    ApplySort -->|Newest| SortNewest[Sort by createdAt descending]
+    ApplySort -->|Name A-Z| SortName[Sort by name ascending]
+    ApplySort -->|No sort| DefaultSort[Default sort]
+    
+    SortPriceAsc --> ExecuteQuery[Execute MongoDB query]
+    SortPriceDesc --> ExecuteQuery
+    SortNewest --> ExecuteQuery
+    SortName --> ExecuteQuery
+    DefaultSort --> ExecuteQuery
+    
+    ExecuteQuery --> CheckResults{Results found?}
+    CheckResults -->|Yes| ReturnProducts[Return products array]
+    CheckResults -->|No| ReturnEmpty[Return empty array]
+    
+    ReturnProducts --> ClientReceive[Client receives response]
+    ReturnEmpty --> ClientReceive
+    
+    ClientReceive --> UpdateUI[Update ProductList UI]
+    UpdateUI --> ShowResults[Display filtered products]
+    
+    ShowResults --> UserBrowse
+```
+
+---
+
+## 📧 Notification & Email Flow
+
+```mermaid
+flowchart TD
+    TriggerEvent([System Event]) --> EventType{Event type}
+    
+    EventType -->|New User| WelcomeEmail[Send welcome email]
+    EventType -->|Order Created| OrderConfirm[Send order confirmation]
+    EventType -->|Order Shipped| ShippingNotify[Send shipping notification]
+    EventType -->|Password Reset| ResetEmail[Send reset link]
+    EventType -->|Account Deactivated| DeactivateEmail[Send deactivation notice]
+    
+    WelcomeEmail --> PrepareEmail[Prepare email template]
+    OrderConfirm --> PrepareEmail
+    ShippingNotify --> PrepareEmail
+    ResetEmail --> PrepareEmail
+    DeactivateEmail --> PrepareEmail
+    
+    PrepareEmail --> LoadTemplate[Load email template]
+    LoadTemplate --> InjectData[Inject dynamic data]
+    InjectData --> BuildHTML[Build HTML email]
+    
+    BuildHTML --> SendViaService{Email service?}
+    SendViaService -->|Development| LogToConsole[Log email to console]
+    SendViaService -->|Production| SendSMTP[Send via SMTP/SendGrid]
+    
+    LogToConsole --> EmailSent[Email handled]
+    SendSMTP --> CheckSendStatus{Send successful?}
+    
+    CheckSendStatus -->|Yes| EmailSent
+    CheckSendStatus -->|No| LogFailure[Log send failure]
+    LogFailure --> RetryQueue[Add to retry queue]
+    
+    RetryQueue --> RetryLater{Retry attempts < 3?}
+    RetryLater -->|Yes| WaitAndRetry[Wait 5 minutes]
+    RetryLater -->|No| MarkFailed[Mark as permanently failed]
+    
+    WaitAndRetry --> SendSMTP
+    MarkFailed --> NotifyAdmin[Notify admin of failure]
+    
+    EmailSent --> End([Complete])
+    NotifyAdmin --> End
+```
+
+---
+
+## 👨‍💼 Admin Dashboard Flow (Future)
+
+```mermaid
+flowchart TD
+    AdminLogin([Admin logs in]) --> CheckRole{Is admin?}
+    CheckRole -->|No| DenyAccess[403 Forbidden]
+    CheckRole -->|Yes| ShowDashboard[Show admin dashboard]
+    
+    ShowDashboard --> AdminAction{Admin action}
+    
+    AdminAction -->|View products| ListProducts[GET /api/admin/products]
+    AdminAction -->|Add product| ShowAddForm[Show add product form]
+    AdminAction -->|Edit product| ShowEditForm[Show edit product form]
+    AdminAction -->|Delete product| ConfirmDelete{Confirm delete?}
+    AdminAction -->|View orders| ListOrders[GET /api/admin/orders]
+    AdminAction -->|Update order status| UpdateStatus[PUT /api/admin/orders/:id/status]
+    AdminAction -->|View users| ListUsers[GET /api/admin/users]
+    AdminAction -->|View stats| GetStats[GET /api/admin/stats]
+    
+    ShowAddForm --> FillDetails[Fill product details]
+    FillDetails --> UploadImage{Has image?}
+    UploadImage -->|Yes| UploadToCloud[Upload to cloud storage]
+    UploadImage -->|No| SubmitProduct
+    UploadToCloud --> SubmitProduct[POST /api/admin/products]
+    
+    SubmitProduct --> ValidateProduct{Valid data?}
+    ValidateProduct -->|No| ShowError[Show validation errors]
+    ValidateProduct -->|Yes| CreateProduct[Create product in DB]
+    CreateProduct --> RefreshList[Refresh product list]
+    
+    ShowEditForm --> LoadProduct[Load existing product]
+    LoadProduct --> ModifyDetails[Modify product details]
+    ModifyDetails --> SaveChanges[PUT /api/admin/products/:id]
+    SaveChanges --> ValidateUpdate{Valid data?}
+    ValidateUpdate -->|No| ShowError
+    ValidateUpdate -->|Yes| UpdateProduct[Update product in DB]
+    UpdateProduct --> RefreshList
+    
+    ConfirmDelete -->|No| ShowDashboard
+    ConfirmDelete -->|Yes| DeleteProduct[DELETE /api/admin/products/:id]
+    DeleteProduct --> CheckInOrders{Product in active orders?}
+    CheckInOrders -->|Yes| SoftDelete[Soft delete - mark inactive]
+    CheckInOrders -->|No| HardDelete[Hard delete from DB]
+    SoftDelete --> RefreshList
+    HardDelete --> RefreshList
+    
+    ListOrders --> FilterOrders{Filter options}
+    FilterOrders -->|By status| FilterStatus[Filter by pending/shipped/etc]
+    FilterOrders -->|By date| FilterDate[Filter by date range]
+    FilterOrders -->|By user| FilterUser[Filter by user]
+    FilterOrders -->|All| ShowAllOrders[Show all orders]
+    
+    FilterStatus --> DisplayOrders[Display filtered orders]
+    FilterDate --> DisplayOrders
+    FilterUser --> DisplayOrders
+    ShowAllOrders --> DisplayOrders
+    
+    UpdateStatus --> SelectStatus[Select new status]
+    SelectStatus --> ConfirmUpdate{Confirm?}
+    ConfirmUpdate -->|No| ShowDashboard
+    ConfirmUpdate -->|Yes| UpdateOrderStatus[Update order.status]
+    UpdateOrderStatus --> SendNotification[Send email to customer]
+    SendNotification --> RefreshOrders[Refresh orders list]
+    
+    GetStats --> FetchStatistics[Fetch statistics from DB]
+    FetchStatistics --> Calculate[Calculate metrics]
+    Calculate --> DisplayCharts[Display charts and graphs]
+    
+    DisplayCharts --> ShowDashboard
+    RefreshList --> ShowDashboard
+    RefreshOrders --> ShowDashboard
+    ShowError --> AdminAction
+    DenyAccess --> End([End])
+```
+
+---
+
+## 💳 Payment Flow (Future Integration)
+
+```mermaid
+flowchart TD
+    Checkout([User clicks checkout]) --> ValidateCart{Cart has items?}
+    ValidateCart -->|No| ShowEmptyCart[Show empty cart message]
+    ValidateCart -->|Yes| ShowCheckoutForm[Show checkout form]
+    
+    ShowCheckoutForm --> FillShipping[Fill shipping address]
+    FillShipping --> SelectPayment{Payment method}
+    
+    SelectPayment -->|Credit Card| CardForm[Enter card details]
+    SelectPayment -->|PayPal| PayPalRedirect[Redirect to PayPal]
+    SelectPayment -->|Other| OtherGateway[Other payment gateway]
+    
+    CardForm --> SubmitPayment[Submit payment]
+    PayPalRedirect --> PayPalAuth[Authorize on PayPal]
+    PayPalAuth --> PayPalReturn[Return to site]
+    
+    SubmitPayment --> CreateIntent[Create payment intent]
+    PayPalReturn --> CreateIntent
+    
+    CreateIntent --> SendToGateway[Send to payment gateway]
+    SendToGateway --> GatewayProcess[Gateway processes payment]
+    
+    GatewayProcess --> PaymentResult{Payment result}
+    
+    PaymentResult -->|Success| RecordPayment[Record payment in DB]
+    PaymentResult -->|Declined| ShowDeclined[Show declined message]
+    PaymentResult -->|Error| ShowPaymentError[Show error message]
+    
+    RecordPayment --> CreateOrder[Create order]
+    CreateOrder --> ClearCart[Clear user cart]
+    ClearCart --> SendConfirmation[Send confirmation email]
+    SendConfirmation --> ShowSuccess[Show success page with order ID]
+    
+    ShowDeclined --> RetryOption{Retry?}
+    RetryOption -->|Yes| ShowCheckoutForm
+    RetryOption -->|No| ReturnToCart[Return to cart]
+    
+    ShowPaymentError --> ContactSupport[Show support contact]
+    ContactSupport --> End([End])
+    
+    ShowSuccess --> End
+    ReturnToCart --> End
+    ShowEmptyCart --> End
+```
+
+---
+
+## 🔄 Token Refresh & Session Management
+
+```mermaid
+flowchart TD
+    ApiCall([User makes API call]) --> SendRequest[Send request with token]
+    SendRequest --> ServerCheck[Server checks token]
+    
+    ServerCheck --> TokenStatus{Token status}
+    
+    TokenStatus -->|Valid| ProcessRequest[Process request normally]
+    TokenStatus -->|Expired| CheckRefreshToken{Has refresh token?}
+    TokenStatus -->|Invalid| Return401[Return 401]
+    
+    CheckRefreshToken -->|No| Return401
+    CheckRefreshToken -->|Yes| ValidateRefreshToken[Validate refresh token]
+    
+    ValidateRefreshToken --> RefreshValid{Refresh token valid?}
+    RefreshValid -->|No| Return401
+    RefreshValid -->|Yes| GenerateNewTokens[Generate new access & refresh tokens]
+    
+    GenerateNewTokens --> SendNewTokens[Send new tokens in response]
+    SendNewTokens --> UpdateClient[Client updates stored tokens]
+    UpdateClient --> RetryOriginalRequest[Retry original API call]
+    RetryOriginalRequest --> ProcessRequest
+    
+    ProcessRequest --> SendResponse[Send successful response]
+    
+    Return401 --> ClientReceives401[Client receives 401]
+    ClientReceives401 --> ClearAuth[Clear authentication state]
+    ClearAuth --> RedirectLogin[Redirect to login page]
+    
+    SendResponse --> End([End])
+    RedirectLogin --> End
+```
+
+---
+
 ## 🎯 Summary
 
 This visual map provides:
@@ -723,17 +1128,24 @@ This visual map provides:
 ✅ **Error Handling** - Comprehensive error recovery flows  
 ✅ **State Management** - Redux state transitions  
 ✅ **Component Lifecycle** - Full initialization to runtime  
-✅ **User Journey** - Every possible user interaction  
+✅ **Database Relationships** - Complete ERD with all entities  
+✅ **Security & Middleware** - Request flow through all security layers  
+✅ **Search & Filter** - Product discovery and filtering logic  
+✅ **Notifications** - Email and notification system flows  
+✅ **Admin Dashboard** - Complete admin operations (future feature)  
+✅ **Payment Integration** - Payment gateway flow (future feature)  
+✅ **Token Refresh** - Session management and token renewal  
 
 **How to use:**
-1. Copy this content to `docs/SYSTEM_MAP.md`
-2. View in GitHub/VS Code with Mermaid preview
-3. Each diagram is interactive and shows the complete logic flow
-4. Update by editing the text - diagrams auto-generate
+1. View this file in GitHub or VS Code with Mermaid preview extension
+2. Each diagram is interactive and shows complete logic flow
+3. Use as reference for development, debugging, and onboarding
+4. Update diagrams as features are added or modified
 
 **Perfect for:**
-- 🎯 **Understanding** the complete system
-- 🔧 **Debugging** issues by following the flow
-- 📋 **Planning** new features
-- 👥 **Onboarding** new team members
-- 📚 **Documentation** and maintenance
+- 🎯 **Understanding** the complete system architecture
+- 🔧 **Debugging** issues by following the exact flow
+- 📋 **Planning** new features with full context
+- 👥 **Onboarding** new team members quickly
+- 📚 **Documentation** and long-term maintenance
+- 🔒 **Security audits** and compliance checks
