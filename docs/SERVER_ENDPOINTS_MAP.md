@@ -120,14 +120,14 @@ flowchart TD
     
     CallService --> FindUser[(Find user by email in MongoDB)]
     FindUser --> UserExists{User found?}
-    UserExists -->|No| Return401["❌ 401: Invalid credentials"]
+    UserExists -->|No| Return401User["❌ 401: Invalid credentials"]
     UserExists -->|Yes| CheckActive{User is active?}
     
     CheckActive -->|No| Return403["❌ 403: Account deactivated"]
     CheckActive -->|Yes| ComparePassword[Compare password with bcrypt]
     
     ComparePassword --> PasswordMatch{Password matches?}
-    PasswordMatch -->|No| Return401
+    PasswordMatch -->|No| Return401Pass["❌ 401: Invalid credentials"]
     PasswordMatch -->|Yes| GenerateJWT[Generate JWT token]
     
     GenerateJWT --> SetCookie[Set httpOnly cookie]
@@ -140,7 +140,8 @@ flowchart TD
     style Return429 fill:#ffcdd2
     style Return400 fill:#ffcdd2
     style Return400Email fill:#ffcdd2
-    style Return401 fill:#ffcdd2
+    style Return401User fill:#ffcdd2
+    style Return401Pass fill:#ffcdd2
     style Return403 fill:#ffcdd2
     style FindUser fill:#fff9c4
 ```
@@ -262,7 +263,6 @@ flowchart TD
     UserExists -->|Yes| PrepareResponse[Prepare user object - exclude password]
     PrepareResponse --> Return200["✅ 200: User profile data"]
     
-    
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
     style Return401 fill:#ffcdd2
@@ -305,21 +305,25 @@ flowchart TD
     CheckEmailExists -->|Yes| FindByEmail[(Check if email exists in MongoDB)]
     FindByEmail --> EmailTaken{Email taken?}
     EmailTaken -->|Yes| Return409["❌ 409: Email already in use"]
-    EmailTaken -->|No| UpdateUser
-    CheckEmailExists -->|No| UpdateUser[Update user document]
+    EmailTaken -->|No| UpdateUserNew[Update user document]
+    CheckEmailExists -->|No| UpdateUserSame[Update user document]
     
-    UpdateUser --> SaveChanges[(Save to MongoDB)]
-    SaveChanges --> Return200["✅ 200: Profile updated"]
+    UpdateUserNew --> SaveChangesNew[(Save to MongoDB)]
+    UpdateUserSame --> SaveChangesSame[(Save to MongoDB)]
     
+    SaveChangesNew --> Return200New["✅ 200: Profile updated"]
+    SaveChangesSame --> Return200Same["✅ 200: Profile updated"]
     
     style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
+    style Return200New fill:#c8e6c9
+    style Return200Same fill:#c8e6c9
     style Return401 fill:#ffcdd2
     style Return400 fill:#ffcdd2
     style Return400Email fill:#ffcdd2
     style Return409 fill:#ffcdd2
     style FindByEmail fill:#fff9c4
-    style SaveChanges fill:#fff9c4
+    style SaveChangesNew fill:#fff9c4
+    style SaveChangesSame fill:#fff9c4
 ```
 
 **Request:**
