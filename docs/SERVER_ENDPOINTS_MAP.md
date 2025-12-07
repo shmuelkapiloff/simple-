@@ -483,36 +483,28 @@ flowchart TD
     Request([GET /api/cart]) --> OptionalAuth[optionalAuth middleware]
     OptionalAuth --> CheckAuth{User authenticated?}
     
-    CheckAuth -->|Yes| GetUserId[Get userId from req.user]
-    CheckAuth -->|No| GetSessionId[Get/Create sessionId from cookies]
+    CheckAuth -->|Yes| UserPath[User path]
+    CheckAuth -->|No| GuestPath[Guest path]
     
-    GetUserId --> RouteHandler[cartRoutes.get /]
-    GetSessionId --> RouteHandler
-    
-    RouteHandler --> Controller[CartController.getCart]
-    Controller --> ServiceCall{User or Guest?}
-    
-    ServiceCall -->|User| FindUserCart[(Find cart by userId in MongoDB)]
-    ServiceCall -->|Guest| FindGuestCart[(Find cart by sessionId in Redis)]
-    
+    UserPath --> FindUserCart[(Find cart by userId in MongoDB)]
     FindUserCart --> UserCartExists{Cart exists?}
+    UserCartExists -->|No| ReturnEmptyUser["✅ 200: Empty cart"]
+    UserCartExists -->|Yes| PopulateProducts[(Populate product details)]
+    PopulateProducts --> CalculateTotalUser[Calculate totals]
+    CalculateTotalUser --> ReturnUserCart["✅ 200: Cart with items"]
+    
+    GuestPath --> FindGuestCart[(Find cart by sessionId in Redis)]
     FindGuestCart --> GuestCartExists{Cart exists?}
-    
-    UserCartExists -->|No| ReturnEmpty["✅ 200: Empty cart"]
-    UserCartExists -->|Yes| PopulateProducts[(Populate product details from MongoDB)]
-    
-    GuestCartExists -->|No| ReturnEmpty
-    GuestCartExists -->|Yes| PopulateProductsGuest[(Populate product details from MongoDB)]
-    
-    PopulateProducts --> CalculateTotal[Calculate cart totals]
-    PopulateProductsGuest --> CalculateTotal
-    
-    CalculateTotal --> Return200["✅ 200: Cart with items"]
-    
+    GuestCartExists -->|No| ReturnEmptyGuest["✅ 200: Empty cart"]
+    GuestCartExists -->|Yes| PopulateProductsGuest[(Populate product details)]
+    PopulateProductsGuest --> CalculateTotalGuest[Calculate totals]
+    CalculateTotalGuest --> ReturnGuestCart["✅ 200: Cart with items"]
     
     style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
-    style ReturnEmpty fill:#c8e6c9
+    style ReturnUserCart fill:#c8e6c9
+    style ReturnGuestCart fill:#c8e6c9
+    style ReturnEmptyUser fill:#c8e6c9
+    style ReturnEmptyGuest fill:#c8e6c9
     style FindUserCart fill:#fff9c4
     style FindGuestCart fill:#ffe0b2
     style PopulateProducts fill:#fff9c4
@@ -637,44 +629,31 @@ flowchart TD
     Request([PUT /api/cart/update]) --> OptionalAuth[optionalAuth middleware]
     OptionalAuth --> CheckAuth{User authenticated?}
     
-    CheckAuth -->|Yes| GetUserId[Get userId]
-    CheckAuth -->|No| GetSessionId[Get sessionId]
+    CheckAuth -->|Yes| UserPath[User path]
+    CheckAuth -->|No| GuestPath[Guest path]
     
-    GetUserId --> RouteHandler[cartRoutes.put /update]
-    GetSessionId --> RouteHandler
+    UserPath --> UserController[CartController.updateQuantity]
+    GuestPath --> GuestController[CartController.updateQuantity]
     
-    RouteHandler --> Controller[CartController.updateQuantity]
-    Controller --> ValidateInput{Validate input}
+    UserController --> ValidateInput{Validate input}
+    GuestController --> ValidateInput
     ValidateInput -->|Missing fields| Return400["❌ 400: Product ID and quantity required"]
     ValidateInput -->|Invalid quantity| Return400Qty["❌ 400: Quantity must be positive"]
-    ValidateInput -->|Valid| ServiceCall{User or Guest?}
+    ValidateInput -->|Valid| FindUserCart[(Find cart in MongoDB)]
     
-    ServiceCall -->|User| FindUserCart[(Find cart in MongoDB)]
-    ServiceCall -->|Guest| FindGuestCartRedis[(Find cart in Redis)]
-    
-    FindUserCart --> CartExists{Cart exists?}
-    FindGuestCartRedis --> CartExists
-    
-    CartExists -->|No| Return404["❌ 404: Cart not found"]
-    CartExists -->|Yes| FindItem{Item in cart?}
-    
+    FindUserCart --> UserCartExists{Cart exists?}
+    UserCartExists -->|No| Return404["❌ 404: Cart not found"]
+    UserCartExists -->|Yes| FindItem{Item in cart?}
     FindItem -->|No| Return404Item["❌ 404: Item not in cart"]
-    FindItem -->|Yes| CheckProduct[(Check product stock in MongoDB)]
-    
+    FindItem -->|Yes| CheckProduct[(Check product stock)]
     CheckProduct --> StockSufficient{Enough stock?}
     StockSufficient -->|No| Return409["❌ 409: Insufficient stock"]
     StockSufficient -->|Yes| UpdateQuantity[Update item quantity]
-    
-    UpdateQuantity --> SaveChanges{User or Guest?}
-    SaveChanges -->|User| SaveMongo[(Save to MongoDB)]
-    SaveChanges -->|Guest| SaveRedis[(Save to Redis)]
-    
-    SaveMongo --> Return200["✅ 200: Quantity updated"]
-    SaveRedis --> Return200
-    
+    UpdateQuantity --> SaveMongo[(Save to MongoDB)]
+    SaveMongo --> ReturnUser["✅ 200: Quantity updated"]
     
     style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
+    style ReturnUser fill:#c8e6c9
     style Return400 fill:#ffcdd2
     style Return400Qty fill:#ffcdd2
     style Return404 fill:#ffcdd2
@@ -682,8 +661,6 @@ flowchart TD
     style Return409 fill:#ffcdd2
     style FindUserCart fill:#fff9c4
     style SaveMongo fill:#fff9c4
-    style FindGuestCartRedis fill:#ffe0b2
-    style SaveRedis fill:#ffe0b2
 ```
 
 **Request:**
@@ -723,41 +700,30 @@ flowchart TD
     Request([DELETE /api/cart/remove]) --> OptionalAuth[optionalAuth middleware]
     OptionalAuth --> CheckAuth{User authenticated?}
     
-    CheckAuth -->|Yes| GetUserId[Get userId]
-    CheckAuth -->|No| GetSessionId[Get sessionId]
+    CheckAuth -->|Yes| UserPath[User path]
+    CheckAuth -->|No| GuestPath[Guest path]
     
-    GetUserId --> RouteHandler[cartRoutes.delete /remove]
-    GetSessionId --> RouteHandler
+    UserPath --> FindUserCart[(Find cart in MongoDB)]
+    FindUserCart --> UserCartExists{Cart exists?}
+    UserCartExists -->|No| Return404["❌ 404: Cart not found"]
+    UserCartExists -->|Yes| RemoveItem[Remove item]
+    RemoveItem --> SaveMongo[(Save to MongoDB)]
+    SaveMongo --> ReturnUser["✅ 200: Item removed"]
     
-    RouteHandler --> Controller[CartController.removeFromCart]
-    Controller --> ValidateInput{Validate input}
-    ValidateInput -->|Missing productId| Return400["❌ 400: Product ID required"]
-    ValidateInput -->|Valid| ServiceCall{User or Guest?}
-    
-    ServiceCall -->|User| FindUserCart[(Find cart in MongoDB)]
-    ServiceCall -->|Guest| FindGuestCartRedis[(Find cart in Redis)]
-    
-    FindUserCart --> CartExists{Cart exists?}
-    FindGuestCartRedis --> CartExists
-    
-    CartExists -->|No| Return404["❌ 404: Cart not found"]
-    CartExists -->|Yes| RemoveItem[Remove item from cart.items]
-    
-    RemoveItem --> SaveChanges{User or Guest?}
-    SaveChanges -->|User| SaveMongo[(Save to MongoDB)]
-    SaveChanges -->|Guest| SaveRedis[(Save to Redis)]
-    
-    SaveMongo --> Return200["✅ 200: Item removed"]
-    SaveRedis --> Return200
-    
+    GuestPath --> FindGuestCart[(Find cart in Redis)]
+    FindGuestCart --> GuestCartExists{Cart exists?}
+    GuestCartExists -->|No| Return404
+    GuestCartExists -->|Yes| RemoveItemGuest[Remove item]
+    RemoveItemGuest --> SaveRedis[(Save to Redis)]
+    SaveRedis --> ReturnGuest["✅ 200: Item removed"]
     
     style Request fill:#e3f2fd
-    style Return200 fill:#c8e6c9
-    style Return400 fill:#ffcdd2
+    style ReturnUser fill:#c8e6c9
+    style ReturnGuest fill:#c8e6c9
     style Return404 fill:#ffcdd2
     style FindUserCart fill:#fff9c4
     style SaveMongo fill:#fff9c4
-    style FindGuestCartRedis fill:#ffe0b2
+    style FindGuestCart fill:#ffe0b2
     style SaveRedis fill:#ffe0b2
 ```
 
@@ -1406,27 +1372,30 @@ flowchart TD
     MongoOK -->|Yes| MongoHealthy[mongo: healthy]
     MongoOK -->|No| MongoDown[mongo: down]
     
-    MongoHealthy --> CheckRedis
-    MongoDown --> CheckRedis
+    MongoHealthy --> CheckRedisYes[(Check Redis connection)]
+    MongoDown --> CheckRedisNo[(Check Redis connection)]
     
-    CheckRedis[(Check Redis connection)]
-    CheckRedis --> RedisOK{Redis connected?}
-    RedisOK -->|Yes| RedisHealthy[redis: healthy]
-    RedisOK -->|No| RedisDown[redis: down]
+    CheckRedisYes --> RedisOKYes{Redis connected?}
+    CheckRedisNo --> RedisOKNo{Redis connected?}
     
-    RedisHealthy --> DetermineStatus
-    RedisDown --> DetermineStatus
+    RedisOKYes -->|Yes| BothHealthy["✅ Both healthy"]
+    RedisOKYes -->|No| DegradedYes["⚠️ One down"]
     
-    DetermineStatus{Both healthy?}
-    DetermineStatus -->|Yes| Return200["✅ 200: All systems healthy"]
-    DetermineStatus -->|No| Return503["⚠️ 503: Degraded service"]
+    RedisOKNo -->|Yes| DegradedNo["⚠️ One down"]
+    RedisOKNo -->|No| AllDown["❌ Both down"]
+    
+    BothHealthy --> Return200["✅ 200: All systems healthy"]
+    DegradedYes --> Return503["⚠️ 503: Degraded service"]
+    DegradedNo --> Return503
+    AllDown --> Return503
     
     
     style Request fill:#e3f2fd
     style Return200 fill:#c8e6c9
     style Return503 fill:#fff3e0
     style CheckMongo fill:#fff9c4
-    style CheckRedis fill:#ffe0b2
+    style CheckRedisYes fill:#ffe0b2
+    style CheckRedisNo fill:#ffe0b2
 ```
 
 **Response (200):**
