@@ -1,0 +1,647 @@
+{
+  "info": {
+    "name": "Simple Shop - Complete API Collection",
+    "description": "Collection מלא לבדיקת כל endpoints של Simple Shop\n\n🔐 Authentication: JWT Token\n📦 Features: Products, Cart, Orders, Auth\n\n**How to use:**\n1. הרץ את השרת: `npm run dev`\n2. הרץ את Auth → Register או Login\n3. Token נשמר אוטומטית\n4. כל ה-requests משתמשים בטוקן\n\nCreated: December 2025",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🏥 Health Check",
+      "item": [
+        {
+          "name": "Health Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "בדיקת תקינות השרת - MongoDB, Redis, Uptime"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has health status', () => pm.expect(json.data).to.have.property('status'));",
+                  "pm.test('✅ MongoDB connected', () => pm.expect(json.data.mongodb).to.eql('connected'));",
+                  "console.log('🏥 Health Check:', json.data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health", "ping"]
+            },
+            "description": "בדיקה מהירה - pong"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Returns pong', () => pm.expect(pm.response.json().message).to.eql('pong'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "הרשמת משתמש חדש\n\n**Required:**\n- name (string)\n- email (string)\n- password (string, min 6 chars)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    pm.test('✅ User registered successfully', () => pm.response.to.have.status(201));",
+                  "    pm.test('✅ Has token', () => pm.expect(json.data).to.have.property('token'));",
+                  "    pm.test('✅ Has user data', () => pm.expect(json.data).to.have.property('user'));",
+                  "    ",
+                  "    // שמירת token למשתנה collection",
+                  "    pm.collectionVariables.set('authToken', json.data.token);",
+                  "    pm.collectionVariables.set('userId', json.data.user._id);",
+                  "    pm.collectionVariables.set('userEmail', json.data.user.email);",
+                  "    ",
+                  "    console.log('🎉 Registered & logged in!');",
+                  "    console.log('👤 User:', json.data.user.email);",
+                  "    console.log('🔑 Token saved to collection variables');",
+                  "} else {",
+                  "    pm.test('User already exists', () => pm.response.to.have.status(409));",
+                  "    console.log('⚠️ User already registered, use login instead');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "התחברות למערכת\n\n**Required:**\n- email\n- password"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Login successful', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has token', () => pm.expect(json.data).to.have.property('token'));",
+                  "pm.test('✅ Has user data', () => pm.expect(json.data).to.have.property('user'));",
+                  "",
+                  "// שמירת token למשתנה collection",
+                  "pm.collectionVariables.set('authToken', json.data.token);",
+                  "pm.collectionVariables.set('userId', json.data.user._id);",
+                  "pm.collectionVariables.set('userEmail', json.data.user.email);",
+                  "",
+                  "console.log('🎉 Logged in successfully!');",
+                  "console.log('👤 User:', json.data.user.email);",
+                  "console.log('🔑 Token:', json.data.token.substring(0, 20) + '...');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify"]
+            },
+            "description": "בדיקת תקינות Token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Token is valid', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has user data', () => pm.expect(json.data).to.have.property('user'));",
+                  "",
+                  "console.log('✅ Token valid for user:', json.data.user.email);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            },
+            "description": "קבלת פרטי המשתמש המחובר"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Profile retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has user data', () => pm.expect(json.data).to.have.property('user'));",
+                  "",
+                  "console.log('👤 Profile:', json.data.user);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "התנתקות מהמערכת"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Logged out', () => pm.response.to.have.status(200));",
+                  "",
+                  "// ניקוי token (אופציונלי)",
+                  "// pm.collectionVariables.unset('authToken');",
+                  "",
+                  "console.log('👋 Logged out successfully');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📦 Products",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "קבלת רשימת כל המוצרים"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Products retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Data is array', () => pm.expect(Array.isArray(json.data)).to.be.true);",
+                  "pm.test('✅ Has products', () => pm.expect(json.data.length).to.be.greaterThan(0));",
+                  "",
+                  "// שמירת ID של מוצר ראשון",
+                  "if (json.data.length > 0) {",
+                  "    pm.collectionVariables.set('productId', json.data[0]._id);",
+                  "    console.log('📦 Found', json.data.length, 'products');",
+                  "    console.log('🔖 Saved product ID:', json.data[0]._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "קבלת מוצר בודד לפי ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Product retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has product data', () => pm.expect(json.data).to.have.property('_id'));",
+                  "pm.test('✅ Has name', () => pm.expect(json.data).to.have.property('name'));",
+                  "pm.test('✅ Has price', () => pm.expect(json.data).to.have.property('price'));",
+                  "",
+                  "console.log('📦 Product:', json.data.name);",
+                  "console.log('💰 Price:', json.data.price);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?search=laptop&category=electronics&minPrice=500&maxPrice=2000&sort=price_asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "laptop",
+                  "description": "Search term"
+                },
+                {
+                  "key": "category",
+                  "value": "electronics",
+                  "description": "Filter by category"
+                },
+                {
+                  "key": "minPrice",
+                  "value": "500",
+                  "description": "Minimum price"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "2000",
+                  "description": "Maximum price"
+                },
+                {
+                  "key": "sort",
+                  "value": "price_asc",
+                  "description": "Sort: price_asc, price_desc, name, newest"
+                }
+              ]
+            },
+            "description": "חיפוש וסינון מוצרים\n\n**Query params:**\n- search: text search\n- category: filter by category\n- minPrice, maxPrice: price range\n- sort: price_asc, price_desc, name, newest"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Search successful', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Data is array', () => pm.expect(Array.isArray(json.data)).to.be.true);",
+                  "",
+                  "console.log('🔍 Found', json.data.length, 'products');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🛒 Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart"]
+            },
+            "description": "קבלת עגלת הקניות (User או Guest)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Cart retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has cart data', () => pm.expect(json.data).to.have.property('cart'));",
+                  "",
+                  "console.log('🛒 Cart items:', json.data.cart.items?.length || 0);",
+                  "console.log('💰 Total:', json.data.cart.totalPrice || 0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "add"]
+            },
+            "description": "הוספת מוצר לעגלה\n\n**Required:**\n- productId\n- quantity"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Added to cart', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has updated cart', () => pm.expect(json.data).to.have.property('cart'));",
+                  "",
+                  "console.log('✅ Item added to cart');",
+                  "console.log('🛒 Total items:', json.data.cart.items?.length || 0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "update"]
+            },
+            "description": "עדכון כמות מוצר בעגלה"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Cart updated', () => pm.response.to.have.status(200));",
+                  "",
+                  "console.log('✅ Cart item updated');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove from Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/remove",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "remove"]
+            },
+            "description": "הסרת מוצר מהעגלה"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Item removed', () => pm.response.to.have.status(200));",
+                  "",
+                  "console.log('✅ Item removed from cart');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/clear",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "clear"]
+            },
+            "description": "ריקון העגלה לגמרי"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Cart cleared', () => pm.response.to.have.status(200));",
+                  "",
+                  "console.log('🗑️ Cart cleared');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Cart Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cart/count",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cart", "count"]
+            },
+            "description": "קבלת מספר הפריטים בעגלה"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Count retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has count', () => pm.expect(json.data).to.have.property('count'));",
+                  "",
+                  "console.log('🛒 Cart count:', json.data.count);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set default baseUrl if not set",
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "    pm.collectionVariables.set('baseUrl', 'http://localhost:5000');",
+          "    console.log('🔧 Set default baseUrl: http://localhost:5000');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test - log response time",
+          "console.log('⏱️ Response time:', pm.response.responseTime + 'ms');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
