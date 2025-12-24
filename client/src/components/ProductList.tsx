@@ -4,8 +4,6 @@ import {
   selectSessionId,
   selectCartItems,
   initializeCart,
-  addItemOptimistic,
-  removeItemOptimistic,
   setError,
 } from "../app/cartSlice";
 import { useEffect, useMemo } from "react";
@@ -52,32 +50,16 @@ export default function ProductList() {
       };
       console.log("📤 Sending to server:", requestData);
 
-      // 🎯 Optimistic Update - עדכן מסך מיד
-      dispatch(
-        addItemOptimistic({
-          productId: product._id,
-          quantity: 1,
-          product: {
-            _id: product._id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            sku: product.sku,
-          },
-        })
-      );
-
-      // 📡 שלח לשרת
+      // 📡 שלח לשרת - חכה לתשובה לפני עדכון UI
       const response = await addToCartMutation(requestData).unwrap();
 
       // 📥 לוג מה קיבלנו בחזרה
       console.log("📥 Server response:", response);
       console.log(`✅ Added ${product.name} to cart`);
+
+      // ✅ UI יתעדכן אוטומטית דרך RTK Query cache invalidation
     } catch (error: any) {
       console.error("Add to cart failed:", error);
-
-      // 🔄 החזר את השינוי האופטימי אם נכשל
-      dispatch(removeItemOptimistic({ productId: product._id }));
 
       // ⚠️ הצג הודעת שגיאה
       dispatch(setError("Failed to add item to cart"));
@@ -174,10 +156,10 @@ export default function ProductList() {
                   >
                     {product.stock <= 0
                       ? "Out of Stock"
+                      : isAddingToCart
+                      ? "Adding..."
                       : isInCart
                       ? `In Cart (${cartQuantity})`
-                      : isAddingToCart
-                      ? "..."
                       : "🛒 Add to Cart"}
                   </button>
                 </div>

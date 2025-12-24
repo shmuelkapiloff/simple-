@@ -13,11 +13,11 @@ const router = Router();
  * Base path: /api/auth
  */
 
-// Public routes (no authentication required)
+// Public routes (no authentication requ;ired)
 router.post("/register", authRateLimit, AuthController.register);
 router.post("/login", authRateLimit, AuthController.login);
 router.post("/logout", AuthController.logout);
-router.get("/verify", AuthController.verifyToken);
+router.get("/verify", AuthController.verifyToken)
 
 // Protected routes (require authentication)
 router.get("/profile", requireAuth, AuthController.getProfile);

@@ -8,8 +8,6 @@ import {
   selectCartItemCount,
   selectSessionId,
   initializeCart,
-  updateQuantityOptimistic,
-  removeItemOptimistic,
   clearCart as clearCartAction,
   setCart,
   setError,
@@ -82,24 +80,17 @@ const Cart: React.FC = () => {
   ) => {
     if (!sessionId) return;
 
-    // Store current state for potential revert
-    const currentItems = [...items];
-    const currentTotal = total;
-
     try {
-      // Optimistic update
-      dispatch(updateQuantityOptimistic({ productId, quantity: newQuantity }));
-
-      // API call
+      // API call - wait for server response
       await updateQuantityMutation({
         sessionId,
         productId,
         quantity: newQuantity,
       }).unwrap();
+
+      // UI will update automatically via RTK Query cache invalidation
     } catch (error) {
       console.error("Update quantity failed:", error);
-      // Revert optimistic update
-      dispatch(setCart({ items: currentItems, total: currentTotal }));
       dispatch(setError("Failed to update quantity"));
     }
   };
@@ -108,23 +99,16 @@ const Cart: React.FC = () => {
   const handleRemoveItem = async (productId: string) => {
     if (!sessionId) return;
 
-    // Store current state for potential revert
-    const currentItems = [...items];
-    const currentTotal = total;
-
     try {
-      // Optimistic update
-      dispatch(removeItemOptimistic({ productId }));
-
-      // API call
+      // API call - wait for server response
       await removeFromCartMutation({
         sessionId,
         productId,
       }).unwrap();
+
+      // UI will update automatically via RTK Query cache invalidation
     } catch (error) {
       console.error("Remove item failed:", error);
-      // Revert optimistic update
-      dispatch(setCart({ items: currentItems, total: currentTotal }));
       dispatch(setError("Failed to remove item"));
     }
   };
@@ -133,16 +117,12 @@ const Cart: React.FC = () => {
   const handleClearCart = async () => {
     if (!sessionId) return;
 
-    // Store current state for potential revert
-    const currentItems = [...items];
-    const currentTotal = total;
-
     try {
-      // Optimistic update
-      dispatch(clearCartAction());
-
-      // API call
+      // API call - wait for server response
       await clearCartMutation({ sessionId }).unwrap();
+
+      // Clear local state after server confirms
+      dispatch(clearCartAction());
     } catch (error) {
       console.error("Clear cart failed:", error);
       // Revert optimistic update
@@ -197,7 +177,7 @@ const Cart: React.FC = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
       {/* Cart Header */}

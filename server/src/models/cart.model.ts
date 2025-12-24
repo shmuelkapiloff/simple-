@@ -13,9 +13,10 @@ const cartItemSchema = new Schema(
       required: true,
       min: 1,
     },
-    price: {
+    // מחיר מנעול רק בזמן תשלום
+    lockedPrice: {
       type: Number,
-      required: true,
+      default: null, // null = משתמש בחנות, value = נעול בתשלום
     },
   },
   { _id: false }
@@ -40,6 +41,7 @@ const cartSchema = new Schema(
       default: 0,
     },
   },
+
   {
     timestamps: true,
     // Index compound לחיפוש מהיר
@@ -48,7 +50,12 @@ const cartSchema = new Schema(
 );
 
 // Types
-export type ICartItem = InferSchemaType<typeof cartItemSchema>;
+export interface ICartItem {
+  product: Types.ObjectId | any;
+  quantity: number;
+  lockedPrice: number | null; // null = משתמש בחנות, value = נעול בתשלום
+}
+
 export type ICart = InferSchemaType<typeof cartSchema>;
 export const CartModel = model("Cart", cartSchema);
 

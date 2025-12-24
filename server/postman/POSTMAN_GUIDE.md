@@ -21,7 +21,7 @@
    - לחץ "Folder"
    - בחר את התיקייה: `server/postman`
 
-4. **Import את ה-Environment (אופציונלי):**
+4. גקר**Import את ה-Environment (אופציונלי):**
    - Import גם את `Development.postman_environment.json`
    - בחר אותו מה-dropdown בצד ימין עליון
 
@@ -41,7 +41,7 @@ npm run dev
 ```
 ✅ MongoDB connected
 ✅ Redis connected  
-🚀 Server running on http://localhost:5000
+🚀 Server running on http://localhost:4001
 ```
 
 #### 2. בדוק שהשרת עובד

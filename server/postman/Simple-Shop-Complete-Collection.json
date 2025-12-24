@@ -414,10 +414,10 @@
                   "const json = pm.response.json();",
                   "",
                   "pm.test('✅ Cart retrieved', () => pm.response.to.have.status(200));",
-                  "pm.test('✅ Has cart data', () => pm.expect(json.data).to.have.property('cart'));",
+                  "pm.test('✅ Has cart data', () => pm.expect(json.data).to.be.an('object'));",
                   "",
-                  "console.log('🛒 Cart items:', json.data.cart.items?.length || 0);",
-                  "console.log('💰 Total:', json.data.cart.totalPrice || 0);"
+                  "console.log('🛒 Cart items:', (json.data.items && json.data.items.length) || 0);",
+                  "console.log('💰 Total:', json.data.total || 0);"
                 ]
               }
             }
@@ -453,10 +453,10 @@
                   "const json = pm.response.json();",
                   "",
                   "pm.test('✅ Added to cart', () => pm.response.to.have.status(200));",
-                  "pm.test('✅ Has updated cart', () => pm.expect(json.data).to.have.property('cart'));",
+                  "pm.test('✅ Has updated cart', () => pm.expect(json.data).to.be.an('object'));",
                   "",
                   "console.log('✅ Item added to cart');",
-                  "console.log('🛒 Total items:', json.data.cart.items?.length || 0);"
+                  "console.log('🛒 Total items:', (json.data.items && json.data.items.length) || 0);"
                 ]
               }
             }
@@ -590,6 +590,106 @@
           ]
         }
       ]
+    },
+    {
+      "name": "🧾 Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\"street\": \"הרצל 10\", \"city\": \"תל אביב\", \"postalCode\": \"67890\", \"country\": \"Israel\"},\n  \"paymentMethod\": \"credit_card\",\n  \"notes\": \"נא לארוז מתנה\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] },
+            "description": "יצירת הזמנה מהעגלה"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Created', () => pm.response.to.have.status(201));",
+                  "pm.test('✅ Has order', () => pm.expect(json.data).to.have.property('order'));",
+                  "if (json.data && json.data.order && json.data.order._id) { pm.collectionVariables.set('orderId', json.data.order._id); }",
+                  "console.log('🧾 Order:', json.data.order?.orderNumber);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] },
+            "description": "רשימת ההזמנות של המשתמש"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Orders fetched', () => pm.response.to.have.status(200));",
+                  "console.log('📦 Orders count:', (json.data && (json.data.orders ? json.data.orders.length : (json.data.length || 'n/a'))) );"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Order By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}"] },
+            "description": "פרטי הזמנה"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Order fetched', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has order', () => pm.expect(json.data).to.have.property('order'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "cancel"] },
+            "description": "ביטול הזמנה"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Cancelled', () => pm.response.to.have.status(200));",
+                  "console.log('🛑 Order cancelled');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [
@@ -600,8 +700,8 @@
         "exec": [
           "// Set default baseUrl if not set",
           "if (!pm.collectionVariables.get('baseUrl')) {",
-          "    pm.collectionVariables.set('baseUrl', 'http://localhost:5000');",
-          "    console.log('🔧 Set default baseUrl: http://localhost:5000');",
+          "    pm.collectionVariables.set('baseUrl', 'http://localhost:4001');",
+          "    console.log('🔧 Set default baseUrl: http://localhost:4001');",
           "}"
         ]
       }
@@ -620,7 +720,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:5000",
+      "value": "http://localhost:4001",
       "type": "string"
     },
     {
@@ -640,6 +740,11 @@
     },
     {
       "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
       "value": "",
       "type": "string"
     }

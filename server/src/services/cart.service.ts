@@ -9,6 +9,16 @@ export class CartService {
   private static pendingSaves = new Map<string, NodeJS.Timeout>();
   private static readonly CACHE_TTL = 3600; // 1 hour
   private static readonly SAVE_DELAY = 5000; // 5 seconds debounce
+
+  // Helper: חשב סכום כולל של עגלה עם מחירים עדכניים
+  private static calculateCartTotal(items: ICartItem[]): number {
+    return items.reduce((sum: number, item: ICartItem) => {
+      // משתמש ב-lockedPrice אם קיים, אחרת לא מחשבים (יחושב עם product.price)
+      const price = item.lockedPrice || 0;
+      return sum + price * item.quantity;
+    }, 0);
+  }
+
   // Get cart for guest or user
   static async getCart(
     sessionId: string,
@@ -254,20 +264,26 @@ export class CartService {
         cart.items[existingItemIndex].quantity = newQuantity;
         console.log(`📈 Updated quantity for ${product.name}: ${newQuantity}`);
       } else {
-        // הוסף פריט חדש
+        // הוסף פריט חדש (ללא price - משתמש בחנות)
         cart.items.push({
           product: productId as any,
           quantity,
-          price: product.price,
+          lockedPrice: null, // null = משתמש בחנות
         });
         console.log(`➕ Added new item: ${product.name} x${quantity}`);
       }
 
-      // חשב מחדש סכום כולל
-      cart.total = cart.items.reduce(
-        (sum: number, item: ICartItem) => sum + item.price * item.quantity,
-        0
-      );
+      // חשב מחדש סכום כולל - משתמש במחיר הנוכחי של המוצר או ב-lockedPrice אם נעול
+      cart.total = cart.items.reduce((sum: number, item: ICartItem) => {
+        // הביאו את המוצר עם populate כדי לקבל את הפרטים
+        const itemProduct =
+          typeof item.product === "string"
+            ? product // אם זה אותו מוצר שזה עתה בדקנו
+            : (item.product as any); // אם זה object מלא
+
+        const price = item.lockedPrice ?? (itemProduct?.price || product.price);
+        return sum + price * item.quantity;
+      }, 0);
       cart.updatedAt = new Date();
 
       // ⚡ עדכן בcache מיידי + תזמן למונגו
@@ -315,20 +331,28 @@ export class CartService {
         (item: ICartItem) => item.product.toString() !== productId
       );
 
-      // חשב מחדש סכום
-      cart.total = cart.items.reduce(
-        (sum: number, item: ICartItem) => sum + item.price * item.quantity,
-        0
-      );
-      cart.updatedAt = new Date();
-
-      // ⚡ עדכן בcache מיידי + תזמן למונגו
-      await this.updateCartInCache(cartId, cart);
-
-      t.success(cart); // 🎯 לוג הצלחה
+      // חשב מחדש סכום עם מחירים עדכניים
+      const updatedCart = await this.getCart(sessionId, userId);
+      if (updatedCart) {
+        updatedCart.total = updatedCart.items.reduce(
+          (sum: number, item: ICartItem) => {
+            const itemProduct =
+              typeof item.product === "string"
+                ? undefined
+                : (item.product as any);
+            const price = item.lockedPrice ?? (itemProduct?.price || 0);
+            return sum + price * item.quantity;
+          },
+          0
+        );
+        await this.updateCartInCache(cartId, updatedCart);
+        t.success(updatedCart);
+        return updatedCart;
+      }
+      t.success(cart);
       return cart;
     } catch (error) {
-      t.error(error); // 🎯 לוג שגיאה
+      t.error(error);
       throw error;
     }
   }
@@ -340,6 +364,7 @@ export class CartService {
     quantity: number,
     userId?: string
   ): Promise<ICart | null> {
+    const t = track("CartService", "updateQuantity");
     console.log(`6📝 Updating quantity: ${productId} to ${quantity} for `);
     // אם כמות 0 או פחות - מחק פריט
     if (quantity <= 0) {
@@ -386,19 +411,31 @@ export class CartService {
       // עדכן כמות
       cart.items[itemIndex].quantity = quantity;
 
-      // חשב מחדש סכום כולל
-      cart.total = cart.items.reduce(
-        (sum: number, item: ICartItem) => sum + item.price * item.quantity,
-        0
-      );
-      cart.updatedAt = new Date();
+      // חשב מחדש סכום כולל עם מחירים עדכניים
+      const updatedCart = await this.getCart(sessionId, userId);
+      if (updatedCart) {
+        updatedCart.total = updatedCart.items.reduce(
+          (sum: number, item: ICartItem) => {
+            const itemProduct =
+              typeof item.product === "string"
+                ? undefined
+                : (item.product as any);
+            const price = item.lockedPrice ?? (itemProduct?.price || 0);
+            return sum + price * item.quantity;
+          },
+          0
+        );
+        updatedCart.updatedAt = new Date();
+        await this.updateCartInCache(cartId, updatedCart);
+        console.log(`✅ Quantity updated: ${product?.name} x${quantity}`);
+        t.success(updatedCart);
+        return updatedCart;
+      }
 
-      // ⚡ עדכן בcache מיידי + תזמן למונגו
-      await this.updateCartInCache(cartId, cart);
-
-      console.log(`✅ Quantity updated: ${product.name} x${quantity}`);
+      t.success(cart);
       return cart;
     } catch (error) {
+      t.error(error);
       console.error(`❌ Error updating quantity for ${cartId}:`, error);
       throw error;
     }
@@ -532,9 +569,16 @@ export class CartService {
         }
 
         if (hasChanges) {
-          // חשב מחדש סכום כולל
+          // חשב מחדש סכום כולל עם מחירים עדכניים
           userCart.total = userCart.items.reduce(
-            (sum: number, item: ICartItem) => sum + item.price * item.quantity,
+            (sum: number, item: ICartItem) => {
+              const itemProduct =
+                typeof item.product === "string"
+                  ? undefined
+                  : (item.product as any);
+              const price = item.lockedPrice ?? (itemProduct?.price || 0);
+              return sum + price * item.quantity;
+            },
             0
           );
           userCart.updatedAt = new Date();

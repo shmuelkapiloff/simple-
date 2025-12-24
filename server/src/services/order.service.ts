@@ -68,17 +68,21 @@ export class OrderService {
           );
         }
 
-        // Create order item
+        // השתמש במחיר הנוכחי של המוצר בעגלה (תמיד עדכני)
+        // אם המחיר השתנה - נשתמש בחדש (זה מה שהלקוח רוצה)
+        const priceForOrder = product.price;
+
+        // Create order item with current price
         const orderItem: IOrderItem = {
           product: product._id,
           name: product.name,
-          price: product.price,
+          price: priceForOrder, // מחיר עדכני
           quantity: cartItem.quantity,
           image: product.image || "📦",
         };
 
         orderItems.push(orderItem);
-        totalAmount += product.price * cartItem.quantity;
+        totalAmount += priceForOrder * cartItem.quantity;
 
         // Update product stock
         await ProductModel.findByIdAndUpdate(

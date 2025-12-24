@@ -25,8 +25,15 @@
 ---
 
 ## 📋 Table of Contents
-- [🗺️ Simple Shop - Complete Visual System Map](#️-simple-shop---complete-visual-system-map)
-  - [📋 Quick Navigation](#-quick-navigation)
+- [🗺️ Simple Shop - מפת המערכת החזותית המלאה](#️-simple-shop---מפת-המערכת-החזותית-המלאה)
+  - [🚀 התחל כאן - Quick Start Guide](#-התחל-כאן---quick-start-guide)
+    - [👨‍💻 למתכנתים:](#-למתכנתים)
+    - [🎨 לעצמאים UI/UX:](#-לעצמאים-uiux)
+    - [🧪 ל-QA/Testers:](#-ל-qatesters)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [🎨 מקרא צבעים וסימנים](#-מקרא-צבעים-וסימנים)
+    - [תרשים Architecture:](#תרשים-architecture)
+    - [תרשימי Flow:](#תרשימי-flow)
   - [🏗️ System Architecture](#️-system-architecture)
   - [🔐 Authentication Flow with Conditions](#-authentication-flow-with-conditions)
   - [🛒 Cart Flow with Multiple Conditions](#-cart-flow-with-multiple-conditions)
@@ -37,13 +44,17 @@
   - [🔄 Complete Component Lifecycle with Conditions](#-complete-component-lifecycle-with-conditions)
   - [❌ Error Handling Flow Map](#-error-handling-flow-map)
   - [🗄️ Database Relationships (ERD)](#️-database-relationships-erd)
-  - [🔒 Security & Middleware Flow](#-security--middleware-flow)
-  - [🔍 Search & Filter Flow](#-search--filter-flow)
-  - [📧 Notification & Email Flow](#-notification--email-flow)
+  - [🔒 Security \& Middleware Flow](#-security--middleware-flow)
+  - [🔍 Search \& Filter Flow](#-search--filter-flow)
+  - [📧 Notification \& Email Flow](#-notification--email-flow)
   - [👨‍💼 Admin Dashboard Flow (Future)](#-admin-dashboard-flow-future)
   - [💳 Payment Flow (Future Integration)](#-payment-flow-future-integration)
-  - [🔄 Token Refresh & Session Management](#-token-refresh--session-management)
-  - [🎯 Summary](#-summary)
+  - [🔄 Token Refresh \& Session Management](#-token-refresh--session-management)
+  - [🎯 Summary \& How to Use This Document](#-summary--how-to-use-this-document)
+    - [📚 למה קובץ זה שימושי:](#-למה-קובץ-זה-שימושי)
+    - [🎯 איך להשתמש:](#-איך-להשתמש)
+    - [🔧 איך עוديים אלו:](#-איך-עוديים-אלו)
+  - [💡 Best Practices לקריאת Diagrams](#-best-practices-לקריאת-diagrams)
 
 ---
 
@@ -276,6 +287,7 @@ flowchart TD
 **🔑 Key Points:**
 - Guest carts stored in Redis (מהיר, זמני 24h)
 - User carts stored in MongoDB (קבוע, זוכר תמיד)
+- Guest dedup - אם פריט כבר בעגלת אורח, רק מעדכנים כמות (לא מוסיפים כפול)
 - Stock validation - אם אין מספיק, מראים שגיאה
 - Quantity limits - לא יכול לקנות יותר מ-X
 
@@ -306,9 +318,12 @@ flowchart TD
     GuestFlow --> CheckGuestSession{🔄 Has guest session?}
     CheckGuestSession -->|❌ No| CreateGuestSession[🆕 Create guest session]
     CheckGuestSession -->|✅ Yes| UseExistingSession[📋 Use existing session]
-    
-    CreateGuestSession --> AddToGuestCart[🛒 Add to guest cart]
-    UseExistingSession --> AddToGuestCart
+
+    CreateGuestSession --> CheckGuestExistingItem{🔍 Item already in guest cart?}
+    UseExistingSession --> CheckGuestExistingItem
+
+    CheckGuestExistingItem -->|✅ Yes| UpdateGuestQuantity[🔄 Update guest quantity]
+    CheckGuestExistingItem -->|❌ No| AddToGuestCart[🛒 Add to guest cart]
     
     %% Logged-in Flow
     LoggedInFlow --> CheckUserCart{🛒 Has existing cart?}
@@ -322,6 +337,7 @@ flowchart TD
     
     %% Cart Operations
     AddToGuestCart --> SaveToRedis[(⚡ Save to Redis)]
+    UpdateGuestQuantity --> SaveToRedis
     AddNewItem --> SaveToMongoDB[(💾 Save to MongoDB)]
     UpdateQuantity --> SaveToMongoDB
     
@@ -355,10 +371,10 @@ flowchart TD
     classDef start fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
 
     class UserAction start
-    class CheckProduct,CheckStock,CheckQuantity,CheckUser,CheckGuestSession,CheckUserCart,CheckExistingItem,CheckCartCount decision
+    class CheckProduct,CheckStock,CheckQuantity,CheckUser,CheckGuestSession,CheckGuestExistingItem,CheckUserCart,CheckExistingItem,CheckCartCount decision
     class ProductError,StockError,QuantityError,ErrorEnd error
     class LowStockWarning warning
-    class LoggedInFlow,GuestFlow,CreateGuestSession,UseExistingSession,CreateUserCart,AddNewItem,UpdateQuantity,AddToGuestCart,UpdateUI,HideCartBadge,ShowSimpleBadge,ShowPlusBadge process
+    class LoggedInFlow,GuestFlow,CreateGuestSession,UseExistingSession,UpdateGuestQuantity,CreateUserCart,AddNewItem,UpdateQuantity,AddToGuestCart,UpdateUI,HideCartBadge,ShowSimpleBadge,ShowPlusBadge process
     class SaveToRedis,SaveToMongoDB,UpdateRedisCache database
     class Success success
 ```
