@@ -25,15 +25,12 @@ const cartItemSchema = new Schema(
 // Cart Schema - עגלת קניות
 const cartSchema = new Schema(
   {
-    sessionId: {
-      type: String,
-      required: true,
-      index: true,
-    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: false,
+      required: true,
+      unique: true,
+      index: true,
     },
     items: [cartItemSchema],
     total: {
@@ -44,8 +41,6 @@ const cartSchema = new Schema(
 
   {
     timestamps: true,
-    // Index compound לחיפוש מהיר
-    index: [{ sessionId: 1 }, { userId: 1 }, { sessionId: 1, userId: 1 }],
   }
 );
 

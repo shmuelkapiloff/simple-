@@ -24,7 +24,9 @@ async function main() {
   }
 
   if (!email) {
-    console.error("Usage: ts-node scripts/make-admin.ts --email=user@example.com [--name=Name] [--password=Secret]");
+    console.error(
+      "Usage: ts-node scripts/make-admin.ts --email=user@example.com [--name=Name] [--password=Secret]"
+    );
     process.exit(1);
   }
 

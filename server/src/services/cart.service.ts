@@ -19,15 +19,12 @@ export class CartService {
     }, 0);
   }
 
-  // Get cart for guest or user
-  static async getCart(
-    sessionId: string,
-    userId?: string
-  ): Promise<ICart | null> {
-    const t = track("CartService", "getCart"); // 🎯 שורה אחת!
+  // Get cart for authenticated user only
+  static async getCart(userId: string): Promise<ICart | null> {
+    const t = track("CartService", "getCart");
 
     try {
-      const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
+      const cartId = `user:${userId}`;
 
       // ⚡ תמיד נסה Redis קודם (מהיר!)
       const redisCart = await redisClient.get(`cart:${cartId}`);
@@ -45,21 +42,12 @@ export class CartService {
           ) {
             console.log(`⚠️ Redis cart needs re-population: ${cartId}`);
 
-            // טען מהמונגו עם populate
-            let query;
-            if (userId) {
-              query = { userId: userId };
-            } else {
-              query = { sessionId: sessionId };
-            }
-
-            const dbCart = await CartModel.findOne(query).populate(
+            const dbCart = await CartModel.findOne({ userId }).populate(
               "items.product"
             );
 
             if (dbCart) {
               const cartObj = dbCart.toObject();
-              // עדכן את Redis עם הנתונים המלאים
               await redisClient.setex(
                 `cart:${cartId}`,
                 this.CACHE_TTL,
@@ -81,46 +69,32 @@ export class CartService {
       console.log(`🔍 Cart not in Redis, checking MongoDB: ${cartId}`);
 
       // 💾 Fallback למונגו (אם Redis ריק)
-      let query;
-      if (userId) {
-        query = { userId: userId };
-      } else {
-        query = { sessionId: sessionId };
-      }
-
-      const dbCart = await CartModel.findOne(query).populate("items.product");
+      const dbCart = await CartModel.findOne({ userId }).populate(
+        "items.product"
+      );
 
       if (dbCart) {
-        // 📥 שמור בRedis לפעמים הבאות
         const cartObj = dbCart.toObject();
         await redisClient.setex(
           `cart:${cartId}`,
           this.CACHE_TTL,
           JSON.stringify(cartObj)
         );
-        t.success(); // 🎯 לוג הצלחה
+        t.success();
         return cartObj;
       }
 
-      t.success(); // 🎯 לוג הצלחה גם אם לא נמצא
+      t.success();
       return null;
     } catch (error) {
-      t.error(error); // 🎯 לוג שגיאה
+      t.error(error);
 
       // 🔄 אם Redis נפל, נסה רק מונגו
       if ((error as Error).message?.includes("Redis")) {
         try {
-          let query;
-          if (userId) {
-            query = { userId: userId };
-          } else {
-            query = { sessionId: sessionId };
-          }
-
-          const dbCart = await CartModel.findOne(query).populate(
+          const dbCart = await CartModel.findOne({ userId }).populate(
             "items.product"
           );
-
           console.log("🚨 Redis failed, served from MongoDB only");
           return dbCart;
         } catch (mongoError) {
@@ -133,7 +107,6 @@ export class CartService {
   }
 
   // 🧠 פונקציה חכמה לשמירה מתוזמנת במונגו
-
   private static async scheduleMongoSave(
     cartId: string,
     cart: ICart
@@ -149,32 +122,20 @@ export class CartService {
       try {
         console.log(`💾 Saving to MongoDB: ${cartId}`);
 
-        // שמור במונגו - using save() to trigger pre-save middleware
-        let query;
-        if (cart.userId) {
-          query = { userId: cart.userId };
-        } else {
-          query = { sessionId: cart.sessionId };
-        }
-
-        const existingCart = await CartModel.findOne(query);
+        const existingCart = await CartModel.findOne({ userId: cart.userId });
 
         if (existingCart) {
-          // Update existing cart
           existingCart.items = cart.items;
           existingCart.updatedAt = new Date();
-          await existingCart.save(); // This triggers pre-save hook
+          await existingCart.save();
         } else {
-          // Create new cart
           const newCart = new CartModel({
-            sessionId: cart.sessionId,
             userId: cart.userId,
             items: cart.items,
           });
-          await newCart.save(); // This triggers pre-save hook
+          await newCart.save();
         }
 
-        // נקה מהרשימה
         this.pendingSaves.delete(cartId);
         console.log(`✅ MongoDB save completed: ${cartId}`);
       } catch (error) {
@@ -183,7 +144,6 @@ export class CartService {
       }
     }, this.SAVE_DELAY);
 
-    // שמור את הtimer
     this.pendingSaves.set(cartId, timer);
     console.log(`⏰ MongoDB save scheduled in ${this.SAVE_DELAY}ms: ${cartId}`);
   }
@@ -194,16 +154,14 @@ export class CartService {
     cart: ICart
   ): Promise<void> {
     try {
-      // Ensure cart is fully populated before caching
-      const sessionId = cart.sessionId;
       const userId = cart.userId;
 
       // Re-fetch with populate to ensure product details are complete
       let populatedCart = cart;
       if (cart.items.length > 0 && typeof cart.items[0].product === "string") {
-        const freshCart = await CartModel.findOne(
-          userId ? { userId } : { sessionId }
-        ).populate("items.product");
+        const freshCart = await CartModel.findOne({ userId }).populate(
+          "items.product"
+        );
 
         if (freshCart) {
           populatedCart = freshCart;
@@ -231,15 +189,14 @@ export class CartService {
 
   // Add item to cart - ⚡ גרסה מהירה וחכמה
   static async addToCart(
-    sessionId: string,
     productId: string,
     quantity: number,
-    userId?: string
+    userId: string
   ): Promise<ICart> {
-    const t = track("CartService", "addToCart"); // 🎯 שורה אחת!
+    const t = track("CartService", "addToCart");
 
     try {
-      const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
+      const cartId = `user:${userId}`;
 
       // ✅ בדוק מוצר ומלאי (חייב להיות מדויק)
       const product = await ProductModel.findById(productId);
@@ -252,15 +209,12 @@ export class CartService {
       }
 
       // ⚡ קבל עגלה נוכחית (מהיר מRedis)
-      let cart = await this.getCart(sessionId, userId);
+      let cart = await this.getCart(userId);
 
       // צור עגלה חדשה אם לא קיימת
       if (!cart) {
-        const userObjectId = userId
-          ? new mongoose.Types.ObjectId(userId)
-          : undefined;
+        const userObjectId = new mongoose.Types.ObjectId(userId);
         cart = new CartModel({
-          sessionId,
           userId: userObjectId,
           items: [],
           total: 0,
@@ -296,13 +250,10 @@ export class CartService {
         console.log(`➕ Added new item: ${product.name} x${quantity}`);
       }
 
-      // חשב מחדש סכום כולל - משתמש במחיר הנוכחי של המוצר או ב-lockedPrice אם נעול
+      // חשב מחדש סכום כולל
       cart.total = cart.items.reduce((sum: number, item: ICartItem) => {
-        // הביאו את המוצר עם populate כדי לקבל את הפרטים
         const itemProduct =
-          typeof item.product === "string"
-            ? product // אם זה אותו מוצר שזה עתה בדקנו
-            : (item.product as any); // אם זה object מלא
+          typeof item.product === "string" ? product : (item.product as any);
 
         const price = item.lockedPrice ?? (itemProduct?.price || product.price);
         return sum + price * item.quantity;
@@ -310,19 +261,16 @@ export class CartService {
       cart.updatedAt = new Date();
 
       // ✅ Populate המוצרים לפני עדכון cache והחזרה
-      const populatedCart = await CartModel.findOne(
-        userId ? { userId } : { sessionId }
-      ).populate("items.product");
+      const populatedCart = await CartModel.findOne({ userId }).populate(
+        "items.product"
+      );
 
       if (!populatedCart) {
-        // Fallback if query fails
         await this.updateCartInCache(cartId, cart);
         t.success(cart);
         return cart;
       }
 
-      // ⚡ עדכן בcache עם העגלה ה-populated
-      // המרת Mongoose Document לאובייקט רגיל כדי שה-populate יישמר
       const cartObject = populatedCart.toObject();
 
       await redisClient.setex(
@@ -331,7 +279,6 @@ export class CartService {
         JSON.stringify(cartObject)
       );
 
-      // 🔍 Debug logging
       console.log(
         `⚡ Cart updated in Redis with populated products: ${cartId}`
       );
@@ -345,30 +292,28 @@ export class CartService {
         );
       }
 
-      // תזמן שמירה למונגו
       this.scheduleMongoSave(cartId, populatedCart);
 
-      t.success(cartObject); // 🎯 לוג הצלחה
+      t.success(cartObject);
       return cartObject;
     } catch (error) {
-      t.error(error); // 🎯 לוג שגיאה
+      t.error(error);
       throw error;
     }
   }
 
   // Remove item from cart - ⚡ גרסה מהירה
   static async removeFromCart(
-    sessionId: string,
     productId: string,
-    userId?: string
+    userId: string
   ): Promise<ICart | null> {
-    const t = track("CartService", "removeFromCart"); // 🎯 שורה אחת!
+    const t = track("CartService", "removeFromCart");
 
     try {
-      const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
+      const cartId = `user:${userId}`;
 
       // ⚡ קבל עגלה נוכחית (מהיר מRedis)
-      const cart = await this.getCart(sessionId, userId);
+      const cart = await this.getCart(userId);
 
       if (!cart) {
         console.log(`❌ Cart not found: ${cartId}`);
@@ -400,9 +345,9 @@ export class CartService {
       cart.updatedAt = new Date();
 
       // Populate and cache
-      const populatedCart = await CartModel.findOne(
-        userId ? { userId } : { sessionId }
-      ).populate("items.product");
+      const populatedCart = await CartModel.findOne({ userId }).populate(
+        "items.product"
+      );
 
       if (populatedCart) {
         const cartObj = populatedCart.toObject();
@@ -426,19 +371,19 @@ export class CartService {
 
   // Update item quantity - ⚡ גרסה מהירה וחכמה
   static async updateQuantity(
-    sessionId: string,
     productId: string,
     quantity: number,
-    userId?: string
+    userId: string
   ): Promise<ICart | null> {
     const t = track("CartService", "updateQuantity");
-    console.log(`6📝 Updating quantity: ${productId} to ${quantity} for `);
+    console.log(`6📝 Updating quantity: ${productId} to ${quantity}`);
+
     // אם כמות 0 או פחות - מחק פריט
     if (quantity <= 0) {
-      return this.removeFromCart(sessionId, productId, userId);
+      return this.removeFromCart(productId, userId);
     }
 
-    const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
+    const cartId = `user:${userId}`;
 
     try {
       console.log(
@@ -446,7 +391,7 @@ export class CartService {
       );
 
       // ⚡ קבל עגלה נוכחית (מהיר מRedis)
-      const cart = await this.getCart(sessionId, userId);
+      const cart = await this.getCart(userId);
 
       if (!cart) {
         console.log(`❌ Cart not found: ${cartId}`);
@@ -488,9 +433,9 @@ export class CartService {
       cart.updatedAt = new Date();
 
       // Populate and cache
-      const populatedCart = await CartModel.findOne(
-        userId ? { userId } : { sessionId }
-      ).populate("items.product");
+      const populatedCart = await CartModel.findOne({ userId }).populate(
+        "items.product"
+      );
 
       if (populatedCart) {
         const cartObj = populatedCart.toObject();
@@ -515,8 +460,8 @@ export class CartService {
   }
 
   // Clear cart - עם ביטול שמירות ממתינות
-  static async clearCart(sessionId: string, userId?: string): Promise<boolean> {
-    const cartId = userId ? `user:${userId}` : `guest:${sessionId}`;
+  static async clearCart(userId: string): Promise<boolean> {
+    const cartId = `user:${userId}`;
 
     try {
       console.log(`🗑️ Clearing cart: ${cartId}`);
@@ -534,14 +479,7 @@ export class CartService {
       console.log(`⚡ Cleared from Redis: ${cartId}`);
 
       // מחק ממונגו (יכול להיות איטי, אבל לא חוסם)
-      let query;
-      if (userId) {
-        query = { userId: userId };
-      } else {
-        query = { sessionId: sessionId };
-      }
-
-      CartModel.deleteOne(query)
+      CartModel.deleteOne({ userId })
         .exec()
         .then(() => {
           console.log(`💾 Cleared from MongoDB: ${cartId}`);
@@ -563,122 +501,10 @@ export class CartService {
 
     for (const [cartId, timer] of this.pendingSaves.entries()) {
       clearTimeout(timer);
-      // כאן יכולנו לשמור מיידית אם נרצה
     }
 
     this.pendingSaves.clear();
     console.log("✅ All pending saves cleared");
-  }
-
-  // 🔄 מיזוג עגלת אורח לעגלת משתמש (כשמשתמש מתחבר)
-  static async mergeGuestCartToUser(
-    guestSessionId: string,
-    userId: string
-  ): Promise<ICart | null> {
-    const t = track("CartService", "mergeGuestCartToUser");
-
-    try {
-      console.log(
-        `🔄 Merging guest cart to user: ${guestSessionId} → ${userId}`
-      );
-
-      // קבל עגלת האורח
-      const guestCart = await this.getCart(guestSessionId);
-      if (!guestCart || guestCart.items.length === 0) {
-        console.log("⚪ No guest cart to merge");
-        t.success();
-        return null;
-      }
-
-      // קבל עגלת המשתמש הקיימת (אם יש)
-      const userCart = await this.getCart("", userId);
-
-      if (!userCart) {
-        // אין עגלת משתמש - העבר את עגלת האורח למשתמש
-        console.log("📦 No existing user cart - transferring guest cart");
-
-        // עדכן ב-Redis
-        const userCartId = `user:${userId}`;
-        guestCart.userId = userId as any;
-        guestCart.sessionId = null as any; // הסר session ID
-        guestCart.updatedAt = new Date();
-
-        await this.updateCartInCache(userCartId, guestCart);
-
-        // נקה עגלת האורח
-        await this.clearCart(guestSessionId);
-
-        t.success({ merged: true, transferred: true });
-        return guestCart;
-      } else {
-        // יש עגלת משתמש קיימת - מזג את הפריטים
-        console.log("🔄 Merging items from guest cart to existing user cart");
-
-        let hasChanges = false;
-
-        // עבור על כל פריט בעגלת האורח
-        for (const guestItem of guestCart.items) {
-          const existingItemIndex = userCart.items.findIndex(
-            (item: ICartItem) =>
-              item.product.toString() === guestItem.product.toString()
-          );
-
-          if (existingItemIndex >= 0) {
-            // פריט קיים - הוסף כמות
-            const oldQuantity = userCart.items[existingItemIndex].quantity;
-            userCart.items[existingItemIndex].quantity += guestItem.quantity;
-            console.log(
-              `➕ Merged quantities for product ${guestItem.product}: ${oldQuantity} + ${guestItem.quantity} = ${userCart.items[existingItemIndex].quantity}`
-            );
-            hasChanges = true;
-          } else {
-            // פריט חדש - הוסף לעגלה
-            userCart.items.push(guestItem);
-            console.log(
-              `🆕 Added new item from guest cart: ${guestItem.product}`
-            );
-            hasChanges = true;
-          }
-        }
-
-        if (hasChanges) {
-          // חשב מחדש סכום כולל עם מחירים עדכניים
-          userCart.total = userCart.items.reduce(
-            (sum: number, item: ICartItem) => {
-              const itemProduct =
-                typeof item.product === "string"
-                  ? undefined
-                  : (item.product as any);
-              const price = item.lockedPrice ?? (itemProduct?.price || 0);
-              return sum + price * item.quantity;
-            },
-            0
-          );
-          userCart.updatedAt = new Date();
-
-          // עדכן בcache
-          const userCartId = `user:${userId}`;
-          await this.updateCartInCache(userCartId, userCart);
-        }
-
-        // נקה עגלת האורח
-        await this.clearCart(guestSessionId);
-
-        console.log(
-          `✅ Successfully merged guest cart to user cart (${guestCart.items.length} items)`
-        );
-        t.success({
-          merged: true,
-          transferred: false,
-          itemsCount: guestCart.items.length,
-        });
-        return userCart;
-      }
-    } catch (error) {
-      t.error(error);
-      console.error("❌ Error merging guest cart:", error);
-      throw error;
-    }
   }
 
   // 📊 סטטיסטיקות עגלות (למנהלים)
@@ -691,16 +517,6 @@ export class CartService {
           $group: {
             _id: null,
             totalCarts: { $sum: 1 },
-            guestCarts: {
-              $sum: {
-                $cond: [{ $eq: ["$userId", null] }, 1, 0],
-              },
-            },
-            userCarts: {
-              $sum: {
-                $cond: [{ $ne: ["$userId", null] }, 1, 0],
-              },
-            },
             averageTotal: { $avg: "$total" },
             averageItems: { $avg: { $size: "$items" } },
           },
@@ -709,8 +525,6 @@ export class CartService {
 
       const result = stats[0] || {
         totalCarts: 0,
-        guestCarts: 0,
-        userCarts: 0,
         averageTotal: 0,
         averageItems: 0,
       };

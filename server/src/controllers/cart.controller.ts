@@ -7,26 +7,20 @@ export class CartController {
     console.log("\n\n\n\n\nGetting cart...\n\n\n\n\n");
 
     try {
-      const { sessionId } = req.query;
-      const userId = (req as any).userId; // From auth middleware
+      const userId = (req as any).userId; // From requireAuth middleware
 
-      console.log(
-        `\nGetting cart for session: ${sessionId}, user: ${userId || "guest"}`
-      );
+      console.log(`\nGetting cart for user: ${userId}`);
 
-      if (!sessionId && !userId) {
-        sendError(res, 400, "Session ID is required for guest users");
+      if (!userId) {
+        sendError(res, 401, "Authentication required");
         return;
       }
 
-      const cart = await CartService.getCart(
-        (sessionId as string) || "",
-        userId
-      );
+      const cart = await CartService.getCart(userId);
 
       if (!cart) {
         sendSuccess(res, {
-          sessionId: sessionId || userId,
+          userId,
           items: [],
           total: 0,
         });
@@ -43,26 +37,17 @@ export class CartController {
   static async addToCart(req: Request, res: Response): Promise<void> {
     console.log("\n\n\n\n\nAdding item to cart...\n\n\n\n\n$");
     try {
-      const { sessionId, productId, quantity } = req.body;
-      const userId = (req as any).userId; // From auth middleware
+      const { productId, quantity } = req.body;
+      const userId = (req as any).userId; // From requireAuth middleware
 
-      console.log(
-        `\nAdding to cart:\n ${productId}\n x${quantity}\n user: ${
-          userId || "guest"
-        }`
-      );
+      console.log(`\nAdding to cart:\n ${productId}\n x${quantity}\n user: ${userId}`);
 
-      if ((!sessionId && !userId) || !productId || !quantity) {
+      if (!userId || !productId || !quantity) {
         sendError(res, 400, "Missing required fields");
         return;
       }
 
-      const cart = await CartService.addToCart(
-        sessionId || "",
-        productId,
-        quantity,
-        userId
-      );
+      const cart = await CartService.addToCart(productId, quantity, userId);
       sendSuccess(res, cart, "Item added to cart");
     } catch (error: any) {
       console.error("Error adding to cart:", error);
@@ -81,19 +66,17 @@ export class CartController {
     console.log("\n\n\n\n\nUpdating item quantity...\n\n\n\n\n");
 
     try {
-      const { sessionId, productId, quantity } = req.body;
+      const { productId, quantity } = req.body;
+      const userId = (req as any).userId;
+
       console.log(`Updating quantity: ${productId} to ${quantity}`);
 
-      if (!sessionId || !productId || quantity === undefined) {
+      if (!userId || !productId || quantity === undefined) {
         sendError(res, 400, "Missing required fields");
         return;
       }
 
-      const cart = await CartService.updateQuantity(
-        sessionId,
-        productId,
-        quantity
-      );
+      const cart = await CartService.updateQuantity(productId, quantity, userId);
 
       if (!cart) {
         sendError(res, 404, "Cart not found");
@@ -111,15 +94,17 @@ export class CartController {
     console.log("\n\n\n\n\nRemoving item from cart...\n\n\n\n\n");
 
     try {
-      const { sessionId, productId } = req.body;
+      const { productId } = req.body;
+      const userId = (req as any).userId;
+
       console.log(`Removing from cart: ${productId}`);
 
-      if (!sessionId || !productId) {
+      if (!userId || !productId) {
         sendError(res, 400, "Missing required fields");
         return;
       }
 
-      const cart = await CartService.removeFromCart(sessionId, productId);
+      const cart = await CartService.removeFromCart(productId, userId);
 
       if (!cart) {
         sendError(res, 404, "Cart not found");
@@ -136,22 +121,23 @@ export class CartController {
   static async clearCart(req: Request, res: Response): Promise<void> {
     console.log("\n\n\n\n\nClearing cart...\n\n\n\n\n");
     try {
-      const { sessionId } = req.body;
-      console.log(`Clearing cart: ${sessionId}`);
+      const userId = (req as any).userId;
 
-      if (!sessionId) {
-        sendError(res, 400, "Session ID is required");
+      console.log(`Clearing cart for user: ${userId}`);
+
+      if (!userId) {
+        sendError(res, 401, "Authentication required");
         return;
       }
 
-      const success = await CartService.clearCart(sessionId);
+      const success = await CartService.clearCart(userId);
 
       if (!success) {
         sendError(res, 500, "Failed to clear cart");
         return;
       }
 
-      sendSuccess(res, { sessionId, items: [], total: 0 }, "Cart cleared");
+      sendSuccess(res, { userId, items: [], total: 0 }, "Cart cleared");
     } catch (error: any) {
       console.error("Error clearing cart:", error);
       sendError(res, 500, "Failed to clear cart");
@@ -161,18 +147,14 @@ export class CartController {
   static async getCartCount(req: Request, res: Response): Promise<void> {
     console.log("\n\n\n\n\nGetting cart count...\n\n\n\n\n");
     try {
-      const { sessionId } = req.query;
       const userId = (req as any).userId;
 
-      if (!sessionId && !userId) {
+      if (!userId) {
         sendSuccess(res, { count: 0 });
         return;
       }
 
-      const cart = await CartService.getCart(
-        (sessionId as string) || "",
-        userId
-      );
+      const cart = await CartService.getCart(userId);
       const count = cart
         ? cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
         : 0;
@@ -183,21 +165,7 @@ export class CartController {
       sendSuccess(res, { count: 0 });
     }
   }
-
-  // 🔄 מיזוג עגלת אורח לעגלת משתמש
-  static async mergeGuestCart(req: Request, res: Response): Promise<void> {
-    try {
-      const { guestSessionId } = req.body;
-      const userId = (req as any).userId;
-
-      console.log(`🔄 Merging guest cart: ${guestSessionId} → user: ${userId}`);
-
-      if (!userId) {
-        sendError(res, 401, "User must be authenticated to merge cart");
-        return;
-      }
-
-      if (!guestSessionId) {
+}
         sendError(res, 400, "Guest session ID is required");
         return;
       }
