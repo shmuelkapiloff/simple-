@@ -49,6 +49,26 @@ const cartSchema = new Schema(
   }
 );
 
+// Pre-save middleware to calculate total
+cartSchema.pre("save", async function (next) {
+  if (this.isModified("items")) {
+    // Populate products if not already populated
+    await this.populate("items.product");
+
+    // Calculate total
+    let total = 0;
+    for (const item of this.items) {
+      const product = item.product as any;
+      const price = item.lockedPrice ?? product?.price ?? 0;
+      total += price * item.quantity;
+    }
+
+    this.total = total;
+    console.log(`💰 Cart total calculated: ${total}`);
+  }
+  next();
+});
+
 // Types
 export interface ICartItem {
   product: Types.ObjectId | any;

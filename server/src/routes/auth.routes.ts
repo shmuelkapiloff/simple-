@@ -1,36 +1,40 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
-import {
-  requireAuth,
-  requireAdmin,
-  authRateLimit,
-} from "../middlewares/auth.middleware";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
 
 /**
- * Authentication Routes
- * Base path: /api/auth
+ * Public routes (no authentication required)
  */
 
-// Public routes (no authentication requ;ired)
-router.post("/register", authRateLimit, AuthController.register);
-router.post("/login", authRateLimit, AuthController.login);
-router.post("/logout", AuthController.logout);
-router.get("/verify", AuthController.verifyToken)
+// POST /api/auth/register - Register new user
+router.post("/register", AuthController.register);
 
-// Protected routes (require authentication)
-router.get("/profile", requireAuth, AuthController.getProfile);
-router.put("/profile", requireAuth, AuthController.updateProfile);
-router.put(
-  "/password",
-  requireAuth,
-  authRateLimit,
-  AuthController.changePassword
-);
-router.delete("/account", requireAuth, AuthController.deactivateAccount);
+// POST /api/auth/login - Login user
+router.post("/login", AuthController.login);
 
-// Admin routes
-router.get("/stats", requireAdmin, AuthController.getUserStats);
+// GET /api/auth/verify - Verify JWT token (requires auth)
+router.get("/verify", authenticate, AuthController.verify);
 
-export { router as authRoutes };
+// ⬅️ חדש - Password reset flow
+// POST /api/auth/forgot-password - Request password reset
+router.post("/forgot-password", AuthController.forgotPassword);
+
+// POST /api/auth/reset-password/:token - Reset password with token
+router.post("/reset-password/:token", AuthController.resetPassword);
+
+/**
+ * Protected routes (authentication required)
+ */
+
+// GET /api/auth/profile - Get user profile
+router.get("/profile", authenticate, AuthController.getProfile);
+
+// ⬅️ חדש - PUT /api/auth/profile - Update user profile
+router.put("/profile", authenticate, AuthController.updateProfile);
+
+// POST /api/auth/logout - Logout user
+router.post("/logout", authenticate, AuthController.logout);
+
+export default router;

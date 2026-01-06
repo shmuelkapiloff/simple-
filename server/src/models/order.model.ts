@@ -1,188 +1,245 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
-export interface IOrderItem {
-  product: mongoose.Types.ObjectId;
-  name: string;
-  price: number;
-  quantity: number;
-  image?: string;
+// Tracking History Item Interface
+export interface ITrackingHistory {
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  timestamp: Date;
+  message?: string;
 }
 
+// Interface for Order document
 export interface IOrder extends Document {
-  _id: mongoose.Types.ObjectId;
-  user: mongoose.Types.ObjectId;
+  _id: string;
   orderNumber: string;
-  items: IOrderItem[];
+  user: string;
+  items: Array<{
+    product: string;
+    name: string;
+    price: number;
+    quantity: number;
+    image?: string;
+  }>;
   totalAmount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentMethod: string;
   shippingAddress: {
     street: string;
     city: string;
     postalCode: string;
     country: string;
   };
-  paymentMethod: "credit_card" | "paypal" | "cash_on_delivery";
-  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  trackingHistory: ITrackingHistory[]; // ⬅️ חדש
+  estimatedDelivery?: Date; // ⬅️ חדש
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
-  estimatedDelivery?: Date;
 }
 
-const OrderItemSchema: Schema = new Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
-    required: true,
-  },
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  price: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1,
-    default: 1,
-  },
-  image: {
-    type: String,
-    default: "",
-  },
-});
-
-const OrderSchema: Schema = new Schema(
+// Order Schema
+const OrderSchema = new Schema<IOrder>(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
     orderNumber: {
       type: String,
       required: true,
       unique: true,
+      index: true,
     },
-    items: {
-      type: [OrderItemSchema],
-      required: true,
-      validate: {
-        validator: function (items: IOrderItem[]) {
-          return items.length > 0;
+
+    user: {
+      type: String,
+      required: [true, "User ID is required"],
+      ref: "User",
+      index: true,
+    },
+
+    items: [
+      {
+        product: {
+          type: String,
+          ref: "Product",
+          required: true,
         },
-        message: "Order must contain at least one item",
+        name: {
+          type: String,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        image: String,
       },
-    },
+    ],
+
     totalAmount: {
       type: Number,
       required: true,
       min: 0,
     },
+
     status: {
       type: String,
-      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
-      default: "pending",
+      enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
+      default: 'pending',
+      index: true,
     },
+
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'refunded'],
+      default: 'pending',
+    },
+
+    paymentMethod: {
+      type: String,
+      required: true,
+      enum: ['credit_card', 'paypal', 'cash_on_delivery'],
+    },
+
     shippingAddress: {
       street: {
         type: String,
         required: true,
-        trim: true,
       },
       city: {
         type: String,
         required: true,
-        trim: true,
       },
       postalCode: {
         type: String,
         required: true,
-        trim: true,
       },
       country: {
         type: String,
-        required: true,
-        trim: true,
         default: "Israel",
       },
     },
-    paymentMethod: {
-      type: String,
-      enum: ["credit_card", "paypal", "cash_on_delivery"],
-      required: true,
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "paid", "failed", "refunded"],
-      default: "pending",
-    },
-    notes: {
-      type: String,
-      trim: true,
-      maxlength: 500,
-    },
+
+    // ⬅️ חדש - Tracking History
+    trackingHistory: [
+      {
+        status: {
+          type: String,
+          enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
+          required: true,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        message: {
+          type: String,
+          maxlength: [500, "Message cannot exceed 500 characters"],
+        },
+      },
+    ],
+
+    // ⬅️ חדש - Estimated Delivery
     estimatedDelivery: {
       type: Date,
     },
+
+    notes: {
+      type: String,
+      maxlength: [500, "Notes cannot exceed 500 characters"],
+    },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        delete (ret as any).__v;
+        return ret;
+      },
+    },
   }
 );
 
-// Generate order number before saving
-OrderSchema.pre("save", async function (next) {
-  if (!this.orderNumber) {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+// Indexes for better query performance
+OrderSchema.index({ user: 1, createdAt: -1 });
+OrderSchema.index({ status: 1, createdAt: -1 });
+OrderSchema.index({ orderNumber: 1 });
 
-    // Find the last order of the day to generate sequential number
-    const todayStart = new Date(year, date.getMonth(), date.getDate());
-    const todayEnd = new Date(year, date.getMonth(), date.getDate() + 1);
-
-    const lastOrder = await mongoose
-      .model("Order")
-      .findOne({
-        createdAt: { $gte: todayStart, $lt: todayEnd },
-      })
-      .sort({ createdAt: -1 });
-
-    let sequence = 1;
-    if (lastOrder && lastOrder.orderNumber) {
-      const lastSequence = parseInt(
-        lastOrder.orderNumber.split("-").pop() || "0"
-      );
-      sequence = lastSequence + 1;
-    }
-
-    this.orderNumber = `ORD-${year}${month}${day}-${String(sequence).padStart(
-      3,
-      "0"
-    )}`;
+// ⬅️ חדש - Pre-save middleware: add initial tracking entry
+OrderSchema.pre("save", function (next) {
+  if (this.isNew && this.trackingHistory.length === 0) {
+    this.trackingHistory.push({
+      status: 'pending',
+      timestamp: new Date(),
+      message: 'Order has been placed',
+    });
+    
+    // Set estimated delivery (5 business days)
+    const estimatedDate = new Date();
+    estimatedDate.setDate(estimatedDate.getDate() + 5);
+    this.estimatedDelivery = estimatedDate;
   }
-
-  // Set estimated delivery (3-7 business days)
-  if (!this.estimatedDelivery) {
-    const deliveryDate = new Date();
-    deliveryDate.setDate(deliveryDate.getDate() + 5); // Default 5 days
-    this.estimatedDelivery = deliveryDate;
-  }
-
   next();
 });
 
-// Add indexes for better performance
-OrderSchema.index({ user: 1, createdAt: -1 });
-OrderSchema.index({ orderNumber: 1 });
-OrderSchema.index({ status: 1 });
-OrderSchema.index({ createdAt: -1 });
+// Static methods
+OrderSchema.statics.findByUserId = function (userId: string) {
+  return this.find({ user: userId }).sort({ createdAt: -1 });
+};
 
-export default mongoose.model<IOrder>("Order", OrderSchema);
+OrderSchema.statics.findByOrderNumber = function (orderNumber: string) {
+  return this.findOne({ orderNumber });
+};
+
+// Create and export the Order model
+export const OrderModel = model<IOrder>("Order", OrderSchema);
+
+// Export types
+export type CreateOrderInput = {
+  user: string;
+  items: Array<{
+    product: string;
+    name: string;
+    price: number;
+    quantity: number;
+    image?: string;
+  }>;
+  totalAmount: number;
+  paymentMethod: string;
+  shippingAddress: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country?: string;
+  };
+  notes?: string;
+};
+
+export type OrderResponse = {
+  _id: string;
+  orderNumber: string;
+  user: string;
+  items: any[];
+  totalAmount: number;
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  shippingAddress: any;
+  trackingHistory: ITrackingHistory[];
+  estimatedDelivery?: Date;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TrackingResponse = {
+  orderNumber: string;
+  status: string;
+  estimatedDelivery?: Date;
+  trackingHistory: ITrackingHistory[];
+  items: any[];
+  totalAmount: number;
+};

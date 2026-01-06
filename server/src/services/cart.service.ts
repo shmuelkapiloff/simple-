@@ -34,24 +34,22 @@ export class CartService {
       if (redisCart) {
         const parsedCart = JSON.parse(redisCart);
 
-        // 🔄 עכשיו נוודא שיש populate של product data
-        // אם parsedCart.items מכיל ObjectIds במקום אובייקטים מלאים
+        // 🔄 תמיד נוודא שיש populate של product data
         if (parsedCart.items && parsedCart.items.length > 0) {
-          // בדוק אם הפריט הראשון צריך populate
           const firstItem = parsedCart.items[0];
+          // בדוק אם המוצר הוא מחרוזת או חסר שדות
           if (
             typeof firstItem.product === "string" ||
-            !firstItem.product.name
+            !firstItem.product?.name ||
+            !firstItem.product?.image
           ) {
-            // Redis cart needs population, fetch from MongoDB
+            console.log(`⚠️ Redis cart needs re-population: ${cartId}`);
 
             // טען מהמונגו עם populate
             let query;
             if (userId) {
-              // For logged-in users, only look for their cart
               query = { userId: userId };
             } else {
-              // For guests, look by sessionId only
               query = { sessionId: sessionId };
             }
 
@@ -60,20 +58,23 @@ export class CartService {
             );
 
             if (dbCart) {
+              const cartObj = dbCart.toObject();
               // עדכן את Redis עם הנתונים המלאים
               await redisClient.setex(
                 `cart:${cartId}`,
                 this.CACHE_TTL,
-                JSON.stringify(dbCart)
+                JSON.stringify(cartObj)
               );
               console.log(
-                `📥 Redis updated with populated cart data: ${cartId}`
+                `✅ Redis updated with fresh populated data: ${cartId}`
               );
-              return dbCart;
+              t.success();
+              return cartObj;
             }
           }
         }
 
+        t.success();
         return parsedCart;
       }
 
@@ -91,13 +92,14 @@ export class CartService {
 
       if (dbCart) {
         // 📥 שמור בRedis לפעמים הבאות
+        const cartObj = dbCart.toObject();
         await redisClient.setex(
           `cart:${cartId}`,
           this.CACHE_TTL,
-          JSON.stringify(dbCart)
+          JSON.stringify(cartObj)
         );
         t.success(); // 🎯 לוג הצלחה
-        return dbCart;
+        return cartObj;
       }
 
       t.success(); // 🎯 לוג הצלחה גם אם לא נמצא
@@ -147,7 +149,7 @@ export class CartService {
       try {
         console.log(`💾 Saving to MongoDB: ${cartId}`);
 
-        // שמור במונגו
+        // שמור במונגו - using save() to trigger pre-save middleware
         let query;
         if (cart.userId) {
           query = { userId: cart.userId };
@@ -155,20 +157,22 @@ export class CartService {
           query = { sessionId: cart.sessionId };
         }
 
-        await CartModel.findOneAndUpdate(
-          query,
-          {
+        const existingCart = await CartModel.findOne(query);
+
+        if (existingCart) {
+          // Update existing cart
+          existingCart.items = cart.items;
+          existingCart.updatedAt = new Date();
+          await existingCart.save(); // This triggers pre-save hook
+        } else {
+          // Create new cart
+          const newCart = new CartModel({
             sessionId: cart.sessionId,
             userId: cart.userId,
             items: cart.items,
-            total: cart.total,
-            updatedAt: new Date(),
-          },
-          {
-            upsert: true,
-            new: true,
-          }
-        );
+          });
+          await newCart.save(); // This triggers pre-save hook
+        }
 
         // נקה מהרשימה
         this.pendingSaves.delete(cartId);
@@ -190,16 +194,35 @@ export class CartService {
     cart: ICart
   ): Promise<void> {
     try {
-      // 1. ⚡ עדכון מיידי בRedis
+      // Ensure cart is fully populated before caching
+      const sessionId = cart.sessionId;
+      const userId = cart.userId;
+
+      // Re-fetch with populate to ensure product details are complete
+      let populatedCart = cart;
+      if (cart.items.length > 0 && typeof cart.items[0].product === "string") {
+        const freshCart = await CartModel.findOne(
+          userId ? { userId } : { sessionId }
+        ).populate("items.product");
+
+        if (freshCart) {
+          populatedCart = freshCart;
+        }
+      }
+
+      // 1. ⚡ עדכון מיידי בRedis with populated data
       await redisClient.setex(
         `cart:${cartId}`,
         this.CACHE_TTL,
-        JSON.stringify(cart)
+        JSON.stringify(populatedCart)
       );
-      console.log(`⚡ Cart updated in Redis: ${cartId}`);
+      log.debug(
+        "CartService",
+        `Cart updated in Redis with populated products: ${cartId}`
+      );
 
       // 2. ⏰ תזמון שמירה למונגו (לא חוסם!)
-      this.scheduleMongoSave(cartId, cart);
+      this.scheduleMongoSave(cartId, populatedCart);
     } catch (error) {
       console.error("❌ Error updating cart cache:", error);
       throw error;
@@ -286,11 +309,47 @@ export class CartService {
       }, 0);
       cart.updatedAt = new Date();
 
-      // ⚡ עדכן בcache מיידי + תזמן למונגו
-      await this.updateCartInCache(cartId, cart);
+      // ✅ Populate המוצרים לפני עדכון cache והחזרה
+      const populatedCart = await CartModel.findOne(
+        userId ? { userId } : { sessionId }
+      ).populate("items.product");
 
-      t.success(cart); // 🎯 לוג הצלחה
-      return cart;
+      if (!populatedCart) {
+        // Fallback if query fails
+        await this.updateCartInCache(cartId, cart);
+        t.success(cart);
+        return cart;
+      }
+
+      // ⚡ עדכן בcache עם העגלה ה-populated
+      // המרת Mongoose Document לאובייקט רגיל כדי שה-populate יישמר
+      const cartObject = populatedCart.toObject();
+
+      await redisClient.setex(
+        `cart:${cartId}`,
+        this.CACHE_TTL,
+        JSON.stringify(cartObject)
+      );
+
+      // 🔍 Debug logging
+      console.log(
+        `⚡ Cart updated in Redis with populated products: ${cartId}`
+      );
+      console.log("🛒 Populated cart items:", cartObject.items.length);
+      if (cartObject.items.length > 0) {
+        const firstItem = cartObject.items[0];
+        console.log("📦 First item product type:", typeof firstItem.product);
+        console.log(
+          "📦 First item product:",
+          JSON.stringify(firstItem.product, null, 2)
+        );
+      }
+
+      // תזמן שמירה למונגו
+      this.scheduleMongoSave(cartId, populatedCart);
+
+      t.success(cartObject); // 🎯 לוג הצלחה
+      return cartObject;
     } catch (error) {
       t.error(error); // 🎯 לוג שגיאה
       throw error;
@@ -331,24 +390,32 @@ export class CartService {
         (item: ICartItem) => item.product.toString() !== productId
       );
 
-      // חשב מחדש סכום עם מחירים עדכניים
-      const updatedCart = await this.getCart(sessionId, userId);
-      if (updatedCart) {
-        updatedCart.total = updatedCart.items.reduce(
-          (sum: number, item: ICartItem) => {
-            const itemProduct =
-              typeof item.product === "string"
-                ? undefined
-                : (item.product as any);
-            const price = item.lockedPrice ?? (itemProduct?.price || 0);
-            return sum + price * item.quantity;
-          },
-          0
+      // חשב מחדש סכום ושמור
+      cart.total = cart.items.reduce((sum: number, item: ICartItem) => {
+        const itemProduct =
+          typeof item.product === "string" ? undefined : (item.product as any);
+        const price = item.lockedPrice ?? (itemProduct?.price || 0);
+        return sum + price * item.quantity;
+      }, 0);
+      cart.updatedAt = new Date();
+
+      // Populate and cache
+      const populatedCart = await CartModel.findOne(
+        userId ? { userId } : { sessionId }
+      ).populate("items.product");
+
+      if (populatedCart) {
+        const cartObj = populatedCart.toObject();
+        await redisClient.setex(
+          `cart:${cartId}`,
+          this.CACHE_TTL,
+          JSON.stringify(cartObj)
         );
-        await this.updateCartInCache(cartId, updatedCart);
-        t.success(updatedCart);
-        return updatedCart;
+        this.scheduleMongoSave(cartId, populatedCart);
+        t.success(cartObj);
+        return cartObj;
       }
+
       t.success(cart);
       return cart;
     } catch (error) {
@@ -411,25 +478,31 @@ export class CartService {
       // עדכן כמות
       cart.items[itemIndex].quantity = quantity;
 
-      // חשב מחדש סכום כולל עם מחירים עדכניים
-      const updatedCart = await this.getCart(sessionId, userId);
-      if (updatedCart) {
-        updatedCart.total = updatedCart.items.reduce(
-          (sum: number, item: ICartItem) => {
-            const itemProduct =
-              typeof item.product === "string"
-                ? undefined
-                : (item.product as any);
-            const price = item.lockedPrice ?? (itemProduct?.price || 0);
-            return sum + price * item.quantity;
-          },
-          0
+      // חשב מחדש סכום
+      cart.total = cart.items.reduce((sum: number, item: ICartItem) => {
+        const itemProduct =
+          typeof item.product === "string" ? undefined : (item.product as any);
+        const price = item.lockedPrice ?? (itemProduct?.price || 0);
+        return sum + price * item.quantity;
+      }, 0);
+      cart.updatedAt = new Date();
+
+      // Populate and cache
+      const populatedCart = await CartModel.findOne(
+        userId ? { userId } : { sessionId }
+      ).populate("items.product");
+
+      if (populatedCart) {
+        const cartObj = populatedCart.toObject();
+        await redisClient.setex(
+          `cart:${cartId}`,
+          this.CACHE_TTL,
+          JSON.stringify(cartObj)
         );
-        updatedCart.updatedAt = new Date();
-        await this.updateCartInCache(cartId, updatedCart);
+        this.scheduleMongoSave(cartId, populatedCart);
         console.log(`✅ Quantity updated: ${product?.name} x${quantity}`);
-        t.success(updatedCart);
-        return updatedCart;
+        t.success(cartObj);
+        return cartObj;
       }
 
       t.success(cart);

@@ -10,4 +10,7 @@ export const env = {
   JWT_SECRET:
     process.env.JWT_SECRET ||
     "your-super-secret-jwt-key-change-in-production-2024!",
+  ALLOWED_ORIGINS:
+    process.env.ALLOWED_ORIGINS ||
+    "http://localhost:5173,http://localhost:3000",
 };

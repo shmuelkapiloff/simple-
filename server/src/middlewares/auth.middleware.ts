@@ -48,8 +48,8 @@ export class AuthMiddleware {
       req.user = user;
 
       console.log(`✅ User authenticated: ${user.email}`);
-      t.success({ userId: user._id });
 
+      
       next();
     } catch (error: any) {
       t.error(error);
@@ -115,10 +115,16 @@ export class AuthMiddleware {
     const t = track("AuthMiddleware", "requireAdmin");
 
     try {
-      // First check if user is authenticated
+      // First check if user is authenticated, then enforce admin role
       await AuthMiddleware.requireAuth(req, res, () => {
-        // For now, all authenticated users can access admin routes
-        // In future, add role-based permissions here
+        if (!req.user || req.user.role !== "admin") {
+          console.log("❌ Admin access denied - not an admin user");
+          return sendError(
+            res,
+            403,
+            "Access denied. Admin privileges required"
+          );
+        }
 
         console.log(`🔐 Admin access granted to: ${req.user?.email}`);
         t.success({ userId: req.userId, admin: true });
@@ -207,3 +213,6 @@ export const requireAuth = AuthMiddleware.requireAuth;
 export const optionalAuth = AuthMiddleware.optionalAuth;
 export const requireAdmin = AuthMiddleware.requireAdmin;
 export const authRateLimit = AuthMiddleware.createRateLimit();
+
+// Alias for backward compatibility
+export const authenticate = AuthMiddleware.requireAuth;

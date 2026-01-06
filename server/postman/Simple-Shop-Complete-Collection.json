@@ -19,7 +19,7 @@
       "name": "🏥 Health Check",
       "item": [
         {
-          "name": "Health Status",
+          "name": "Health Check",
           "request": {
             "method": "GET",
             "header": [],
@@ -36,11 +36,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const json = pm.response.json();",
                   "pm.test('✅ Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('✅ Has health status', () => pm.expect(json.data).to.have.property('status'));",
-                  "pm.test('✅ MongoDB connected', () => pm.expect(json.data.mongodb).to.eql('connected'));",
-                  "console.log('🏥 Health Check:', json.data);"
+                  "pm.test('✅ Has status', () =>  pm.expect(json.data && json.data.status).to.eql('healthy'));"
                 ]
               }
             }
@@ -111,9 +108,15 @@
                   "    pm.test('✅ Has user data', () => pm.expect(json.data).to.have.property('user'));",
                   "    ",
                   "    // שמירת token למשתנה collection",
-                  "    pm.collectionVariables.set('authToken', json.data.token);",
-                  "    pm.collectionVariables.set('userId', json.data.user._id);",
-                  "    pm.collectionVariables.set('userEmail', json.data.user.email);",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.collectionVariables.set('authToken', json.data.token);",
+                  "        pm.collectionVariables.set('userId', json.data.user._id);",
+                  "        pm.collectionVariables.set('userEmail', json.data.user.email);",
+                  "        pm.environment.set('authToken', json.data.token);",
+                  "        pm.environment.set('userId', json.data.user._id);",
+                  "        pm.environment.set('userEmail', json.data.user.email);",
+                  "        console.log('🔑 Token saved:', json.data.token.substring(0, 20) + '...');",
+                  "    }",
                   "    ",
                   "    console.log('🎉 Registered & logged in!');",
                   "    console.log('👤 User:', json.data.user.email);",
@@ -139,7 +142,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"Admin123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
@@ -161,9 +164,16 @@
                   "pm.test('✅ Has user data', () => pm.expect(json.data).to.have.property('user'));",
                   "",
                   "// שמירת token למשתנה collection",
-                  "pm.collectionVariables.set('authToken', json.data.token);",
-                  "pm.collectionVariables.set('userId', json.data.user._id);",
-                  "pm.collectionVariables.set('userEmail', json.data.user.email);",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('authToken', json.data.token);",
+                  "    pm.collectionVariables.set('userId', json.data.user._id);",
+                  "    pm.collectionVariables.set('userEmail', json.data.user.email);",
+                  "    pm.environment.set('authToken', json.data.token);",
+                  "    pm.environment.set('userId', json.data.user._id);",
+                  "    pm.environment.set('userEmail', json.data.user.email);",
+                  "    console.log('🔑 Token saved:', json.data.token.substring(0, 20) + '...');",
+                  "    console.log('👤 User ID:', json.data.user._id);",
+                  "}",
                   "",
                   "console.log('🎉 Logged in successfully!');",
                   "console.log('👤 User:', json.data.user.email);",
@@ -177,7 +187,13 @@
           "name": "Verify Token",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/verify",
               "host": ["{{baseUrl}}"],
@@ -194,9 +210,15 @@
                   "const json = pm.response.json();",
                   "",
                   "pm.test('✅ Token is valid', () => pm.response.to.have.status(200));",
-                  "pm.test('✅ Has user data', () => pm.expect(json.data).to.have.property('user'));",
+                  "pm.test('✅ Has user data', () => pm.expect(json.data && json.data.user).to.exist);",
                   "",
-                  "console.log('✅ Token valid for user:', json.data.user.email);"
+                  "if (json.data && json.data.user) {",
+                  "    console.log('✅ Token valid for user:', json.data.user.email);",
+                  "} else {",
+                  "    console.log('⚠️ Verify failed - response:', json);",
+                  "    console.log('🔎 authToken (env):', pm.environment.get('authToken'));",
+                  "    console.log('🔎 authToken (collection):', pm.collectionVariables.get('authToken'));",
+                  "}"
                 ]
               }
             }
@@ -255,6 +277,122 @@
                   "// pm.collectionVariables.unset('authToken');",
                   "",
                   "console.log('👋 Logged out successfully');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+972501234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            },
+            "description": "עדכון פרטי הפרופיל של המשתמש (שם וטלפון)\n\n**Optional:**\n- name (string)\n- phone (string)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Profile updated', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has updated user', () => pm.expect(json.data).to.have.property('user'));",
+                  "",
+                  "console.log('👤 Profile updated:', json.data.user);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "description": "בקשה לאיפוס סיסמה\n\n**Required:**\n- email (string)\n\n**Note:** דוא\"ל עם קישור איפוס יישלח לכתובת"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Email sent', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has message', () => pm.expect(json.message).to.exist);",
+                  "",
+                  "let reqEmail = '';",
+                  "try { const body = JSON.parse(pm.request.body.raw || '{}'); reqEmail = body.email || ''; } catch (e) {}",
+                  "console.log('📧 Reset email sent to:', reqEmail || '(unknown)');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"RESET_TOKEN_FROM_EMAIL\",\n  \"newPassword\": \"newPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password/RESET_TOKEN_FROM_EMAIL",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "reset-password", "RESET_TOKEN_FROM_EMAIL"]
+            },
+            "description": "איפוס סיסמה עם טוקן\n\n**Required:**\n- token (from email link) - בparam\n- newPassword (string, min 6 chars) - בbody\n\n**Usage:**\n1. קבל את הטוקן מהדוא\"ל\n2. החלף את RESET_TOKEN_FROM_EMAIL בטוקן האמיתי\n3. שנה את הסיסמה החדשה"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Password reset', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has message', () => pm.expect(json.message).to.exist);",
+                  "",
+                  "console.log('🔐 Password reset successfully');"
                 ]
               }
             }
@@ -391,6 +529,288 @@
       ]
     },
     {
+      "name": "👤 Profile & Addresses (P1)",
+      "item": [
+        {
+          "name": "Get All Addresses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/addresses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "addresses"]
+            },
+            "description": "קבלת כל הכתובות של המשתמש"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Addresses retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Data is array', () => pm.expect(Array.isArray(json.data)).to.be.true);",
+                  "",
+                  "if (json.data.length > 0) {",
+                  "    pm.collectionVariables.set('addressId', json.data[0]._id);",
+                  "    console.log('📍 Found', json.data.length, 'address(es)');",
+                  "    console.log('🔖 First address saved:', json.data[0]._id);",
+                  "} else {",
+                  "    console.log('📍 No addresses found');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Default Address",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/addresses/default",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "addresses", "default"]
+            },
+            "description": "קבלת הכתובת ברירת המחדל"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.environment.get('authToken') || pm.collectionVariables.get('authToken');",
+                  "if (!token) { console.warn('No authToken – run Login first'); return; }",
+                  "if (pm.collectionVariables.get('addressId')) { return; }",
+                  "const base = pm.environment.get('baseUrl') || pm.collectionVariables.get('baseUrl');",
+                  "pm.sendRequest({",
+                  "    url: `${base}/api/addresses`,",
+                  "    method: 'POST',",
+                  "    header: {",
+                  "        'Content-Type': 'application/json',",
+                  "        'Authorization': `Bearer ${token}`",
+                  "    },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            label: 'home',",
+                  "            street: 'Herzl 10',",
+                  "            city: 'Tel Aviv',",
+                  "            postalCode: '67890',",
+                  "            country: 'Israel',",
+                  "            isDefault: true",
+                  "        })",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    if (!err && res && res.code === 201) {",
+                  "        try {",
+                  "            const body = res.json();",
+                  "            if (body.data && body.data._id) {",
+                  "                pm.collectionVariables.set('addressId', body.data._id);",
+                  "                console.log('📍 Created default address');",
+                  "            }",
+                  "        } catch (e) {",
+                  "            console.warn('Could not parse address create response');",
+                  "        }",
+                  "    } else {",
+                  "        console.warn('Could not auto-create address', err || (res && res.code));",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const status = pm.response.code;",
+                  "if (status === 404) {",
+                  "    pm.test('⚠️ No default address yet', () => pm.expect(status).to.eql(404));",
+                  "    console.warn('No default address. Create one or use Set Default.');",
+                  "    return;",
+                  "}",
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Default address retrieved', () => pm.expect(status).to.eql(200));",
+                  "pm.test('✅ Is default', () => pm.expect(json.data.isDefault).to.be.true);",
+                  "pm.test('✅ Has label', () => pm.expect(json.data.label).to.exist);",
+                  "console.log('📍 Default address:', json.data.label);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Address by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/addresses/{{addressId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "addresses", "{{addressId}}"]
+            },
+            "description": "קבלת כתובת ספציפית לפי ID"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Address retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has address data', () => pm.expect(json.data).to.have.property('_id'));",
+                  "",
+                  "console.log('📍 Address:', json.data.street, json.data.city);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"home\",\n  \"street\": \"הרצל 10\",\n  \"city\": \"תל אביב\",\n  \"postalCode\": \"67890\",\n  \"country\": \"Israel\",\n  \"isDefault\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/addresses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "addresses"]
+            },
+            "description": "יצירת כתובת חדשה\n\n**Required:**\n- label: home|work|other\n- street\n- city\n- postalCode\n\n**Optional:**\n- country (default: Israel)\n- isDefault (default: false, אם כתובת ראשונה תהיה default)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Address created', () => pm.response.to.have.status(201));",
+                  "pm.test('✅ Has address ID', () => pm.expect(json.data).to.have.property('_id'));",
+                  "",
+                  "if (json.data && json.data._id) {",
+                  "    pm.collectionVariables.set('addressId', json.data._id);",
+                  "    console.log('📍 Address created and saved:', json.data._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"work\",\n  \"street\": \"בן גוריון 50\",\n  \"city\": \"ירושלים\",\n  \"postalCode\": \"91234\",\n  \"country\": \"Israel\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/addresses/{{addressId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "addresses", "{{addressId}}"]
+            },
+            "description": "עדכון כתובת קיימת"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Address updated', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has updated data', () => pm.expect(json.data).to.have.property('_id'));",
+                  "",
+                  "console.log('✏️ Address updated:', json.data.street);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set Default Address",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/addresses/{{addressId}}/set-default",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "addresses", "{{addressId}}", "set-default"]
+            },
+            "description": "הגדרת כתובת כברירת מחדל\n\nאם כבר יש כתובת default, היא תושנה ל-false"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('✅ Set as default', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Is default now', () => pm.expect(json.data.isDefault).to.be.true);",
+                  "",
+                  "console.log('⭐ Address set as default');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/addresses/{{addressId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "addresses", "{{addressId}}"]
+            },
+            "description": "מחיקת כתובת\n\nאם הכתובת היא default, כתובת אחרת תהפוך ל-default"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Address deleted', () => pm.response.to.have.status(200));",
+                  "",
+                  "console.log('🗑️ Address deleted');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "🛒 Cart",
       "item": [
         {
@@ -435,7 +855,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/cart/add",
@@ -446,14 +866,57 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// ensure sessionId for guest carts (optional when logged-in)",
+                  "if (!pm.collectionVariables.get('sessionId')) {",
+                  "    const sid = 'sess-' + pm.variables.replaceIn('{{$guid}}');",
+                  "    pm.collectionVariables.set('sessionId', sid);",
+                  "    pm.environment.set('sessionId', sid);",
+                  "    console.log('🆔 sessionId created:', sid);",
+                  "}",
+                  "// ensure productId set (run Get All Products first)",
+                  "if (!pm.collectionVariables.get('productId')) {",
+                  "    console.warn('⚠️ productId missing – run Get All Products to set it.');",
+                  "}",
+                  "// warn if no authToken and relying on guest cart",
+                  "if (!pm.collectionVariables.get('authToken') && !pm.environment.get('authToken')) {",
+                  "    console.log('👤 Guest cart mode (no authToken). sessionId will be used.');",
+                  "}",
+                  "// set Authorization header only if token exists (inherits collection auth otherwise)",
+                  "const token = pm.environment.get('authToken') || pm.collectionVariables.get('authToken');",
+                  "if (token) {",
+                  "    pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token });",
+                  "}",
+                  "// inject sessionId into body if missing (for raw JSON)",
+                  "try {",
+                  "  const body = pm.request.body && pm.request.body.raw ? JSON.parse(pm.request.body.raw) : {};",
+                  "  if (!body.sessionId) { body.sessionId = pm.collectionVariables.get('sessionId'); }",
+                  "  pm.request.body.raw = JSON.stringify(body, null, 2);",
+                  "} catch (e) { console.warn('Could not patch body with sessionId'); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status !== 200) {",
+                  "    pm.test('❌ Add to cart failed', () => pm.expect(status).to.eql(200));",
+                  "    console.warn('❌ Add to cart failed. Ensure sessionId (guest) or authToken (logged-in) and valid productId.');",
+                  "    console.warn('Response:', json);",
+                  "    return;",
+                  "}",
                   "",
                   "pm.test('✅ Added to cart', () => pm.response.to.have.status(200));",
                   "pm.test('✅ Has updated cart', () => pm.expect(json.data).to.be.an('object'));",
+                  "pm.test('✅ Has items array', () => pm.expect(json.data.items).to.be.an('array'));",
                   "",
                   "console.log('✅ Item added to cart');",
                   "console.log('🛒 Total items:', (json.data.items && json.data.items.length) || 0);"
@@ -603,22 +1066,78 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"shippingAddress\": {\"street\": \"הרצל 10\", \"city\": \"תל אביב\", \"postalCode\": \"67890\", \"country\": \"Israel\"},\n  \"paymentMethod\": \"credit_card\",\n  \"notes\": \"נא לארוז מתנה\"\n}"
+              "raw": "{\n  \"shippingAddress\": {\n    \"street\": \"הרצל 10\",\n    \"city\": \"תל אביב\",\n    \"postalCode\": \"67890\",\n    \"country\": \"Israel\"\n  },\n  \"paymentMethod\": \"credit_card\",\n  \"notes\": \"נא לארוז מתנה\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] },
-            "description": "יצירת הזמנה מהעגלה"
+            "description": "יצירת הזמנה מהעגלה\n\n**Required:**\n- shippingAddress (object with street, city, postalCode, country)\n- paymentMethod (string: credit_card, paypal, cash)\n\n**Optional:**\n- notes (string)\n\n**Prerequisites:**\n1. User must be logged in (authToken)\n2. Cart must have items"
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Check if user is logged in",
+                  "const token = pm.environment.get('authToken') || pm.collectionVariables.get('authToken');",
+                  "if (!token) {",
+                  "    console.warn('⚠️ No authToken found. Please login first!');",
+                  "    console.warn('Run: Authentication → Login');",
+                  "}",
+                  "",
+                  "// Check if cart has items",
+                  "console.log('💡 Make sure your cart has items before creating an order.');",
+                  "console.log('💡 Run: Cart → Get Cart to check, or Cart → Add to Cart to add items.');"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "pm.test('✅ Created', () => pm.response.to.have.status(201));",
-                  "pm.test('✅ Has order', () => pm.expect(json.data).to.have.property('order'));",
-                  "if (json.data && json.data.order && json.data.order._id) { pm.collectionVariables.set('orderId', json.data.order._id); }",
-                  "console.log('🧾 Order:', json.data.order?.orderNumber);"
+                  "const status = pm.response.code;",
+                  "",
+                  "// Handle different status codes",
+                  "if (status === 400) {",
+                  "    pm.test('❌ Bad Request', () => pm.expect(status).to.eql(201));",
+                  "    console.error('❌ Create order failed with 400 Bad Request');",
+                  "    console.error('Error:', json.message || json.error || JSON.stringify(json));",
+                  "    ",
+                  "    // Common issues",
+                  "    if (json.message && json.message.includes('cart')) {",
+                  "        console.warn('💡 Cart is empty or invalid. Add items to cart first!');",
+                  "        console.warn('Run: Cart → Add to Cart');",
+                  "    }",
+                  "    if (json.message && json.message.includes('address')) {",
+                  "        console.warn('💡 Shipping address is invalid or missing required fields');",
+                  "    }",
+                  "    return;",
+                  "}",
+                  "",
+                  "if (status === 401) {",
+                  "    pm.test('❌ Unauthorized', () => pm.expect(status).to.eql(201));",
+                  "    console.error('❌ Not logged in. Run: Authentication → Login');",
+                  "    return;",
+                  "}",
+                  "",
+                  "// Success",
+                  "pm.test('✅ Order created', () => pm.response.to.have.status(201));",
+                  "pm.test('✅ Has data', () => pm.expect(json.data).to.exist);",
+                  "",
+                  "if (json.data && json.data.order) {",
+                  "    pm.test('✅ Has order', () => pm.expect(json.data.order).to.exist);",
+                  "    if (json.data.order._id) {",
+                  "        pm.collectionVariables.set('orderId', json.data.order._id);",
+                  "        console.log('✅ Order created successfully!');",
+                  "        console.log('🧾 Order Number:', json.data.order.orderNumber);",
+                  "        console.log('🆔 Order ID saved:', json.data.order._id);",
+                  "        console.log('💰 Total Amount:', json.data.order.totalAmount);",
+                  "    }",
+                  "} else {",
+                  "    console.log('✅ Order created');",
+                  "    console.log('Response:', JSON.stringify(json, null, 2));",
+                  "}"
                 ]
               }
             }
@@ -669,6 +1188,75 @@
           ]
         },
         {
+          "name": "Track Order (P1 - Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/orders/track/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "track", "{{orderId}}"] },
+            "description": "עקיבה אחרי הזמנה (ציבורי - בלא צורך בטוקן)\n\nמחזיר:\n- orderNumber\n- status\n- estimatedDelivery\n- trackingHistory (כל השינויים)\n- items\n- totalAmount\n\n**Prerequisites:**\n- orderId must be set (create an order first)"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Check if orderId exists",
+                  "const orderId = pm.collectionVariables.get('orderId') || pm.environment.get('orderId');",
+                  "if (!orderId) {",
+                  "    console.error('❌ No orderId found!');",
+                  "    console.error('💡 Please create an order first:');",
+                  "    console.error('   1. Login (Authentication → Login)');",
+                  "    console.error('   2. Add items to cart (Cart → Add to Cart)');",
+                  "    console.error('   3. Create order (Orders → Create Order)');",
+                  "    console.error('   4. Then you can track it');",
+                  "} else {",
+                  "    console.log('🆔 Tracking order:', orderId);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "// Handle 404",
+                  "if (status === 404) {",
+                  "    pm.test('❌ Order not found', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ Order not found (404)');",
+                  "    ",
+                  "    const orderId = pm.collectionVariables.get('orderId');",
+                  "    if (!orderId || orderId === '') {",
+                  "        console.error('💡 orderId is empty! Create an order first.');",
+                  "        console.error('   Run: Orders → Create Order');",
+                  "    } else {",
+                  "        console.error('💡 Order ID used:', orderId);",
+                  "        console.error('💡 This order might not exist or was deleted.');",
+                  "    }",
+                  "    return;",
+                  "}",
+                  "",
+                  "// Success",
+                  "pm.test('✅ Tracking info retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has order number', () => pm.expect(json.data).to.have.property('orderNumber'));",
+                  "pm.test('✅ Has status', () => pm.expect(json.data).to.have.property('status'));",
+                  "pm.test('✅ Has tracking history', () => pm.expect(json.data).to.have.property('trackingHistory'));",
+                  "pm.test('✅ Has estimated delivery', () => pm.expect(json.data).to.have.property('estimatedDelivery'));",
+                  "",
+                  "console.log('🧾 Order:', json.data.orderNumber);",
+                  "console.log('📦 Status:', json.data.status);",
+                  "console.log('🚚 Estimated delivery:', new Date(json.data.estimatedDelivery).toLocaleDateString('he-IL'));",
+                  "console.log('📜 Tracking history:', json.data.trackingHistory.length, 'entries');"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Cancel Order",
           "request": {
             "method": "POST",
@@ -684,6 +1272,383 @@
                 "exec": [
                   "pm.test('✅ Cancelled', () => pm.response.to.have.status(200));",
                   "console.log('🛑 Order cancelled');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🛠️ Admin",
+      "item": [
+        {
+          "name": "Admin - List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products?includeInactive=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "products"],
+              "query": [
+                { "key": "includeInactive", "value": "true", "description": "Include inactive (soft-deleted)" }
+              ]
+            },
+            "description": "רשימת מוצרים כולל לא פעילים\n\n**Prerequisites:**\n- User must be logged in\n- User must have role: admin"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Check if user is logged in",
+                  "const token = pm.environment.get('authToken') || pm.collectionVariables.get('authToken');",
+                  "if (!token) {",
+                  "    console.error('❌ No authToken found. Please login first!');",
+                  "    console.error('Run: Authentication → Login');",
+                  "} else {",
+                  "    console.log('✅ Authenticated');",
+                  "}",
+                  "",
+                  "// Warning about admin role",
+                  "console.warn('⚠️ Admin endpoints require role: admin');",
+                  "console.warn('💡 If you get 403 Forbidden:');",
+                  "console.warn('   1. Login as admin user');",
+                  "console.warn('   2. OR use Admin → Update User Role to make your user an admin');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "// Handle 403 Forbidden",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden - Not admin', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ 403 Forbidden: User is not an admin!');",
+                  "    console.error('Error:', json.message || json.error);",
+                  "    console.error('');",
+                  "    console.error('💡 Solutions:');",
+                  "    console.error('   Option 1: Create admin user manually in database');",
+                  "    console.error('   Option 2: Use Admin → Update User Role (requires existing admin)');",
+                  "    console.error('   Option 3: Register new user and update role in MongoDB:');",
+                  "    console.error('      db.users.updateOne({email: \"test@example.com\"}, {$set: {role: \"admin\"}})');",
+                  "    return;",
+                  "}",
+                  "",
+                  "// Handle 401",
+                  "if (status === 401) {",
+                  "    pm.test('❌ Unauthorized', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ Not logged in. Run: Authentication → Login');",
+                  "    return;",
+                  "}",
+                  "",
+                  "// Success",
+                  "pm.test('✅ Admin products fetched', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has products array', () => pm.expect(json.data.products).to.be.an('array'));",
+                  "",
+                  "if (json.data.products && json.data.products.length) {",
+                  "    pm.collectionVariables.set('productId', json.data.products[0]._id);",
+                  "    console.log('📦 Found', json.data.products.length, 'products (including inactive)');",
+                  "    console.log('🔖 First product ID saved:', json.data.products[0]._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Create Product",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"SKU-1001\",\n  \"name\": \"Admin Product\",\n  \"description\": \"Created via admin\",\n  \"price\": 199.99,\n  \"category\": \"general\",\n  \"image\": \"https://via.placeholder.com/300\",\n  \"stock\": 50\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/products", "host": ["{{baseUrl}}"], "path": ["api", "admin", "products"] },
+            "description": "יצירת מוצר חדש (אדמין)\n\n**Prerequisites:**\n- User must be logged in\n- User must have role: admin"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const token = pm.environment.get('authToken') || pm.collectionVariables.get('authToken');",
+                  "if (!token) {",
+                  "    console.error('❌ No authToken. Login first!');",
+                  "} else {",
+                  "    console.log('✅ Authenticated');",
+                  "}",
+                  "console.warn('⚠️ Requires admin role');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden - Not admin', () => pm.expect(status).to.eql(201));",
+                  "    console.error('❌ 403: User is not admin!');",
+                  "    console.error('💡 Update role in MongoDB: db.users.updateOne({email: \"test@example.com\"}, {$set: {role: \"admin\"}})');  ",
+                  "    return;",
+                  "}",
+                  "",
+                  "if (status === 401) {",
+                  "    pm.test('❌ Unauthorized', () => pm.expect(status).to.eql(201));",
+                  "    console.error('❌ Not logged in');",
+                  "    return;",
+                  "}",
+                  "",
+                  "pm.test('✅ Product created', () => pm.response.to.have.status(201));",
+                  "pm.test('✅ Has product', () => pm.expect(json.data).to.have.property('product'));",
+                  "if (json.data.product && json.data.product._id) {",
+                  "    pm.collectionVariables.set('productId', json.data.product._id);",
+                  "    console.log('✅ Product created:', json.data.product.name);",
+                  "    console.log('🔖 Product ID saved:', json.data.product._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 149.99,\n  \"stock\": 80,\n  \"featured\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "products", "{{productId}}"] },
+            "description": "עדכון מוצר (אדמין)\n\n**Prerequisites:** Admin role required"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ 403: Not admin. Update role in MongoDB');",
+                  "    return;",
+                  "}",
+                  "",
+                  "pm.test('✅ Product updated', () => pm.response.to.have.status(200));",
+                  "console.log('✅ Product updated successfully');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Delete Product (soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "products", "{{productId}}"] },
+            "description": "השבתת מוצר (isActive=false)\n\n**Prerequisites:** Admin role required"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ 403: Not admin');",
+                  "    return;",
+                  "}",
+                  "",
+                  "pm.test('✅ Product disabled', () => pm.response.to.have.status(200));",
+                  "console.log('✅ Product disabled successfully');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "רשימת משתמשים (פגינציה)\n\n**Prerequisites:** Admin role required"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ 403: Not admin');",
+                  "    return;",
+                  "}",
+                  "",
+                  "pm.test('✅ Users fetched', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has users array', () => pm.expect(json.data.users).to.be.an('array'));",
+                  "if (json.data.users && json.data.users.length) {",
+                  "    pm.collectionVariables.set('userId', json.data.users[0]._id);",
+                  "    console.log('👥 Found', json.data.users.length, 'users');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Update User Role",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"admin\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}/role", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}", "role"] },
+            "description": "עדכון role למשתמש (user/admin)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Role updated', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has user', () => pm.expect(json.data).to.have.property('user'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - List Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders?status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "orders"],
+              "query": [ { "key": "status", "value": "pending" } ]
+            },
+            "description": "רשימת הזמנות עם פילטר סטטוס\n\n**Prerequisites:** Admin role required"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ 403: Not admin. Update role in MongoDB');",
+                  "    return;",
+                  "}",
+                  "",
+                  "pm.test('✅ Orders fetched', () => pm.response.to.have.status(200));",
+                  "if (json.data.orders && json.data.orders.length) {",
+                  "    pm.collectionVariables.set('orderId', json.data.orders[0]._id);",
+                  "    console.log('📦 Found', json.data.orders.length, 'orders');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\",\n  \"message\": \"שוגר מהמחסן\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/orders/{{orderId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "admin", "orders", "{{orderId}}", "status"] },
+            "description": "עדכון סטטוס הזמנה + Tracking entry\n\n**Prerequisites:** Admin role required"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ 403: Not admin');",
+                  "    return;",
+                  "}",
+                  "",
+                  "pm.test('✅ Status updated', () => pm.response.to.have.status(200));",
+                  "console.log('✅ Order status updated successfully');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Stats Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin/stats/summary", "host": ["{{baseUrl}}"], "path": ["api", "admin", "stats", "summary"] },
+            "description": "סיכום סטטיסטיקות: מכירות, הזמנות פתוחות, מלאי נמוך, משתמשים\n\n**Prerequisites:** Admin role required"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const status = pm.response.code;",
+                  "",
+                  "if (status === 403) {",
+                  "    pm.test('❌ Forbidden', () => pm.expect(status).to.eql(200));",
+                  "    console.error('❌ 403: Not admin');",
+                  "    return;",
+                  "}",
+                  "",
+                  "pm.test('✅ Stats fetched', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has stats', () => pm.expect(json.data).to.have.property('stats'));",
+                  "console.log('📊 Stats retrieved successfully');"
                 ]
               }
             }
@@ -744,7 +1709,17 @@
       "type": "string"
     },
     {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "addressId",
       "value": "",
       "type": "string"
     }

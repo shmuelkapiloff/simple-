@@ -7,11 +7,18 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
+  phone?: string; // ⬅️ חדש
+  role: 'user' | 'admin'; // ⬅️ חדש
   
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
   lastLogin?: Date;
+  lastUpdated?: Date; // ⬅️ חדש
+  
+  // Password reset fields ⬅️ חדש
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 
   // Instance methods
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -48,6 +55,20 @@ const UserSchema = new Schema<IUser>(
       maxlength: [50, "Name cannot exceed 50 characters"],
     },
 
+    // ⬅️ חדש - שדות נוספים
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+      match: [/^[0-9\-\+\(\)\s]*$/, "Please provide a valid phone number"],
+    },
+
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+
     isActive: {
       type: Boolean,
       default: true,
@@ -56,6 +77,24 @@ const UserSchema = new Schema<IUser>(
     lastLogin: {
       type: Date,
     },
+
+    lastUpdated: {
+      type: Date,
+      default: Date.now,
+    },
+
+    // ⬅️ חדש - איפוס סיסמה
+    resetPasswordToken: {
+      type: String,
+      default: null,
+      select: false, // Don't include in queries
+    },
+
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+      select: false, // Don't include in queries
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt
@@ -63,6 +102,8 @@ const UserSchema = new Schema<IUser>(
       virtuals: true,
       transform: function (doc, ret) {
         delete (ret as any).password;
+        delete (ret as any).resetPasswordToken;
+        delete (ret as any).resetPasswordExpires;
         delete (ret as any).__v;
         return ret;
       },
@@ -73,6 +114,7 @@ const UserSchema = new Schema<IUser>(
 // Index for better query performance
 // Email index is already created by unique: true in schema
 UserSchema.index({ createdAt: -1 });
+UserSchema.index({ resetPasswordToken: 1 }); // ⬅️ חדש - לאיפוס סיסמה מהיר
 
 // Pre-save middleware to hash password
 UserSchema.pre("save", async function (next) {
@@ -119,6 +161,7 @@ export type CreateUserInput = {
   email: string;
   password: string;
   name: string;
+  phone?: string; // ⬅️ חדש
 };
 
 export type LoginInput = {
@@ -130,7 +173,15 @@ export type UserResponse = {
   _id: string;
   email: string;
   name: string;
+  phone?: string; // ⬅️ חדש
+  role: string; // ⬅️ חדש
   createdAt: Date;
   updatedAt: Date;
   lastLogin?: Date;
+};
+
+// ⬅️ חדש - טייפ לעדכון פרופיל
+export type UpdateProfileInput = {
+  name?: string;
+  phone?: string;
 };

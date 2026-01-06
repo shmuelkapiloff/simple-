@@ -1,240 +1,167 @@
 import { Request, Response } from "express";
-import {
-  OrderService,
-  CreateOrderData,
-  OrderFilters,
-} from "../services/order.service";
-import { sendSuccess, sendError } from "../utils/response";
-import { logger } from "../utils/logger";
-import { z } from "zod";
-
-// Validation schemas
-const CreateOrderSchema = z.object({
-  shippingAddress: z.object({
-    street: z.string().min(1, "Street address is required"),
-    city: z.string().min(1, "City is required"),
-    postalCode: z.string().min(1, "Postal code is required"),
-    country: z.string().optional().default("Israel"),
-  }),
-  paymentMethod: z.enum(["credit_card", "paypal", "cash_on_delivery"]),
-  notes: z.string().optional(),
-});
-
-const UpdateOrderStatusSchema = z.object({
-  status: z.enum([
-    "pending",
-    "processing",
-    "shipped",
-    "delivered",
-    "cancelled",
-  ]),
-});
+import { OrderService } from "../services/order.service";
+import { CreateOrderInput } from "../models/order.model";
 
 export class OrderController {
   /**
-   * Create a new order from cart
+   * Create new order
    * POST /api/orders
    */
-  static async createOrder(req: Request, res: Response): Promise<void> {
+  static async createOrder(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = (req as any).userId;
+      const orderData: Partial<CreateOrderInput> = req.body;
 
       if (!userId) {
-        return sendError(res, 401, "Authentication required");
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated",
+        });
       }
 
-      // Validate request body
-      const validation = CreateOrderSchema.safeParse(req.body);
-      if (!validation.success) {
-        return sendError(
-          res,
-          400,
-          "Invalid order data",
-          validation.error.errors
-        );
+      // Validate shipping address
+      if (!orderData.shippingAddress) {
+        return res.status(400).json({
+          success: false,
+          message: "Shipping address is required",
+        });
       }
 
-      const orderData: CreateOrderData = {
-        userId,
-        ...validation.data,
-      };
+      const { street, city, postalCode } = orderData.shippingAddress;
+      if (!street || !city || !postalCode) {
+        return res.status(400).json({
+          success: false,
+          message: "Complete shipping address (street, city, postalCode) is required",
+        });
+      }
 
-      // Create the order
-      const order = await OrderService.createOrderFromCart(orderData);
+      const order = await OrderService.createOrder(userId, orderData);
 
-      logger.info(
-        `📋 Order created successfully: ${order.orderNumber} for user: ${userId}`
-      );
-
-      sendSuccess(
-        res,
-        {
-          order: {
-            _id: order._id,
-            orderNumber: order.orderNumber,
-            items: order.items,
-            totalAmount: order.totalAmount,
-            status: order.status,
-            shippingAddress: order.shippingAddress,
-            paymentMethod: order.paymentMethod,
-            paymentStatus: order.paymentStatus,
-            estimatedDelivery: order.estimatedDelivery,
-            createdAt: order.createdAt,
-          },
-        },
-        "ההזמנה נוצרה בהצלחה! 🎉",
-        201
-      );
+      res.status(201).json({
+        success: true,
+        data: { order },
+        message: "Order created successfully",
+      });
     } catch (error: any) {
-      logger.error("❌ Create order failed:", error);
-
-      if (
-        error.message.includes("Cart is empty") ||
-        error.message.includes("Cart not found")
-      ) {
-        return sendError(
-          res,
-          400,
-          "העגלה ריקה או לא נמצאה. אנא הוסף פריטים לעגלה."
-        );
-      }
-
-      if (error.message.includes("Insufficient stock")) {
-        return sendError(res, 400, error.message);
-      }
-
-      sendError(res, 500, "שגיאה ביצירת ההזמנה. אנא נסה שוב.");
+      res.status(400).json({
+        success: false,
+        message: error.message || "Failed to create order",
+      });
     }
   }
 
   /**
    * Get user's orders
-   * GET /api/orders?status=pending&limit=10&offset=0
+   * GET /api/orders?status=pending
    */
-  static async getUserOrders(req: Request, res: Response): Promise<void> {
+  static async getUserOrders(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = (req as any).userId;
+      const { status } = req.query;
 
       if (!userId) {
-        return sendError(res, 401, "Authentication required");
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated",
+        });
       }
 
-      const { status, limit = "10", offset = "0" } = req.query;
+      const filters = status ? { status: status as string } : undefined;
+      const orders = await OrderService.getUserOrders(userId, filters);
 
-      const filters: OrderFilters = {
-        userId,
-        status: status as string,
-        limit: parseInt(limit as string, 10),
-        offset: parseInt(offset as string, 10),
-      };
-
-      const result = await OrderService.getUserOrders(filters);
-
-      sendSuccess(res, result, "הזמנות נטענו בהצלחה");
+      res.status(200).json({
+        success: true,
+        data: { orders },
+      });
     } catch (error: any) {
-      logger.error("❌ Get user orders failed:", error);
-      sendError(res, 500, "שגיאה בטעינת ההזמנות");
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch orders",
+      });
     }
   }
 
   /**
-   * Get specific order by ID
+   * Get order by ID
    * GET /api/orders/:orderId
    */
-  static async getOrderById(req: Request, res: Response): Promise<void> {
+  static async getOrderById(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = (req as any).userId;
       const { orderId } = req.params;
 
       if (!userId) {
-        return sendError(res, 401, "Authentication required");
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated",
+        });
       }
 
       const order = await OrderService.getOrderById(orderId, userId);
 
-      if (!order) {
-        return sendError(res, 404, "הזמנה לא נמצאה");
-      }
-
-      sendSuccess(res, { order }, "פרטי ההזמנה נטענו בהצלחה");
+      res.status(200).json({
+        success: true,
+        data: { order },
+      });
     } catch (error: any) {
-      logger.error("❌ Get order by ID failed:", error);
-      sendError(res, 500, "שגיאה בטעינת פרטי ההזמנה");
+      res.status(404).json({
+        success: false,
+        message: error.message || "Order not found",
+      });
+    }
+  }
+
+  // ⬅️ חדש - מעקב הזמנה
+  /**
+   * Track order
+   * GET /api/orders/track/:orderId
+   */
+  static async trackOrder(req: Request, res: Response) {
+    try {
+      const { orderId } = req.params;
+
+      const tracking = await OrderService.getOrderTracking(orderId);
+
+      res.status(200).json({
+        success: true,
+        data: tracking,
+      });
+    } catch (error: any) {
+      res.status(404).json({
+        success: false,
+        message: error.message || "Order not found",
+      });
     }
   }
 
   /**
-   * Cancel an order
+   * Cancel order
    * POST /api/orders/:orderId/cancel
    */
-  static async cancelOrder(req: Request, res: Response): Promise<void> {
+  static async cancelOrder(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = (req as any).userId;
       const { orderId } = req.params;
 
       if (!userId) {
-        return sendError(res, 401, "Authentication required");
+        return res.status(401).json({
+          success: false,
+          message: "Not authenticated",
+        });
       }
 
       const order = await OrderService.cancelOrder(orderId, userId);
 
-      if (!order) {
-        return sendError(res, 404, "הזמנה לא נמצאה");
-      }
-
-      sendSuccess(res, { order }, "ההזמנה בוטלה בהצלחה");
+      res.status(200).json({
+        success: true,
+        data: { order },
+        message: "Order cancelled successfully",
+      });
     } catch (error: any) {
-      logger.error("❌ Cancel order failed:", error);
-
-      if (error.message.includes("Cannot cancel")) {
-        return sendError(res, 400, error.message);
-      }
-
-      sendError(res, 500, "שגיאה בביטול ההזמנה");
-    }
-  }
-
-  /**
-   * Update order status (Admin only)
-   * PUT /api/orders/:orderId/status
-   */
-  static async updateOrderStatus(req: Request, res: Response): Promise<void> {
-    try {
-      const { orderId } = req.params;
-
-      // Validate request body
-      const validation = UpdateOrderStatusSchema.safeParse(req.body);
-      if (!validation.success) {
-        return sendError(res, 400, "Invalid status", validation.error.errors);
-      }
-
-      const { status } = validation.data;
-
-      const order = await OrderService.updateOrderStatus(orderId, status);
-
-      if (!order) {
-        return sendError(res, 404, "הזמנה לא נמצאה");
-      }
-
-      sendSuccess(res, { order }, `סטטוס ההזמנה עודכן ל-${status}`);
-    } catch (error: any) {
-      logger.error("❌ Update order status failed:", error);
-      sendError(res, 500, "שגיאה בעדכון סטטוס ההזמנה");
-    }
-  }
-
-  /**
-   * Get order statistics (Admin only)
-   * GET /api/orders/stats
-   */
-  static async getOrderStats(req: Request, res: Response): Promise<void> {
-    try {
-      const stats = await OrderService.getOrderStats();
-
-      sendSuccess(res, stats, "סטטיסטיקות הזמנות נטענו בהצלחה");
-    } catch (error: any) {
-      logger.error("❌ Get order stats failed:", error);
-      sendError(res, 500, "שגיאה בטעינת סטטיסטיקות ההזמנות");
+      res.status(400).json({
+        success: false,
+        message: error.message || "Failed to cancel order",
+      });
     }
   }
 }

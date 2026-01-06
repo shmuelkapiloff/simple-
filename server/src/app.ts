@@ -1,32 +1,91 @@
-import express from "express";
-import cors from "cors";
-import compression from "compression";
-import cookieParser from "cookie-parser";
+import express, { Application, Request, Response } from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+import corsConfig from "./config/cors";
 import { errorHandler } from "./middlewares/error.middleware";
-import { healthRouter } from "./routes/health.routes";
-import { productRouter } from "./routes/product.routes";
+import { logger } from "./utils/logger";
+
+// Import routes
+import healthRoutes from "./routes/health.routes";
+import authRoutes from "./routes/auth.routes";
+import productRoutes from "./routes/product.routes";
 import cartRoutes from "./routes/cart.routes";
-import { authRoutes } from "./routes/auth.routes";
 import orderRoutes from "./routes/order.routes";
+import addressRoutes from "./routes/addresses.routes";
+import adminRoutes from "./routes/admin.routes";
 
-export function createApp() {
-  const app = express();
+const app: Application = express();
 
-  // Middlewares
-  app.use(cors()); // Allow cross-origin requests in dev; tighten later
-  app.use(compression()); // gzip responses
-  app.use(express.json()); // parse JSON bodies
-  app.use(cookieParser()); // parse cookies
+/**
+ * Middleware - Security and Parsing
+ */
+app.use(helmet()); // Security headers
+app.use(corsConfig); // CORS configuration for all clients
+app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true, limit: "10mb" })); // Parse URL-encoded bodies
+app.use(morgan("dev")); // HTTP request logger
 
-  // Routes
-  app.use("/api/health", healthRouter);
-  app.use("/api/products", productRouter);
-  app.use("/api/cart", cartRoutes);
-  app.use("/api/auth", authRoutes);
-  app.use("/api/orders", orderRoutes);
+/**
+ * Health check for load balancers
+ */
+app.get("/health", (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
+});
 
-  // Error handler (keep last)
-  app.use(errorHandler);
+/**
+ * API Routes - Versioned for future compatibility
+ */
+app.use("/api/health", healthRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/addresses", addressRoutes);
+app.use("/api/admin", adminRoutes);
 
-  return app;
-}
+/**
+ * Root endpoint - API documentation
+ */
+app.get("/", (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      name: "Simple Shop API",
+      version: "1.0.0",
+      status: "running",
+      endpoints: {
+        health: "/health or /api/health",
+        auth: "/api/auth",
+        products: "/api/products",
+        cart: "/api/cart",
+        orders: "/api/orders",
+        addresses: "/api/addresses",
+        admin: "/api/admin",
+      },
+      documentation: "/docs (coming soon)",
+    },
+    message: "Welcome to Simple Shop API",
+  });
+});
+
+/**
+ * 404 handler - Not Found
+ */
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: "NOT_FOUND",
+    message: `Route ${req.method} ${req.path} not found`,
+  });
+});
+
+/**
+ * Global error handler (must be last)
+ */
+app.use(errorHandler);
+
+export default app;
