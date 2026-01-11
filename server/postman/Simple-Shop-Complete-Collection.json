@@ -85,7 +85,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"bizz0123456789k@gmail.com\",\n  \"password\": \"Admin123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
@@ -142,7 +142,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"Admin123!\"\n}"
+              "raw": "{\n  \"email\": \"bizz0123456789k@gmail.com\",\n  \"password\": \"Admin123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
@@ -254,35 +254,6 @@
           ]
         },
         {
-          "name": "Logout",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "logout"]
-            },
-            "description": "התנתקות מהמערכת"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('✅ Logged out', () => pm.response.to.have.status(200));",
-                  "",
-                  "// ניקוי token (אופציונלי)",
-                  "// pm.collectionVariables.unset('authToken');",
-                  "",
-                  "console.log('👋 Logged out successfully');"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "name": "Update Profile",
           "request": {
             "method": "PUT",
@@ -315,6 +286,41 @@
                   "pm.test('✅ Has updated user', () => pm.expect(json.data).to.have.property('user'));",
                   "",
                   "console.log('👤 Profile updated:', json.data.user);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "התנתקות מהמערכת"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Logged out', () => pm.response.to.have.status(200));",
+                  "",
+                  "// Clear authToken after logout",
+                  "pm.collectionVariables.unset('authToken');",
+                  "pm.collectionVariables.unset('userId');",
+                  "pm.collectionVariables.unset('userEmail');",
+                  "pm.environment.unset('authToken');",
+                  "pm.environment.unset('userId');",
+                  "pm.environment.unset('userEmail');",
+                  "",
+                  "console.log('👋 Logged out successfully');",
+                  "console.log('🧹 Token cleared from collection and environment');"
                 ]
               }
             }
@@ -354,7 +360,16 @@
                   "",
                   "let reqEmail = '';",
                   "try { const body = JSON.parse(pm.request.body.raw || '{}'); reqEmail = body.email || ''; } catch (e) {}",
-                  "console.log('📧 Reset email sent to:', reqEmail || '(unknown)');"
+                  "console.log('📧 Reset email sent to:', reqEmail || '(unknown)');",
+                  "",
+                  "// Dev convenience: capture resetToken if server returned it (NODE_ENV !== production)",
+                  "if (json.resetToken) {",
+                  "    pm.environment.set('resetToken', json.resetToken);",
+                  "    pm.collectionVariables.set('resetToken', json.resetToken);",
+                  "    console.log('🔑 Saved resetToken to environment/collection:', json.resetToken);",
+                  "} else {",
+                  "    console.log('ℹ️ No resetToken in response (expected in production). Check your email.');",
+                  "}"
                 ]
               }
             }
@@ -372,14 +387,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"RESET_TOKEN_FROM_EMAIL\",\n  \"newPassword\": \"newPassword123\"\n}"
+              "raw": "{\n  \"newPassword\": \"newPassword123\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/reset-password/RESET_TOKEN_FROM_EMAIL",
+              "raw": "{{baseUrl}}/api/auth/reset-password/{{resetToken}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "reset-password", "RESET_TOKEN_FROM_EMAIL"]
+              "path": ["api", "auth", "reset-password", "{{resetToken}}"]
             },
-            "description": "איפוס סיסמה עם טוקן\n\n**Required:**\n- token (from email link) - בparam\n- newPassword (string, min 6 chars) - בbody\n\n**Usage:**\n1. קבל את הטוקן מהדוא\"ל\n2. החלף את RESET_TOKEN_FROM_EMAIL בטוקן האמיתי\n3. שנה את הסיסמה החדשה"
+            "description": "איפוס סיסמה עם טוקן\n\n**Required:**\n- token (from email link) - ב-URL param\n- newPassword (string, min 6 chars) - בbody\n\n**Usage (dev/test):**\n1. הרץ Forgot Password – הטוקן נשמר ב-resetToken אוטומטית\n2. הרץ Reset Password – ה-URL משתמש ב-{{resetToken}}\n\n**Production:** אם אין resetToken בתגובה, העתק מהדוא\"ל והדבק ב-resetToken (environment/collection var)"
           },
           "event": [
             {
@@ -855,7 +870,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/cart/add",
@@ -870,32 +885,19 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// ensure sessionId for guest carts (optional when logged-in)",
-                  "if (!pm.collectionVariables.get('sessionId')) {",
-                  "    const sid = 'sess-' + pm.variables.replaceIn('{{$guid}}');",
-                  "    pm.collectionVariables.set('sessionId', sid);",
-                  "    pm.environment.set('sessionId', sid);",
-                  "    console.log('🆔 sessionId created:', sid);",
-                  "}",
-                  "// ensure productId set (run Get All Products first)",
+                  "// Ensure productId is set (run Get All Products first)",
                   "if (!pm.collectionVariables.get('productId')) {",
                   "    console.warn('⚠️ productId missing – run Get All Products to set it.');",
                   "}",
-                  "// warn if no authToken and relying on guest cart",
-                  "if (!pm.collectionVariables.get('authToken') && !pm.environment.get('authToken')) {",
-                  "    console.log('👤 Guest cart mode (no authToken). sessionId will be used.');",
-                  "}",
-                  "// set Authorization header only if token exists (inherits collection auth otherwise)",
+                  "",
+                  "// Ensure authToken exists (authentication required)",
                   "const token = pm.environment.get('authToken') || pm.collectionVariables.get('authToken');",
-                  "if (token) {",
-                  "    pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + token });",
-                  "}",
-                  "// inject sessionId into body if missing (for raw JSON)",
-                  "try {",
-                  "  const body = pm.request.body && pm.request.body.raw ? JSON.parse(pm.request.body.raw) : {};",
-                  "  if (!body.sessionId) { body.sessionId = pm.collectionVariables.get('sessionId'); }",
-                  "  pm.request.body.raw = JSON.stringify(body, null, 2);",
-                  "} catch (e) { console.warn('Could not patch body with sessionId'); }"
+                  "if (!token) {",
+                  "    console.error('❌ No authToken found! Please login first.');",
+                  "    console.log('👉 Run: Authentication → Login or Register');",
+                  "} else {",
+                  "    console.log('✅ authToken found, adding to request');",
+                  "}"
                 ]
               }
             },
@@ -909,7 +911,7 @@
                   "",
                   "if (status !== 200) {",
                   "    pm.test('❌ Add to cart failed', () => pm.expect(status).to.eql(200));",
-                  "    console.warn('❌ Add to cart failed. Ensure sessionId (guest) or authToken (logged-in) and valid productId.');",
+                  "    console.warn('❌ Add to cart failed. Ensure authToken (login required) and valid productId.');",
                   "    console.warn('Response:', json);",
                   "    return;",
                   "}",
@@ -1080,13 +1082,86 @@
                   "// Check if user is logged in",
                   "const token = pm.environment.get('authToken') || pm.collectionVariables.get('authToken');",
                   "if (!token) {",
-                  "    console.warn('⚠️ No authToken found. Please login first!');",
-                  "    console.warn('Run: Authentication → Login');",
+                  "    console.error('❌ No authToken found. Please login first!');",
+                  "    return;",
                   "}",
                   "",
-                  "// Check if cart has items",
-                  "console.log('💡 Make sure your cart has items before creating an order.');",
-                  "console.log('💡 Run: Cart → Get Cart to check, or Cart → Add to Cart to add items.');"
+                  "// Auto-add items to cart if empty",
+                  "const baseUrl = pm.environment.get('baseUrl') || pm.collectionVariables.get('baseUrl') || 'http://localhost:4001';",
+                  "",
+                  "console.log('🔍 Checking cart count...');",
+                  "",
+                  "pm.sendRequest({",
+                  "    url: `${baseUrl}/api/cart/count`,",
+                  "    method: 'GET',",
+                  "    header: {",
+                  "        'Authorization': `Bearer ${token}`",
+                  "    }",
+                  "}, (err, response) => {",
+                  "    if (err || !response || response.code !== 200) {",
+                  "        console.warn('⚠️ Could not check cart count');",
+                  "        return;",
+                  "    }",
+                  "    ",
+                  "    const body = response.json();",
+                  "    const count = body.data?.count || 0;",
+                  "    ",
+                  "    if (count > 0) {",
+                  "        console.log(`✅ Cart has ${count} item(s) - proceeding with order`);",
+                  "        return;",
+                  "    }",
+                  "    ",
+                  "    console.log('⚠️ Cart is empty - auto-adding a product...');",
+                  "    ",
+                  "    // Get first product",
+                  "    pm.sendRequest({",
+                  "        url: `${baseUrl}/api/products`,",
+                  "        method: 'GET'",
+                  "    }, (err2, res2) => {",
+                  "        if (err2 || !res2 || res2.code !== 200) {",
+                  "            console.error('❌ Could not fetch products');",
+                  "            return;",
+                  "        }",
+                  "        ",
+                  "        const products = res2.json();",
+                  "        if (!products.data || products.data.length === 0) {",
+                  "            console.error('❌ No products available. Run seed script first.');",
+                  "            return;",
+                  "        }",
+                  "        ",
+                  "        const firstProduct = products.data[0];",
+                  "        console.log(`📦 Adding product: ${firstProduct.name}`);",
+                  "        ",
+                  "        // Add to cart",
+                  "        pm.sendRequest({",
+                  "            url: `${baseUrl}/api/cart/add`,",
+                  "            method: 'POST',",
+                  "            header: {",
+                  "                'Content-Type': 'application/json',",
+                  "                'Authorization': `Bearer ${token}`",
+                  "            },",
+                  "            body: {",
+                  "                mode: 'raw',",
+                  "                raw: JSON.stringify({",
+                  "                    productId: firstProduct._id,",
+                  "                    quantity: 1",
+                  "                })",
+                  "            }",
+                  "        }, (err3, res3) => {",
+                  "            if (err3 || !res3 || res3.code !== 200) {",
+                  "                console.error('❌ Failed to add item to cart');",
+                  "                return;",
+                  "            }",
+                  "            console.log('✅ Item added to cart');",
+                  "            console.log('⏳ Waiting 6 seconds for MongoDB sync...');",
+                  "            ",
+                  "            // Wait 6 seconds for cart to be saved to MongoDB (server has 5s delay)",
+                  "            setTimeout(() => {",
+                  "                console.log('✅ MongoDB sync complete - ready to create order');",
+                  "            }, 6000);",
+                  "        });",
+                  "    });",
+                  "});"
                 ]
               }
             },
@@ -1705,11 +1780,6 @@
     },
     {
       "key": "productId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "sessionId",
       "value": "",
       "type": "string"
     },

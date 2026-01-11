@@ -7,11 +7,18 @@ import {
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { logger } from "../utils/logger";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const JWT_EXPIRE = process.env.JWT_EXPIRE || "7d";
 
 export class AuthService {
+  /**
+   * ==========================================
+   * 🔓 PUBLIC METHODS (No auth required)
+   * ==========================================
+   */
+
   /**
    * Register a new user
    */
@@ -78,59 +85,6 @@ export class AuthService {
   }
 
   /**
-   * Verify JWT token
-   */
-  static async verifyToken(token: string) {
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-      const user = await UserModel.findById(decoded.userId);
-
-      if (!user || !user.isActive) {
-        throw new Error("Invalid token");
-      }
-
-      return this.sanitizeUser(user);
-    } catch (error) {
-      throw new Error("Invalid token");
-    }
-  }
-
-  /**
-   * Get user profile
-   */
-  static async getProfile(userId: string) {
-    const user = await UserModel.findById(userId);
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    return this.sanitizeUser(user);
-  }
-
-  // ⬅️ חדש - עדכון פרופיל
-  /**
-   * Update user profile
-   */
-  static async updateProfile(userId: string, data: UpdateProfileInput) {
-    const user = await UserModel.findById(userId);
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Update fields
-    if (data.name !== undefined) user.name = data.name;
-    if (data.phone !== undefined) user.phone = data.phone;
-    user.lastUpdated = new Date();
-
-    await user.save();
-
-    return this.sanitizeUser(user);
-  }
-
-  // ⬅️ חדש - שליחת בקשה לאיפוס סיסמה
-  /**
    * Send password reset email
    */
   static async forgotPassword(email: string) {
@@ -145,6 +99,8 @@ export class AuthService {
         message: "If this email exists, a password reset link has been sent",
       };
     }
+
+    const includeTokenInResponse = process.env.NODE_ENV !== "production";
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -172,22 +128,22 @@ export class AuthService {
       await user.save();
       // Do NOT fail the request: return generic success to avoid 500s and user enumeration
       // This is especially helpful in local/dev when SMTP creds are not valid
-      // eslint-disable-next-line no-console
-      console.warn(
-        "Failed to send reset email, returning generic success",
-        error
+      logger.warn(
+        { error },
+        "Failed to send reset email, returning generic success"
       );
       return {
         message: "If this email exists, a password reset link has been sent",
+        ...(includeTokenInResponse ? { resetToken } : {}),
       };
     }
 
     return {
       message: "Password reset link has been sent to your email",
+      ...(includeTokenInResponse ? { resetToken } : {}),
     };
   }
 
-  // ⬅️ חדש - איפוס סיסמה בפועל
   /**
    * Reset password with token
    */
@@ -226,7 +182,69 @@ export class AuthService {
     };
   }
 
-  // ⬅️ חדש - שליחת Email
+  /**
+   * ==========================================
+   * 🔐 PROTECTED METHODS (Auth required)
+   * ==========================================
+   */
+
+  /**
+   * Verify JWT token
+   */
+  static async verifyToken(token: string) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const user = await UserModel.findById(decoded.userId);
+
+      if (!user || !user.isActive) {
+        throw new Error("Invalid token");
+      }
+
+      return this.sanitizeUser(user);
+    } catch (error) {
+      throw new Error("Invalid token");
+    }
+  }
+
+  /**
+   * Get user profile
+   */
+  static async getProfile(userId: string) {
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * Update user profile
+   */
+  static async updateProfile(userId: string, data: UpdateProfileInput) {
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Update fields
+    if (data.name !== undefined) user.name = data.name;
+    if (data.phone !== undefined) user.phone = data.phone;
+    user.lastUpdated = new Date();
+
+    await user.save();
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * ==========================================
+   * 🛠️ HELPER METHODS
+   * ==========================================
+   */
+
   /**
    * Send password reset email
    */
@@ -242,8 +260,8 @@ export class AuthService {
      */
     // If SMTP credentials are not configured, skip sending and log for local/dev
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.log("⚠️ EMAIL_USER/EMAIL_PASSWORD not set - skipping email send");
-      console.log(`Reset URL for ${to}: ${resetUrl}`);
+      logger.info("⚠️ EMAIL_USER/EMAIL_PASSWORD not set - skipping email send");
+      logger.info(`Reset URL for ${to}: ${resetUrl}`);
       return;
     }
 
@@ -324,3 +342,4 @@ export class AuthService {
     return userObject;
   }
 }
+

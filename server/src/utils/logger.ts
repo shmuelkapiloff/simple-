@@ -31,7 +31,7 @@ export const log = {
     logger.debug({ service, data }, message);
   },
   // Simple logging methods
-  info: (message: string, data?: any) => logger.info({ data }, message),
-  error: (message: string, data?: any) => logger.error({ data }, message),
-  warn: (message: string, data?: any) => logger.warn({ data }, message),
+  info: (message: string, data?: any) => logger.info(data || {}, message),
+  error: (message: string, data?: any) => logger.error(data || {}, message),
+  warn: (message: string, data?: any) => logger.warn(data || {}, message),
 };

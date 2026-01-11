@@ -4,17 +4,15 @@ import { sendSuccess, sendError } from "../utils/response";
 
 export class CartController {
   static async getCart(req: Request, res: Response): Promise<void> {
-    console.log("\n\n\n\n\nGetting cart...\n\n\n\n\n");
-
     try {
-      const userId = (req as any).userId; // From requireAuth middleware
-
-      console.log(`\nGetting cart for user: ${userId}`);
+      const userId = (req as any).userId; // From auth middleware
 
       if (!userId) {
         sendError(res, 401, "Authentication required");
         return;
       }
+
+      console.log(`Getting cart for user: ${userId}`);
 
       const cart = await CartService.getCart(userId);
 
@@ -35,17 +33,23 @@ export class CartController {
   }
 
   static async addToCart(req: Request, res: Response): Promise<void> {
-    console.log("\n\n\n\n\nAdding item to cart...\n\n\n\n\n$");
     try {
       const { productId, quantity } = req.body;
-      const userId = (req as any).userId; // From requireAuth middleware
+      const userId = (req as any).userId; // From auth middleware
 
-      console.log(`\nAdding to cart:\n ${productId}\n x${quantity}\n user: ${userId}`);
-
-      if (!userId || !productId || !quantity) {
-        sendError(res, 400, "Missing required fields");
+      if (!userId) {
+        sendError(res, 401, "Authentication required");
         return;
       }
+
+      if (!productId || !quantity) {
+        sendError(res, 400, "Missing required fields: productId and quantity");
+        return;
+      }
+
+      console.log(
+        `Adding to cart: product ${productId} x${quantity} for user ${userId}`
+      );
 
       const cart = await CartService.addToCart(productId, quantity, userId);
       sendSuccess(res, cart, "Item added to cart");
@@ -63,20 +67,29 @@ export class CartController {
   }
 
   static async updateQuantity(req: Request, res: Response): Promise<void> {
-    console.log("\n\n\n\n\nUpdating item quantity...\n\n\n\n\n");
-
     try {
       const { productId, quantity } = req.body;
-      const userId = (req as any).userId;
+      const userId = (req as any).userId; // From auth middleware
 
-      console.log(`Updating quantity: ${productId} to ${quantity}`);
-
-      if (!userId || !productId || quantity === undefined) {
-        sendError(res, 400, "Missing required fields");
+      if (!userId) {
+        sendError(res, 401, "Authentication required");
         return;
       }
 
-      const cart = await CartService.updateQuantity(productId, quantity, userId);
+      if (!productId || quantity === undefined) {
+        sendError(res, 400, "Missing required fields: productId and quantity");
+        return;
+      }
+
+      console.log(
+        `Updating quantity: product ${productId} to ${quantity} for user ${userId}`
+      );
+
+      const cart = await CartService.updateQuantity(
+        productId,
+        quantity,
+        userId
+      );
 
       if (!cart) {
         sendError(res, 404, "Cart not found");
@@ -91,18 +104,23 @@ export class CartController {
   }
 
   static async removeFromCart(req: Request, res: Response): Promise<void> {
-    console.log("\n\n\n\n\nRemoving item from cart...\n\n\n\n\n");
-
     try {
       const { productId } = req.body;
-      const userId = (req as any).userId;
+      const userId = (req as any).userId; // From auth middleware
 
-      console.log(`Removing from cart: ${productId}`);
-
-      if (!userId || !productId) {
-        sendError(res, 400, "Missing required fields");
+      if (!userId) {
+        sendError(res, 401, "Authentication required");
         return;
       }
+
+      if (!productId) {
+        sendError(res, 400, "Missing required field: productId");
+        return;
+      }
+
+      console.log(
+        `Removing from cart: product ${productId} for user ${userId}`
+      );
 
       const cart = await CartService.removeFromCart(productId, userId);
 
@@ -119,16 +137,15 @@ export class CartController {
   }
 
   static async clearCart(req: Request, res: Response): Promise<void> {
-    console.log("\n\n\n\n\nClearing cart...\n\n\n\n\n");
     try {
-      const userId = (req as any).userId;
-
-      console.log(`Clearing cart for user: ${userId}`);
+      const userId = (req as any).userId; // From auth middleware
 
       if (!userId) {
         sendError(res, 401, "Authentication required");
         return;
       }
+
+      console.log(`Clearing cart for user: ${userId}`);
 
       const success = await CartService.clearCart(userId);
 
@@ -145,9 +162,8 @@ export class CartController {
   }
 
   static async getCartCount(req: Request, res: Response): Promise<void> {
-    console.log("\n\n\n\n\nGetting cart count...\n\n\n\n\n");
     try {
-      const userId = (req as any).userId;
+      const userId = (req as any).userId; // From auth middleware
 
       if (!userId) {
         sendSuccess(res, { count: 0 });
@@ -163,27 +179,6 @@ export class CartController {
     } catch (error: any) {
       console.error("Error getting cart count:", error);
       sendSuccess(res, { count: 0 });
-    }
-  }
-}
-        sendError(res, 400, "Guest session ID is required");
-        return;
-      }
-
-      const mergedCart = await CartService.mergeGuestCartToUser(
-        guestSessionId,
-        userId
-      );
-
-      if (!mergedCart) {
-        sendSuccess(res, { message: "No guest cart to merge" });
-        return;
-      }
-
-      sendSuccess(res, mergedCart, "Cart merged successfully");
-    } catch (error: any) {
-      console.error("Error merging cart:", error);
-      sendError(res, 500, "Failed to merge cart");
     }
   }
 }

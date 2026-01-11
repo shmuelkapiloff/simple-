@@ -27,13 +27,12 @@ Client → Middleware (app.ts: CORS, Helmet, JSON, Logger)
 - **GET /** → `product.controller.getProducts` → `product.service.listProducts` → `ProductModel.find({ isActive: true }).lean()`
 - **GET /:id** → `product.controller.getProduct` → `product.service.getProductById` → `ProductModel.findById(id).lean()`
 
-## Cart (/api/cart)
-- **GET /** → `optionalAuth` → `cart.controller.getCart` → `cart.service.getCart(userId||sessionId)` → `CartModel.findOne().populate('items.product')`
-- **POST /add** → `optionalAuth` → `cart.controller.addToCart` → `cart.service.addToCart`
-- **PUT /update** → `cart.controller.updateCartQuantity` → `cart.service.updateCartQuantity`
-- **DELETE /remove** → `cart.controller.removeFromCart` → `cart.service.removeFromCart`
-- **DELETE /clear** → `cart.controller.clearCart` → `cart.service.clearCart`
-- **POST /merge** → `cart.controller.mergeGuestCart` → `cart.service.mergeGuestCart`
+## Cart (/api/cart) – **דורש אימות (requireAuth)**
+- **GET /** → `requireAuth` → `cart.controller.getCart` → `cart.service.getCart(userId)` → `CartModel.findOne({ userId }).populate('items.product')`
+- **POST /add** → `requireAuth` → `cart.controller.addToCart` → `cart.service.addToCart(productId, quantity, userId)`
+- **PUT /update** → `requireAuth` → `cart.controller.updateCartQuantity` → `cart.service.updateQuantity(productId, quantity, userId)`
+- **DELETE /remove** → `requireAuth` → `cart.controller.removeFromCart` → `cart.service.removeFromCart(productId, userId)`
+- **DELETE /clear** → `requireAuth` → `cart.controller.clearCart` → `cart.service.clearCart(userId)`
 
 ## Orders (/api/orders)
 - **POST /** → `requireAuth` → `order.controller.createOrder` → `order.service.createOrder`
@@ -74,7 +73,7 @@ server/src/app.ts              # חיבור middleware ונתיבים
 server/src/server.ts           # אתחול השרת
 server/src/config/cors.ts      # CORS
 server/src/config/env.ts       # משתני סביבה
-server/src/middlewares/auth.middleware.ts  # requireAuth/requireAdmin/optionalAuth
+server/src/middlewares/auth.middleware.ts  # requireAuth/requireAdmin
 server/src/middlewares/error.middleware.ts # טיפול בשגיאות
 server/src/routes/*.routes.ts  # ניתוב
 server/src/controllers/*.ts    # בקר

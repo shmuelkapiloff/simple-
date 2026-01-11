@@ -1,16 +1,14 @@
 import { Router } from "express";
 import { OrderController } from "../controllers/order.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import { asyncHandler } from "../utils/asyncHandler";
 
 const router = Router();
 
 /**
- * Order operations
+ * Public endpoint - Track order (NO AUTH REQUIRED)
  */
-
-// ⬅️ Public endpoint - GET /api/orders/track/:orderId - Track order (NO AUTH REQUIRED)
-// Note: Placed BEFORE authenticate middleware
-router.get("/track/:orderId", OrderController.trackOrder);
+router.get("/track/:orderId", asyncHandler(OrderController.trackOrder));
 
 /**
  * All routes below require authentication
@@ -18,15 +16,15 @@ router.get("/track/:orderId", OrderController.trackOrder);
 router.use(authenticate);
 
 // POST /api/orders - Create new order from cart
-router.post("/", OrderController.createOrder);
+router.post("/", asyncHandler(OrderController.createOrder));
 
 // GET /api/orders - Get user's orders (with optional status filter)
-router.get("/", OrderController.getUserOrders);
+router.get("/", asyncHandler(OrderController.getUserOrders));
 
 // GET /api/orders/:orderId - Get order by ID
-router.get("/:orderId", OrderController.getOrderById);
+router.get("/:orderId", asyncHandler(OrderController.getOrderById));
 
 // POST /api/orders/:orderId/cancel - Cancel order
-router.post("/:orderId/cancel", OrderController.cancelOrder);
+router.post("/:orderId/cancel", asyncHandler(OrderController.cancelOrder));
 
 export default router;

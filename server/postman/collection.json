@@ -1,6 +1,7 @@
 {
   "info": {
-    "name": "Simple Shop API (Step 1)",
+    "name": "Simple Shop API - Basic Tests",
+    "description": "Basic collection for testing Health and Products endpoints (no auth required)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -21,8 +22,6 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "// Note: Pre-request scripts run before the request is sent, so the response object is not yet available.",
-              "// For more information, see: https://learning.postman.com/docs/tests-and-scripts/write-scripts/pre-request-scripts/",
               "if (!pm.collectionVariables.get('baseUrl')) { pm.collectionVariables.set('baseUrl', 'http://localhost:4001'); }"
             ]
           }
@@ -40,8 +39,7 @@
           }
         }
       ]
-    }
-    ,
+    },
     {
       "name": "Products",
       "item": [
@@ -57,9 +55,9 @@
               "pm.test('200', () => pm.response.to.have.status(200));",
               "pm.test('data array', () => pm.expect(Array.isArray(j.data)).to.eql(true));",
               "pm.test('has products', () => pm.expect(j.data.length).to.be.greaterThan(0));",
-              "// שמור ID של מוצר ראשון למטרות בדיקה",
               "if (j.data.length > 0) {",
               "  pm.collectionVariables.set('firstProductId', j.data[0]._id);",
+              "  pm.environment.set('productId', j.data[0]._id);",
               "}"
             ] } }
           ]

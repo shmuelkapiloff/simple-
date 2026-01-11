@@ -2,7 +2,13 @@ import { Schema, model, Document } from "mongoose";
 
 // Tracking History Item Interface
 export interface ITrackingHistory {
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status:
+    | "pending"
+    | "confirmed"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
   timestamp: Date;
   message?: string;
 }
@@ -20,8 +26,14 @@ export interface IOrder extends Document {
     image?: string;
   }>;
   totalAmount: number;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  status:
+    | "pending"
+    | "confirmed"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
+  paymentStatus: "pending" | "paid" | "failed" | "refunded";
   paymentMethod: string;
   shippingAddress: {
     street: string;
@@ -86,21 +98,28 @@ const OrderSchema = new Schema<IOrder>(
 
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: [
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ],
+      default: "pending",
       index: true,
     },
 
     paymentStatus: {
       type: String,
-      enum: ['pending', 'paid', 'failed', 'refunded'],
-      default: 'pending',
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
     },
 
     paymentMethod: {
       type: String,
       required: true,
-      enum: ['credit_card', 'paypal', 'cash_on_delivery'],
+      enum: ["credit_card", "paypal", "cash_on_delivery"],
     },
 
     shippingAddress: {
@@ -127,7 +146,14 @@ const OrderSchema = new Schema<IOrder>(
       {
         status: {
           type: String,
-          enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
+          enum: [
+            "pending",
+            "confirmed",
+            "processing",
+            "shipped",
+            "delivered",
+            "cancelled",
+          ],
           required: true,
         },
         timestamp: {
@@ -166,17 +192,16 @@ const OrderSchema = new Schema<IOrder>(
 // Indexes for better query performance
 OrderSchema.index({ user: 1, createdAt: -1 });
 OrderSchema.index({ status: 1, createdAt: -1 });
-OrderSchema.index({ orderNumber: 1 });
 
 // ⬅️ חדש - Pre-save middleware: add initial tracking entry
 OrderSchema.pre("save", function (next) {
   if (this.isNew && this.trackingHistory.length === 0) {
     this.trackingHistory.push({
-      status: 'pending',
+      status: "pending",
       timestamp: new Date(),
-      message: 'Order has been placed',
+      message: "Order has been placed",
     });
-    
+
     // Set estimated delivery (5 business days)
     const estimatedDate = new Date();
     estimatedDate.setDate(estimatedDate.getDate() + 5);

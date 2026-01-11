@@ -15,51 +15,49 @@ export interface CartItem {
 }
 
 export interface CartState {
-  sessionId: string | null;
   items: CartItem[];
   total: number;
   itemCount: number;
   loading: boolean;
   error: string | null;
+  sessionId?: string | null;
 }
 
 // Initial state
 const initialState: CartState = {
-  sessionId: null,
   items: [],
   total: 0,
   itemCount: 0,
   loading: false,
   error: null,
+  sessionId: undefined,
+};
+/**
+ * Cart session handling (guest session ID)
+ */
+const CART_SESSION_KEY = "cart-session-id";
+
+const generateSessionId = (): string => {
+  const rand = Math.random().toString(36).slice(2, 10);
+  const id = `sess_${Date.now()}_${rand}`;
+  return id;
 };
 
-// Helper functions
-const generateSessionId = (): string => {
-  // 🔍 נסה לטעון sessionId קיים מ-localStorage
-  const existingSessionId = localStorage.getItem("cart-session-id");
-
-  if (existingSessionId) {
-    console.log("🔄 Using existing session ID:", existingSessionId);
-    return existingSessionId;
+const getOrCreateSessionId = (): string => {
+  let sessionId = localStorage.getItem(CART_SESSION_KEY);
+  if (!sessionId) {
+    sessionId = generateSessionId();
+    localStorage.setItem(CART_SESSION_KEY, sessionId);
   }
-
-  // 🆕 צור sessionId חדש
-  const newSessionId = `guest-${Date.now()}-${Math.random()
-    .toString(36)
-    .substr(2, 9)}`;
-
-  // 💾 שמור ב-localStorage לעתיד
-  localStorage.setItem("cart-session-id", newSessionId);
-  console.log("🆕 Created new session ID:", newSessionId);
-
-  return newSessionId;
+  return sessionId;
 };
 
 const calculateTotals = (items: CartItem[]) => {
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const total = items.reduce((sum, item) => {
+    // Use item.price if available, otherwise use product.price
+    const price = item.price ?? item.product?.price ?? 0;
+    return sum + price * item.quantity;
+  }, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   return { total, itemCount };
 };
@@ -67,16 +65,18 @@ const calculateTotals = (items: CartItem[]) => {
 // Cart Slice
 export const cartSlice = createSlice({
   name: "cart",
-  initialState,
+  initialState: { ...initialState, sessionId: getOrCreateSessionId() },
   reducers: {
-    // Initialize cart with session ID
+    // Initialize cart sessionId if missing
     initializeCart: (state) => {
       if (!state.sessionId) {
-        state.sessionId = generateSessionId();
-        console.log("🆕 Cart initialized with sessionId:", state.sessionId);
+        state.sessionId = getOrCreateSessionId();
+      } else {
+        try {
+          localStorage.setItem(CART_SESSION_KEY, state.sessionId);
+        } catch {}
       }
     },
-
     // Set cart data (from API)
     setCart: (
       state,
@@ -86,16 +86,20 @@ export const cartSlice = createSlice({
         sessionId?: string;
       }>
     ) => {
-      const { items, total, sessionId } = action.payload;
+      const { items, total } = action.payload;
       state.items = items;
       state.total = total;
-      if (sessionId) state.sessionId = sessionId;
+
+      // Optionally update sessionId from server payload
+      if (action.payload.sessionId) {
+        state.sessionId = action.payload.sessionId;
+      }
 
       const { itemCount } = calculateTotals(items);
       state.itemCount = itemCount;
       state.error = null;
 
-      console.log("📥 Cart set:", { itemCount, total, sessionId });
+      console.log("📥 Cart set:", { itemCount, total });
     },
 
     // Add item optimistically (before API call)
@@ -204,6 +208,7 @@ export const cartSlice = createSlice({
       // 🧹 נקה גם sessionId מ-localStorage כשמנקים עגלה לגמרי
       if (state.sessionId) {
         localStorage.removeItem("cart-session-id");
+        state.sessionId = null;
         console.log("🧹 Cart cleared and session ID removed from storage");
       }
 
@@ -235,15 +240,6 @@ export const cartSlice = createSlice({
 
       console.log("↩️ Optimistic update reverted");
     },
-
-    // 🔧 Debug function - מחק sessionId מ-localStorage (לטסטים)
-    resetSessionId: (state) => {
-      localStorage.removeItem("cart-session-id");
-      state.sessionId = null;
-      console.log(
-        "🔧 Session ID reset - next initializeCart will create new one"
-      );
-    },
   },
 });
 
@@ -258,7 +254,6 @@ export const {
   setLoading,
   setError,
   revertOptimisticUpdate,
-  resetSessionId,
 } = cartSlice.actions;
 
 // Selectors
@@ -270,12 +265,14 @@ export const selectCartItemCount = (state: { cart: CartState }) =>
 export const selectCartLoading = (state: { cart: CartState }) =>
   state.cart.loading;
 export const selectCartError = (state: { cart: CartState }) => state.cart.error;
-export const selectSessionId = (state: { cart: CartState }) =>
-  state.cart.sessionId;
 
 // Helper selector to check if a product is in cart
 export const selectIsInCart = (state: { cart: CartState }, productId: string) =>
   state.cart.items.some((item) => item.product._id === productId);
+
+// Session ID selector
+export const selectSessionId = (state: { cart: CartState }) =>
+  state.cart.sessionId || null;
 
 // Helper selector to get quantity of a product in cart
 export const selectProductQuantity = (

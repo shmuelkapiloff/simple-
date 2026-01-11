@@ -1,8 +1,11 @@
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
-import morgan from "morgan";
 import corsConfig from "./config/cors";
 import { errorHandler } from "./middlewares/error.middleware";
+import {
+  requestIdMiddleware,
+  requestLoggerMiddleware,
+} from "./middlewares/logging.middleware";
 import { logger } from "./utils/logger";
 
 // Import routes
@@ -13,6 +16,7 @@ import cartRoutes from "./routes/cart.routes";
 import orderRoutes from "./routes/order.routes";
 import addressRoutes from "./routes/addresses.routes";
 import adminRoutes from "./routes/admin.routes";
+import paymentRoutes from "./routes/payment.routes";
 
 const app: Application = express();
 
@@ -23,7 +27,8 @@ app.use(helmet()); // Security headers
 app.use(corsConfig); // CORS configuration for all clients
 app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true, limit: "10mb" })); // Parse URL-encoded bodies
-app.use(morgan("dev")); // HTTP request logger
+app.use(requestIdMiddleware); // Assign X-Request-ID
+app.use(requestLoggerMiddleware); // Structured request/response logging
 
 /**
  * Health check for load balancers
@@ -46,6 +51,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/payments", paymentRoutes);
 
 /**
  * Root endpoint - API documentation

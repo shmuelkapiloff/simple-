@@ -1,20 +1,43 @@
-import { useGetProductsQuery, useAddToCartMutation } from "../app/api";
+import {
+  useGetProductsQuery,
+  useAddToCartMutation,
+  useGetCartQuery,
+} from "../app/api";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectSessionId,
   selectCartItems,
   initializeCart,
   setError,
+  setCart,
 } from "../app/cartSlice";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function ProductList() {
   const dispatch = useDispatch();
   const sessionId = useSelector(selectSessionId);
   const cartItems = useSelector(selectCartItems); // ✅ קבל את כל העגלה פעם אחת
   const { data: products = [], error, isLoading } = useGetProductsQuery();
-  const [addToCartMutation, { isLoading: isAddingToCart }] =
-    useAddToCartMutation();
+  const [addToCartMutation] = useAddToCartMutation();
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
+
+  // Load cart from server to sync state
+  const { data: serverCart } = useGetCartQuery(sessionId || "", {
+    skip: !sessionId,
+  });
+
+  // Sync server cart to local state
+  useEffect(() => {
+    if (serverCart && sessionId) {
+      dispatch(
+        setCart({
+          items: serverCart.items,
+          total: serverCart.total,
+          sessionId: serverCart.sessionId,
+        })
+      );
+    }
+  }, [serverCart, dispatch, sessionId]);
 
   // ✅ חישוב מיפוי מוצרים בעגלה
   const cartMap = useMemo(() => {
@@ -32,6 +55,9 @@ export default function ProductList() {
 
   const handleAddToCart = async (product: any) => {
     if (!sessionId) {
+      if (import.meta.env.DEV) {
+        console.warn("No session ID available");
+      }
       dispatch(setError("Session not initialized"));
       return;
     }
@@ -42,20 +68,38 @@ export default function ProductList() {
     }
 
     try {
-      // 📤 לוג מה אנחנו שולחים לשרת
+      // Set loading state for this specific product
+      setAddingProductId(product._id);
+
       const requestData = {
         sessionId,
         productId: product._id,
         quantity: 1,
       };
-      console.log("📤 Sending to server:", requestData);
 
       // 📡 שלח לשרת - חכה לתשובה לפני עדכון UI
       const response = await addToCartMutation(requestData).unwrap();
 
-      // 📥 לוג מה קיבלנו בחזרה
-      console.log("📥 Server response:", response);
-      console.log(`✅ Added ${product.name} to cart`);
+      if (import.meta.env.DEV) {
+        console.log(
+          "✅ Added to cart:",
+          product.name,
+          "|",
+          response.items.length,
+          "items"
+        );
+      }
+
+      // ✅ עדכן את ה-Redux state מיד עם התגובה מהשרת
+      if (response) {
+        dispatch(
+          setCart({
+            items: response.items,
+            total: response.total,
+            sessionId: response.sessionId,
+          })
+        );
+      }
 
       // ✅ UI יתעדכן אוטומטית דרך RTK Query cache invalidation
     } catch (error: any) {
@@ -63,13 +107,33 @@ export default function ProductList() {
 
       // ⚠️ הצג הודעת שגיאה
       dispatch(setError("Failed to add item to cart"));
+    } finally {
+      // Clear loading state
+      setAddingProductId(null);
     }
   };
 
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Loading products...</div>
+        <h2 className="text-3xl font-bold text-gray-900 mb-8">Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-lg shadow-md p-4 animate-pulse"
+            >
+              <div className="w-full h-48 bg-gray-200 rounded-md mb-4" />
+              <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
+              <div className="h-3 bg-gray-200 rounded w-5/6 mb-2" />
+              <div className="h-3 bg-gray-200 rounded w-4/6 mb-4" />
+              <div className="flex items-center justify-between">
+                <div className="h-6 bg-gray-200 rounded w-20" />
+                <div className="h-9 bg-gray-200 rounded w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -82,15 +146,34 @@ export default function ProductList() {
     );
   }
 
+  if (!isLoading && !error && products.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <div className="text-6xl mb-4">🛍️</div>
+        <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+          אין מוצרים זמינים
+        </h3>
+        <p className="text-gray-600 mb-6">נסה לרענן או לחזור בהמשך.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+        >
+          רענן דף
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h2 className="text-3xl font-bold text-gray-900 mb-8">Products</h2>
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" dir="rtl">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">מוצרים</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((product) => {
           // ✅ חישוב פשוט מהמיפוי
           const cartQuantity = cartMap[product._id] || 0;
           const isInCart = cartQuantity > 0;
+          const isAddingThisProduct = addingProductId === product._id;
 
           return (
             <div
@@ -145,7 +228,8 @@ export default function ProductList() {
                   </span>
                   <button
                     onClick={() => handleAddToCart(product)}
-                    disabled={product.stock <= 0 || isAddingToCart}
+                    disabled={product.stock <= 0 || isAddingThisProduct}
+                    aria-label={`הוסף ${product.name} לעגלה`}
                     className={`px-4 py-2 rounded-md transition-colors font-medium ${
                       product.stock <= 0
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -156,7 +240,7 @@ export default function ProductList() {
                   >
                     {product.stock <= 0
                       ? "Out of Stock"
-                      : isAddingToCart
+                      : isAddingThisProduct
                       ? "Adding..."
                       : isInCart
                       ? `In Cart (${cartQuantity})`
@@ -178,8 +262,8 @@ export default function ProductList() {
       </div>
 
       <div className="mt-8 text-center">
-        <p className="text-gray-600">Showing {products.length} products</p>
+        <p className="text-gray-600">מציג {products.length} מוצרים</p>
       </div>
-    </div>
+    </main>
   );
 }

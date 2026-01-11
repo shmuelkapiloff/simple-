@@ -10,34 +10,32 @@
 ```http
 GET /api/health
 ```
-**תיאור:** בדיקת חיות בסיסית של השרת  
+**תיאור:** בדיקת חיות ומצב חיבורי Mongo/Redis  \
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Server is running!",
   "data": {
     "status": "healthy",
-    "timestamp": "2025-11-13T00:31:15.123Z",
-    "uptime": "0:05:23"
+    "mongodb": "connected",
+    "redis": "connected",
+    "uptime": 523.12
   }
 }
 ```
 
-### **🔍 GET `/health/detailed`**
+### **🔍 GET `/health/ping`**
 ```http
-GET /api/health/detailed
+GET /api/health/ping
 ```
-**תיאור:** בדיקה מפורטת של כל הרכיבים  
+**תיאור:** פינג מהיר לבדיקת זמינות השרת  
 **Response:**
 ```json
 {
   "success": true,
+  "message": "pong",
   "data": {
-    "server": "healthy",
-    "mongodb": "connected",
-    "redis": "connected",
-    "timestamp": "2025-11-13T00:31:15.123Z"
+    "time": 1700000000000
   }
 }
 ```
@@ -116,23 +114,90 @@ GET /api/products/507f1f77bcf86cd799439011
 
 ---
 
-## 🛒 **Cart Endpoints**
+## 🔐 **Authentication Endpoints**
+
+> כל ה-endpoints תחת `/api/auth`
+
+### **🆕 POST `/auth/register`**
+```http
+POST /api/auth/register
+Content-Type: application/json
+```
+**Body:** `{ "name": "John Doe", "email": "john@example.com", "password": "secret123" }`  
+**Response:** יוצר משתמש חדש ומחזיר JWT (cookie) + user
+
+### **🔑 POST `/auth/login`**
+```http
+POST /api/auth/login
+Content-Type: application/json
+```
+**Body:** `{ "email": "john@example.com", "password": "secret123" }`  
+**Response:** מתחבר ומחזיר JWT (cookie) + user
+
+### **🚪 POST `/auth/logout`** (⚠️ דורש התחברות)
+```http
+POST /api/auth/logout
+```
+**תיאור:** מוחק את ה-cookie של ה-JWT ומנתק
+
+### **✅ GET `/auth/verify`** (⚠️ דורש התחברות)
+```http
+GET /api/auth/verify
+```
+**תיאור:** בודק שה-Token תקף ומחזיר פרטי משתמש בסיסיים
+
+### **👤 GET `/auth/profile`** (⚠️ דורש התחברות)
+```http
+GET /api/auth/profile
+```
+**תיאור:** מחזיר פרופיל מלא של המשתמש
+
+### **✏️ PUT `/auth/profile`** (⚠️ דורש התחברות)
+```http
+PUT /api/auth/profile
+Content-Type: application/json
+```
+**Body נפוץ:** `{ "name": "New Name" }`  
+**תיאור:** עדכון פרטים בסיסיים של המשתמש
+
+### **🧠 POST `/auth/forgot-password`**
+```http
+POST /api/auth/forgot-password
+Content-Type: application/json
+```
+**Body:** `{ "email": "john@example.com" }`  
+**תיאור:** שולח מייל לשחזור סיסמה; בסביבת פיתוח מוחזר גם `resetToken` בתגובה לנוחות
+
+### **🔄 POST `/auth/reset-password/:token`**
+```http
+POST /api/auth/reset-password/<token>
+Content-Type: application/json
+```
+**Body:** `{ "password": "newStrongPass123" }`  
+**תיאור:** מחליף סיסמה באמצעות token תקף
+
+---
+
+## 🛒 **Cart Endpoints** (⚠️ **דורש אימות - Authentication Required**)
+
+> **הערה חשובה:** כל endpoints העגלה דורשים JWT token בכותרת Authorization.  
+> אין עוד מצב אורח - חובה להיות מחובר כדי להשתמש בעגלה.
 
 ### **🔍 GET `/cart`**
 ```http
-GET /api/cart?sessionId=guest-1762688526749-lc9dle37n
+GET /api/cart
+Authorization: Bearer <JWT_TOKEN>
 ```
-**תיאור:** קבלת עגלה נוכחית  
-**Query Parameters:**
-- `sessionId` (string, required) - מזהה הסשן
+**תיאור:** קבלת עגלה נוכחית של המשתמש המחובר  
+**Headers:**
+- `Authorization: Bearer <token>` (required) - JWT token
 
 **Response:**
 ```json
 {
   "success": true,
   "data": {
-    "sessionId": "guest-1762688526749-lc9dle37n",
-    "userId": null,
+    "userId": "507f1f77bcf86cd799439012",
     "items": [
       {
         "_id": "item1",
@@ -154,13 +219,23 @@ GET /api/cart?sessionId=guest-1762688526749-lc9dle37n
 }
 ```
 
+**Response Error (401):**
+```json
+{
+  "success": false,
+  "message": "Authentication required",
+  "errors": []
+}
+```
+
 ### **🔢 GET `/cart/count`**
 ```http
-GET /api/cart/count?sessionId=guest-1762688526749-lc9dle37n
+GET /api/cart/count
+Authorization: Bearer <JWT_TOKEN>
 ```
-**תיאור:** ספירת פריטים בעגלה  
-**Query Parameters:**
-- `sessionId` (string, required) - מזהה הסשן
+**תיאור:** ספירת פריטים בעגלה של המשתמש  
+**Headers:**
+- `Authorization: Bearer <token>` (required)
 
 **Response:**
 ```json
@@ -176,12 +251,15 @@ GET /api/cart/count?sessionId=guest-1762688526749-lc9dle37n
 ```http
 POST /api/cart/add
 Content-Type: application/json
+Authorization: Bearer <JWT_TOKEN>
 ```
 **תיאור:** הוספת פריט לעגלה  
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
 **Request Body:**
 ```json
 {
-  "sessionId": "guest-1762688526749-lc9dle37n",
   "productId": "507f1f77bcf86cd799439011",
   "quantity": 2
 }
@@ -193,7 +271,7 @@ Content-Type: application/json
   "success": true,
   "message": "Item added to cart",
   "data": {
-    "sessionId": "guest-1762688526749-lc9dle37n",
+    "userId": "507f1f77bcf86cd799439012",
     "items": [...],
     "total": 1998,
     "updatedAt": "2025-11-13T00:31:00.000Z"
@@ -203,11 +281,18 @@ Content-Type: application/json
 
 **Response Errors:**
 ```json
+// Not authenticated
+{
+  "success": false,
+  "message": "Authentication required",
+  "errors": []
+}
+
 // Missing fields
 {
   "success": false,
   "message": "Missing required fields",
-  "errors": ["sessionId", "productId", "quantity"]
+  "errors": ["productId", "quantity"]
 }
 
 // Product not found
@@ -229,12 +314,15 @@ Content-Type: application/json
 ```http
 PUT /api/cart/update
 Content-Type: application/json
+Authorization: Bearer <JWT_TOKEN>
 ```
 **תיאור:** עדכון כמות פריט בעגלה  
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
 **Request Body:**
 ```json
 {
-  "sessionId": "guest-1762688526749-lc9dle37n",
   "productId": "507f1f77bcf86cd799439011",
   "quantity": 5
 }
@@ -244,9 +332,9 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "Cart updated successfully",
+  "message": "Quantity updated",
   "data": {
-    "sessionId": "guest-1762688526749-lc9dle37n",
+    "userId": "507f1f77bcf86cd799439012",
     "items": [...],
     "total": 4995,
     "updatedAt": "2025-11-13T00:31:00.000Z"
@@ -258,12 +346,15 @@ Content-Type: application/json
 ```http
 DELETE /api/cart/remove
 Content-Type: application/json
+Authorization: Bearer <JWT_TOKEN>
 ```
 **תיאור:** הסרת פריט מעגלה  
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
 **Request Body:**
 ```json
 {
-  "sessionId": "guest-1762688526749-lc9dle37n",
   "productId": "507f1f77bcf86cd799439011"
 }
 ```
@@ -274,7 +365,7 @@ Content-Type: application/json
   "success": true,
   "message": "Item removed from cart",
   "data": {
-    "sessionId": "guest-1762688526749-lc9dle37n",
+    "userId": "507f1f77bcf86cd799439012",
     "items": [],
     "total": 0,
     "updatedAt": "2025-11-13T00:31:00.000Z"
@@ -286,22 +377,24 @@ Content-Type: application/json
 ```http
 DELETE /api/cart/clear
 Content-Type: application/json
+Authorization: Bearer <JWT_TOKEN>
 ```
 **תיאור:** ניקוי עגלה מלאה  
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
 **Request Body:**
 ```json
-{
-  "sessionId": "guest-1762688526749-lc9dle37n"
-}
+{}
 ```
 
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Cart cleared successfully",
+  "message": "Cart cleared",
   "data": {
-    "sessionId": "guest-1762688526749-lc9dle37n",
+    "userId": "507f1f77bcf86cd799439012",
     "items": [],
     "total": 0,
     "updatedAt": "2025-11-13T00:31:00.000Z"
@@ -311,17 +404,69 @@ Content-Type: application/json
 
 ---
 
+## 📦 **Order Endpoints**
+
+> כל ה-endpoints תחת `/api/orders`
+
+- **POST /** (⚠️ דורש התחברות) — יוצר הזמנה מהעגלה. חובה `shippingAddress` עם `street`, `city`, `postalCode`.
+- **GET /** (⚠️ דורש התחברות) — מחזיר את כל ההזמנות של המשתמש, אפשרי סינון `?status=`.
+- **GET `/:orderId`** (⚠️ דורש התחברות) — פרטי הזמנה ספציפית.
+- **POST `/:orderId/cancel`** (⚠️ דורש התחברות) — ביטול הזמנה פתוחה.
+- **GET `/track/:orderId`** (ציבורי) — מעקב סטטוס ללא צורך ב-Token.
+
+**דוגמת יצירת הזמנה:**
+```json
+{
+  "shippingAddress": {
+    "street": "Herzl 10",
+    "city": "Tel Aviv",
+    "postalCode": "61000",
+    "country": "Israel"
+  },
+  "notes": "Ring the bell"
+}
+```
+
+---
+
+## 🏠 **Address Endpoints** (⚠️ דורש התחברות)
+
+> כל ה-endpoints תחת `/api/addresses`
+
+- **GET /** — כל הכתובות של המשתמש (ממוינות לפי ברירת מחדל קודם).
+- **GET `/default`** — הכתובת ברירת מחדל.
+- **GET `/:addressId`** — פרטי כתובת.
+- **POST /** — יצירת כתובת: חובה `street`, `city`, `postalCode`; אפשרי `label` (`home`/`work`/`other`), `country`, `isDefault`.
+- **PUT `/:addressId`** — עדכון כתובת קיימת.
+- **DELETE `/:addressId`** — מחיקת כתובת.
+- **POST `/:addressId/set-default`** — סימון כברירת מחדל (מסיר ברירת מחדל קודמת אוטומטית).
+
+---
+
+## 🛠️ **Admin Endpoints** (⚠️ דורש `admin` role)
+
+> כל ה-endpoints תחת `/api/admin`
+
+- **Products:** `GET /products`, `POST /products`, `PUT /products/:id`, `DELETE /products/:id` (מחיקה רכה).
+- **Users:** `GET /users`, `PUT /users/:id/role`.
+- **Orders:** `GET /orders`, `PUT /orders/:id/status`.
+- **Stats:** `GET /stats/summary` — סיכום מכירות, משתמשים והזמנות.
+
+---
+
 ## 🔄 **Data Flow לפי Endpoint**
 
-### **🛒 Cart Add Flow:**
+### **🛒 Cart Add Flow (Auth Required):**
 ```
-1. POST /api/cart/add
+1. POST /api/cart/add + JWT Token
    ↓
-2. CartController.addToCart
+2. requireAuth middleware (validates token)
+   ↓
+3. CartController.addToCart
    ↓ [Logging: 22:31:49 [CartService] → addToCart]
 3. CartService.addToCart
    ├── ✅ Product validation (MongoDB)
-   ├── 🔍 Get current cart (Redis → MongoDB)
+   ├── 🔍 Get current cart by userId (Redis → MongoDB)
    ├── ➕ Add/update item
    ├── 💰 Calculate total
    ├── ⚡ Update Redis cache (immediate)
@@ -330,19 +475,21 @@ Content-Type: application/json
 4. Response to client
 ```
 
-### **🔍 Cart Get Flow:**
+### **🔍 Cart Get Flow (Auth Required):**
 ```
-1. GET /api/cart?sessionId=xxx
+1. GET /api/cart + JWT Token
    ↓
-2. CartController.getCart
+2. requireAuth middleware (validates token, sets userId)
+   ↓
+3. CartController.getCart
    ↓ [Logging: 22:31:49 [CartService] → getCart]
-3. CartService.getCart
+4. CartService.getCart(userId)
    ├── ⚡ Try Redis first (~5ms)
    ├── 🔍 If not found → MongoDB (~50ms)
    ├── 📥 Cache result in Redis
    └── 🔄 Populate product data
    ↓ [Logging: 22:31:49 [CartService] ✅ getCart (55ms)]
-4. Response to client
+5. Response to client
 ```
 
 ---

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,29 +12,47 @@ import {
   setCart,
   setError,
 } from "../app/cartSlice";
+import { selectIsAuthenticated } from "../app/authSlice";
 import {
   useGetCartQuery,
   useUpdateCartQuantityMutation,
   useRemoveFromCartMutation,
   useClearCartMutation,
-  useCreateOrderMutation,
+  useGetAddressesQuery,
+  Address,
+  useCreateAddressMutation,
 } from "../app/api";
+import { useToast } from "./ToastProvider";
 
 const Cart: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const cart = useSelector(selectCart);
   const items = useSelector(selectCartItems);
   const total = useSelector(selectCartTotal);
   const itemCount = useSelector(selectCartItemCount);
   const sessionId = useSelector(selectSessionId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   // RTK Query mutations
   const [updateQuantityMutation] = useUpdateCartQuantityMutation();
   const [removeFromCartMutation] = useRemoveFromCartMutation();
   const [clearCartMutation] = useClearCartMutation();
-  const [createOrderMutation, { isLoading: isCreatingOrder }] =
-    useCreateOrderMutation();
+  const [createAddressMutation, { isLoading: isCreatingAddress }] =
+    useCreateAddressMutation();
+
+  // Load addresses if authenticated
+  const {
+    data: addresses = [],
+    error: addressError,
+    isLoading: isAddressesLoading,
+  } = useGetAddressesQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
   // Initialize cart on mount
   useEffect(() => {
@@ -72,6 +90,26 @@ const Cart: React.FC = () => {
       console.error("Cart API error:", error);
     }
   }, [error, dispatch]);
+
+  // Auto-select default/first address when loaded
+  useEffect(() => {
+    if (addresses.length > 0) {
+      // Try restore from localStorage first
+      const savedId = localStorage.getItem("selectedAddressId");
+      if (savedId) {
+        const found = addresses.find((a) => a._id === savedId);
+        if (found) {
+          setSelectedAddress(found);
+          return;
+        }
+      }
+      // Fallback: default or first
+      if (!selectedAddress) {
+        const defaultAddr = addresses.find((a) => a.isDefault);
+        setSelectedAddress(defaultAddr || addresses[0]);
+      }
+    }
+  }, [addresses, selectedAddress]);
 
   // Update quantity handler
   const handleUpdateQuantity = async (
@@ -123,46 +161,11 @@ const Cart: React.FC = () => {
 
       // Clear local state after server confirms
       dispatch(clearCartAction());
+      addToast("העגלה נוקתה", "success");
     } catch (error) {
       console.error("Clear cart failed:", error);
-      // Revert optimistic update
-      dispatch(setCart({ items: currentItems, total: currentTotal }));
       dispatch(setError("Failed to clear cart"));
-    }
-  };
-
-  // Create order handler
-  const handleCreateOrder = async () => {
-    if (!sessionId) {
-      dispatch(setError("No session ID"));
-      return;
-    }
-
-    if (items.length === 0) {
-      dispatch(setError("Cart is empty"));
-      return;
-    }
-
-    try {
-      const order = await createOrderMutation({ sessionId }).unwrap();
-
-      // Clear cart after successful order
-      dispatch(clearCartAction());
-
-      // Show success message and navigate to orders
-      alert(`הזמנה נוצרה בהצלחה! מספר הזמנה: ${order.orderNumber}`);
-      navigate("/orders");
-    } catch (error: any) {
-      console.error("Create order failed:", error);
-
-      // Handle different error types
-      if (error?.data?.message) {
-        dispatch(setError(error.data.message));
-      } else if (error?.message) {
-        dispatch(setError(error.message));
-      } else {
-        dispatch(setError("Failed to create order"));
-      }
+      addToast("שגיאה בניקוי העגלה", "error");
     }
   };
 
@@ -177,7 +180,7 @@ const Cart: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
       {/* Cart Header */}
@@ -283,7 +286,10 @@ const Cart: React.FC = () => {
                 {/* Item Total */}
                 <div className="text-right">
                   <p className="font-semibold text-gray-900">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    $
+                    {(
+                      (item.price ?? item.product.price) * item.quantity
+                    ).toFixed(2)}
                   </p>
 
                   <button
@@ -299,6 +305,55 @@ const Cart: React.FC = () => {
 
           {/* Cart Summary */}
           <div className="border-t border-gray-200 pt-4">
+            {/* Address Selection */}
+            {isAuthenticated && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium text-gray-900 mb-2">
+                  📍 כתובת למשלוח
+                </h3>
+
+                {addressError && (addressError as any).status === 401 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-red-700">
+                      סשן ההתחברות פג תוקף. אנא התחבר מחדש כדי לטעון כתובות.
+                    </p>
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                    >
+                      התחבר
+                    </button>
+                  </div>
+                ) : selectedAddress ? (
+                  <div className="flex items-start justify-between">
+                    <div className="text-sm text-gray-700">
+                      <p className="font-medium">{selectedAddress.street}</p>
+                      <p>
+                        {selectedAddress.city}, {selectedAddress.state}{" "}
+                        {selectedAddress.zipCode}
+                      </p>
+                      <p>{selectedAddress.country}</p>
+                    </div>
+                    <button
+                      onClick={() => setShowAddressModal(true)}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      שנה
+                    </button>
+                  </div>
+                ) : isAddressesLoading ? (
+                  <p className="text-sm text-gray-600">טוען כתובות...</p>
+                ) : (
+                  <button
+                    onClick={() => setShowAddressModal(true)}
+                    className="w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
+                  >
+                    ➕ בחר כתובת למשלוח
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-medium text-gray-900">Total:</span>
               <span className="text-2xl font-bold text-blue-600">
@@ -316,21 +371,120 @@ const Cart: React.FC = () => {
 
               <button
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                onClick={handleCreateOrder}
-                disabled={isCreatingOrder || items.length === 0}
+                onClick={() => {
+                  navigate("/checkout");
+                }}
+                disabled={items.length === 0}
               >
-                {isCreatingOrder ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    יוצר הזמנה...
-                  </div>
-                ) : (
-                  "🛍️ בצע הזמנה"
-                )}
+                🛍️ המשך לתהליך הזמנה
               </button>
             </div>
           </div>
         </>
+      )}
+
+      {/* Address Selection Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                בחר כתובת למשלוח
+              </h2>
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            {addresses.length === 0 ? (
+              <div className="py-4">
+                <p className="text-gray-700 mb-4">
+                  אין כתובות שמורות. הוסף כתובת חדשה:
+                </p>
+                <AddressQuickForm
+                  onCreate={async (payload) => {
+                    try {
+                      const created = await createAddressMutation(
+                        payload
+                      ).unwrap();
+                      setSelectedAddress(created);
+                      try {
+                        localStorage.setItem("selectedAddressId", created._id);
+                      } catch {}
+                      setShowAddressModal(false);
+                    } catch (e) {
+                      console.error("Create address failed", e);
+                      alert("שגיאה ביצירת כתובת. אנא נסה שוב.");
+                    }
+                  }}
+                  isSubmitting={isCreatingAddress}
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {addresses.map((address) => (
+                  <div
+                    key={address._id}
+                    onClick={() => {
+                      setSelectedAddress(address);
+                      try {
+                        localStorage.setItem("selectedAddressId", address._id);
+                      } catch {}
+                      setShowAddressModal(false);
+                    }}
+                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                      selectedAddress?._id === address._id
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {address.isDefault && (
+                      <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-2">
+                        ⭐ ברירת מחדל
+                      </span>
+                    )}
+                    <p className="font-medium text-gray-900">
+                      {address.street}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {address.city}, {address.state} {address.zipCode}
+                    </p>
+                    <p className="text-sm text-gray-600">{address.country}</p>
+                  </div>
+                ))}
+                <div className="mt-4">
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    או הוסף כתובת חדשה
+                  </h3>
+                  <AddressQuickForm
+                    onCreate={async (payload) => {
+                      try {
+                        const created = await createAddressMutation(
+                          payload
+                        ).unwrap();
+                        setSelectedAddress(created);
+                        try {
+                          localStorage.setItem(
+                            "selectedAddressId",
+                            created._id
+                          );
+                        } catch {}
+                        setShowAddressModal(false);
+                      } catch (e) {
+                        console.error("Create address failed", e);
+                        alert("שגיאה ביצירת כתובת. אנא נסה שוב.");
+                      }
+                    }}
+                    isSubmitting={isCreatingAddress}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Debug Info (remove in production) */}
@@ -350,3 +504,80 @@ const Cart: React.FC = () => {
 };
 
 export default Cart;
+
+// Inline quick form component (simple, no external deps)
+type AddressQuickPayload = {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault?: boolean;
+};
+
+const AddressQuickForm: React.FC<{
+  onCreate: (p: AddressQuickPayload) => Promise<void> | void;
+  isSubmitting?: boolean;
+}> = ({ onCreate, isSubmitting }) => {
+  const [form, setForm] = useState<AddressQuickPayload>({
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "Israel",
+    isDefault: false,
+  });
+
+  const disabled = !form.street || !form.city || !form.zipCode || !form.country;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <input
+          placeholder="רחוב"
+          className="border rounded px-3 py-2"
+          value={form.street}
+          onChange={(e) => setForm({ ...form, street: e.target.value })}
+        />
+        <input
+          placeholder="עיר"
+          className="border rounded px-3 py-2"
+          value={form.city}
+          onChange={(e) => setForm({ ...form, city: e.target.value })}
+        />
+        <input
+          placeholder="מחוז/מדינה"
+          className="border rounded px-3 py-2"
+          value={form.state}
+          onChange={(e) => setForm({ ...form, state: e.target.value })}
+        />
+        <input
+          placeholder="מיקוד"
+          className="border rounded px-3 py-2"
+          value={form.zipCode}
+          onChange={(e) => setForm({ ...form, zipCode: e.target.value })}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          id="isDefault"
+          type="checkbox"
+          checked={!!form.isDefault}
+          onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
+        />
+        <label htmlFor="isDefault" className="text-sm text-gray-700">
+          הגדר כברירת מחדל
+        </label>
+      </div>
+      <div className="flex justify-end">
+        <button
+          disabled={disabled || isSubmitting}
+          onClick={() => onCreate(form)}
+          className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
+        >
+          {isSubmitting ? "שומר..." : "שמור כתובת"}
+        </button>
+      </div>
+    </div>
+  );
+};

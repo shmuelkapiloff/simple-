@@ -16,5 +16,10 @@ const productSchema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for better query performance
+productSchema.index({ category: 1, isActive: 1 }); // For filtering by category
+productSchema.index({ featured: 1, isActive: 1 }); // For featured products
+// SKU already has unique: true in schema, no need for explicit index
+
 export type Product = InferSchemaType<typeof productSchema>;
 export const ProductModel = model("Product", productSchema);

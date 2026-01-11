@@ -1,12 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectUser, selectIsAuthenticated } from "../app/authSlice";
-import {
-  useGetUserOrdersQuery,
-  useCancelOrderMutation,
-  Order,
-} from "../app/api";
+import { useGetUserOrdersQuery, useCancelOrderMutation } from "../app/api";
 import type { RootState } from "../app/store";
+import { useToast } from "../components/ToastProvider";
 
 type OrderStatus =
   | "pending"
@@ -16,6 +14,8 @@ type OrderStatus =
   | "cancelled";
 
 const Orders: React.FC = () => {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const user = useSelector((state: RootState) => selectUser(state));
   const isAuthenticated = useSelector((state: RootState) =>
     selectIsAuthenticated(state)
@@ -94,13 +94,12 @@ const Orders: React.FC = () => {
   };
 
   const handleTrackOrder = (orderId: string) => {
-    console.log("🔧 TODO: Open order tracking modal for:", orderId);
-    alert(`מעקב הזמנה ${orderId}\n\nבקרוב נוסיף מערכת מעקב מלאה! 📦`);
+    navigate(`/track/${orderId}`);
   };
 
   const handleReorder = (orderId: string) => {
     console.log("🔧 TODO: Add order items to cart:", orderId);
-    alert(`הזמנה מחדש ${orderId}\n\nבקרוב נוסיף תכונה זו! 🛒`);
+    addToast(`הזמנה מחדש ${orderId} — בקרוב נוסיף תכונה זו! 🛒`, "info");
   };
 
   const handleCancelOrder = async (orderId: string) => {
@@ -110,26 +109,53 @@ const Orders: React.FC = () => {
 
     try {
       await cancelOrderMutation({ orderId }).unwrap();
-      alert("ההזמנה בוטלה בהצלחה! ✅");
+      addToast("ההזמנה בוטלה בהצלחה! ✅", "success");
     } catch (error: any) {
       console.error("Cancel order error:", error);
       const errorMessage =
         error?.data?.message || "שגיאה בביטול ההזמנה. אנא נסה שוב.";
-      alert(errorMessage);
+      addToast(errorMessage, "error");
     }
   };
 
   const handleDownloadInvoice = (orderId: string) => {
     console.log("🔧 TODO: Generate and download invoice for:", orderId);
-    alert(`הורדת חשבונית ${orderId}\n\nבקרוב נוסיף יצירת חשבוניות! 📄`);
+    addToast(`הורדת חשבונית ${orderId} — בקרוב! 📄`, "info");
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
-          <span className="text-gray-600">טוען הזמנות...</span>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-2" />
+            <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="space-y-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="space-y-2">
+                    <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                  <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+                </div>
+                <div className="space-y-3">
+                  {[...Array(2)].map((__, j) => (
+                    <div key={j} className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gray-200 rounded animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-3 w-36 bg-gray-200 rounded animate-pulse" />
+                      </div>
+                      <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -151,10 +177,10 @@ const Orders: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <main className="min-h-screen bg-gray-50 py-8" dir="rtl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <header className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
@@ -169,10 +195,13 @@ const Orders: React.FC = () => {
               <p className="font-semibold text-gray-900">{user.name}</p>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Filter Tabs */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <nav
+          aria-label="סינון הזמנות"
+          className="bg-white rounded-lg shadow-sm p-6 mb-8"
+        >
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setSelectedFilter("all")}
@@ -231,11 +260,12 @@ const Orders: React.FC = () => {
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              aria-label="הצג הזמנות מבוטלות"
             >
               🚫 בוטל
             </button>
           </div>
-        </div>
+        </nav>
 
         {/* Orders List */}
         {filteredOrders.length === 0 ? (
@@ -275,7 +305,9 @@ const Orders: React.FC = () => {
                       </div>
                       <p className="text-sm text-gray-500 mt-1">
                         📅 הוזמן ב-
-                        {new Date(order.createdAt).toLocaleDateString("he-IL")}{" "}
+                        {new Date(order.createdAt).toLocaleDateString(
+                          "he-IL"
+                        )}{" "}
                         🕐{" "}
                         {new Date(order.createdAt).toLocaleTimeString("he-IL", {
                           hour: "2-digit",
@@ -285,10 +317,10 @@ const Orders: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-gray-900">
-                        ₪{order.total.toLocaleString()}
+                        ₪{(order.total ?? 0).toLocaleString()}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {order.items.length} פריטים
+                        {order.items?.length ?? 0} פריטים
                       </p>
                     </div>
                   </div>
@@ -299,22 +331,21 @@ const Orders: React.FC = () => {
                   <div className="space-y-4">
                     {order.items.map((item, index) => (
                       <div key={index} className="flex items-center space-x-4">
-                        <img
-                          src={item.product.image}
-                          alt={item.product.name}
-                          className="w-12 h-12 object-cover rounded-lg"
-                        />
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                          📦
+                        </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">
                             {item.product.name}
                           </h4>
                           <p className="text-sm text-gray-500">
                             כמות: {item.quantity} × ₪
-                            {item.price.toLocaleString()}
+                            {(item.price ?? 0).toLocaleString()}
                           </p>
                         </div>
                         <div className="font-semibold text-gray-900">
-                          ₪{(item.quantity * item.price).toLocaleString()}
+                          ₪
+                          {(item.quantity * (item.price ?? 0)).toLocaleString()}
                         </div>
                       </div>
                     ))}
@@ -385,7 +416,7 @@ const Orders: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

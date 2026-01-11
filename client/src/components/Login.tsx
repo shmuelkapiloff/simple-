@@ -6,6 +6,7 @@ import {
   selectAuthLoading,
   selectAuthError,
 } from "../app/authSlice";
+import { selectSessionId } from "../app/cartSlice";
 import type { AppDispatch, RootState } from "../app/store";
 
 interface LoginProps {
@@ -17,6 +18,7 @@ export const Login: React.FC<LoginProps> = ({ onSwitch, onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const isLoading = useSelector((state: RootState) => selectAuthLoading(state));
   const authError = useSelector((state: RootState) => selectAuthError(state));
+  const sessionId = useSelector(selectSessionId);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -39,6 +41,9 @@ export const Login: React.FC<LoginProps> = ({ onSwitch, onClose }) => {
       // Dispatch login action
       const result = await dispatch(login(formData)).unwrap();
       console.log("✅ Login successful:", result);
+
+      // Note: Guest cart merge is not implemented on server.
+      // If needed, we can add a merge endpoint later.
 
       // Close modal on success
       onClose();

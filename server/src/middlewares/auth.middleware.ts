@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
 import { sendResponse, sendError } from "../utils/response";
 import { track, log } from "../utils/quickLog";
+import { logger } from "../utils/logger";
 
 // Extend Express Request interface to include user data
 declare global {
@@ -36,7 +37,7 @@ export class AuthMiddleware {
       }
 
       if (!token) {
-        console.log("❌ No token provided in request");
+        logger.info("❌ No token provided in request");
         return sendError(res, 401, "Access denied. No token provided");
       }
 
@@ -47,13 +48,13 @@ export class AuthMiddleware {
       req.userId = user._id.toString(); // Ensure string conversion
       req.user = user;
 
-      console.log(`✅ User authenticated: ${user.email}`);
+      logger.info(`✅ User authenticated: ${user.email}`);
 
       
       next();
     } catch (error: any) {
       t.error(error);
-      console.log("❌ Authentication failed:", error.message);
+      logger.info("❌ Authentication failed:", error.message);
 
       return sendError(res, 401, "Access denied. Invalid token");
     }
@@ -63,49 +64,49 @@ export class AuthMiddleware {
    * Optional auth middleware - continues even if no token
    * Useful for routes that work for both authenticated and guest users
    */
-  static async optionalAuth(req: Request, res: Response, next: NextFunction) {
-    const t = track("AuthMiddleware", "optionalAuth");
+  // static async optionalAuth(req: Request, res: Response, next: NextFunction) {
+  //   const t = track("AuthMiddleware", "optionalAuth");
 
-    try {
-      // Get token from Authorization header or cookies
-      let token = "";
+  //   try {
+  //     // Get token from Authorization header or cookies
+  //     let token = "";
 
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-      } else if (req.cookies?.token) {
-        token = req.cookies.token;
-      }
+  //     const authHeader = req.headers.authorization;
+  //     if (authHeader && authHeader.startsWith("Bearer ")) {
+  //       token = authHeader.split(" ")[1];
+  //     } else if (req.cookies?.token) {
+  //       token = req.cookies.token;
+  //     }
 
-      // If no token, continue without authentication
-      if (!token) {
-        console.log("⚪ No token provided - continuing as guest");
-        t.success({ authenticated: false });
-        return next();
-      }
+  //     // If no token, continue without authentication
+  //     if (!token) {
+  //       logger.info("⚪ No token provided - continuing as guest");
+  //       t.success({ authenticated: false });
+  //       return next();
+  //     }
 
-      // Try to verify token
-      try {
-        const user = await AuthService.verifyToken(token);
-        req.userId = user._id;
-        req.user = user;
+  //     // Try to verify token
+  //     try {
+  //       const user = await AuthService.verifyToken(token);
+  //       req.userId = user._id;
+  //       req.user = user;
 
-        console.log(`✅ User optionally authenticated: ${user.email}`);
-        t.success({ userId: user._id, authenticated: true });
-      } catch (tokenError) {
-        // Invalid token, but continue as guest
-        console.log("⚠️ Invalid token provided - continuing as guest");
-        t.success({ authenticated: false, tokenError: true });
-      }
+  //       logger.info(`✅ User optionally authenticated: ${user.email}`);
+  //       t.success({ userId: user._id, authenticated: true });
+  //     } catch (tokenError) {
+  //       // Invalid token, but continue as guest
+  //       logger.info("⚠️ Invalid token provided - continuing as guest");
+  //       t.success({ authenticated: false, tokenError: true });
+  //     }
 
-      next();
-    } catch (error: any) {
-      t.error(error);
-      // Even if middleware fails, continue as guest
-      console.log("⚠️ Auth middleware error - continuing as guest");
-      next();
-    }
-  }
+  //     next();
+  //   } catch (error: any) {
+  //     t.error(error);
+  //     // Even if middleware fails, continue as guest
+  //     logger.info("⚠️ Auth middleware error - continuing as guest");
+  //     next();
+  //   }
+  // }
 
   /**
    * Admin-only middleware
@@ -118,7 +119,7 @@ export class AuthMiddleware {
       // First check if user is authenticated, then enforce admin role
       await AuthMiddleware.requireAuth(req, res, () => {
         if (!req.user || req.user.role !== "admin") {
-          console.log("❌ Admin access denied - not an admin user");
+          logger.info("❌ Admin access denied - not an admin user");
           return sendError(
             res,
             403,
@@ -126,7 +127,7 @@ export class AuthMiddleware {
           );
         }
 
-        console.log(`🔐 Admin access granted to: ${req.user?.email}`);
+        logger.info(`🔐 Admin access granted to: ${req.user?.email}`);
         t.success({ userId: req.userId, admin: true });
         next();
       });
@@ -179,7 +180,7 @@ export class AuthMiddleware {
             (attemptData.resetTime - currentTime) / 60000
           );
 
-          console.log(`⚠️ Rate limit exceeded for IP: ${clientIp}`);
+          logger.info(`⚠️ Rate limit exceeded for IP: ${clientIp}`);
           t.error(new Error("Rate limit exceeded"));
 
           return sendError(
@@ -193,7 +194,7 @@ export class AuthMiddleware {
         attemptData.count++;
         attempts.set(clientIp, attemptData);
 
-        console.log(
+        logger.info(
           `⚠️ Auth attempt ${attemptData.count}/${MAX_ATTEMPTS} for IP: ${clientIp}`
         );
         t.success({ ip: clientIp, attempt: attemptData.count });
@@ -210,9 +211,9 @@ export class AuthMiddleware {
 
 // Export individual middleware functions for easier use
 export const requireAuth = AuthMiddleware.requireAuth;
-export const optionalAuth = AuthMiddleware.optionalAuth;
 export const requireAdmin = AuthMiddleware.requireAdmin;
 export const authRateLimit = AuthMiddleware.createRateLimit();
 
 // Alias for backward compatibility
 export const authenticate = AuthMiddleware.requireAuth;
+

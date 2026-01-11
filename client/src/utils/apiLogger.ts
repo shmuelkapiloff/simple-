@@ -1,4 +1,8 @@
 // client/src/utils/apiLogger.ts
+const DEV_ENABLED = (import.meta as any)?.env?.DEV === true;
+const LOGGER_ENABLED =
+  DEV_ENABLED || (import.meta as any)?.env?.VITE_API_LOGGER === "1";
+
 export class ApiLogger {
   private static calls: Map<string, any> = new Map();
 
@@ -15,10 +19,12 @@ export class ApiLogger {
 
     this.calls.set(callId, callInfo);
 
-    console.group(`🌐 API Call Starting: ${endpoint}`);
-    console.log("📤 Request Data:", data);
-    console.log("⏰ Time:", callInfo.startTime);
-    console.groupEnd();
+    if (LOGGER_ENABLED) {
+      console.group(`🌐 API Call Starting: ${endpoint}`);
+      console.log("📤 Request Data:", data);
+      console.log("⏰ Time:", callInfo.startTime);
+      console.groupEnd();
+    }
 
     return callId;
   }
@@ -30,20 +36,26 @@ export class ApiLogger {
     const duration = Date.now() - callInfo.timestamp;
 
     if (error) {
-      console.group(`❌ API Call Failed: ${callInfo.endpoint} (${duration}ms)`);
-      console.log("📤 Original Request:", callInfo.data);
-      console.log("💥 Error:", error);
-      console.groupEnd();
+      if (LOGGER_ENABLED) {
+        console.group(
+          `❌ API Call Failed: ${callInfo.endpoint} (${duration}ms)`
+        );
+        console.log("📤 Original Request:", callInfo.data);
+        console.log("💥 Error:", error);
+        console.groupEnd();
+      }
 
       callInfo.status = "ERROR";
       callInfo.error = error;
     } else {
-      console.group(
-        `✅ API Call Success: ${callInfo.endpoint} (${duration}ms)`
-      );
-      console.log("📤 Request:", callInfo.data);
-      console.log("📥 Response:", response);
-      console.groupEnd();
+      if (LOGGER_ENABLED) {
+        console.group(
+          `✅ API Call Success: ${callInfo.endpoint} (${duration}ms)`
+        );
+        console.log("📤 Request:", callInfo.data);
+        console.log("📥 Response:", response);
+        console.groupEnd();
+      }
 
       callInfo.status = "SUCCESS";
       callInfo.response = response;
@@ -96,7 +108,9 @@ export class ApiLogger {
           : 0,
     };
 
-    console.table(stats);
+    if (LOGGER_ENABLED) {
+      console.table(stats);
+    }
     return stats;
   }
 }
@@ -104,8 +118,10 @@ export class ApiLogger {
 // 🎯 הוסף לwindow לגישה מקלדת דפדפן
 if (typeof window !== "undefined") {
   (window as any).__API_LOGGER__ = ApiLogger;
-  console.log("🌐 ApiLogger available at window.__API_LOGGER__");
-  console.log(
-    "💡 Try: __API_LOGGER__.getHistory() or __API_LOGGER__.getStats()"
-  );
+  if (LOGGER_ENABLED) {
+    console.log("🌐 ApiLogger available at window.__API_LOGGER__");
+    console.log(
+      "💡 Try: __API_LOGGER__.getHistory() or __API_LOGGER__.getStats()"
+    );
+  }
 }

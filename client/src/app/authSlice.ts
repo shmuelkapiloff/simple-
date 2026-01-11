@@ -78,8 +78,9 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
       }
 
       // Store token in localStorage
-      if (data.token) {
-        localStorage.setItem("token", data.token);
+      const token = data?.data?.token;
+      if (token) {
+        localStorage.setItem("token", token);
       }
 
       return data;
@@ -124,8 +125,9 @@ export const register = createAsyncThunk<AuthResponse, RegisterData>(
       }
 
       // Store token in localStorage
-      if (data.token) {
-        localStorage.setItem("token", data.token);
+      const token = data?.data?.token;
+      if (token) {
+        localStorage.setItem("token", token);
       }
 
       return data;
@@ -185,7 +187,7 @@ export const verifyToken = createAsyncThunk<User>(
         data = JSON.parse(text);
         console.log("✅ verifyToken: Parsed response:", {
           success: data.success,
-          userExists: !!data.user,
+          userExists: !!data?.data?.user,
         });
       } catch (jsonError) {
         console.log("❌ verifyToken: JSON parse error:", jsonError);
@@ -197,8 +199,9 @@ export const verifyToken = createAsyncThunk<User>(
         return rejectWithValue(data.message || "Token verification failed");
       }
 
-      console.log("🎉 verifyToken: Success! User:", data.user?.name);
-      return data.user;
+      const user = data?.data?.user;
+      console.log("🎉 verifyToken: Success! User:", user?.name);
+      return user;
     } catch (error: any) {
       console.log("❌ verifyToken: Network error:", error);
       if (error.name === "TypeError" && error.message.includes("fetch")) {

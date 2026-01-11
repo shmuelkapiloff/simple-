@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { AddressController } from "../controllers/addresses.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import { asyncHandler } from "../utils/asyncHandler";
 
 const router = Router();
 
@@ -14,24 +15,27 @@ router.use(authenticate);
  */
 
 // GET /api/addresses - Get all addresses for user
-router.get("/", AddressController.getAddresses);
+router.get("/", asyncHandler(AddressController.getAddresses));
 
 // GET /api/addresses/default - Get default address
-router.get("/default", AddressController.getDefaultAddress);
+router.get("/default", asyncHandler(AddressController.getDefaultAddress));
 
 // GET /api/addresses/:addressId - Get address by ID
-router.get("/:addressId", AddressController.getAddressById);
+router.get("/:addressId", asyncHandler(AddressController.getAddressById));
 
 // POST /api/addresses - Create new address
-router.post("/", AddressController.createAddress);
+router.post("/", asyncHandler(AddressController.createAddress));
 
 // PUT /api/addresses/:addressId - Update address
-router.put("/:addressId", AddressController.updateAddress);
+router.put("/:addressId", asyncHandler(AddressController.updateAddress));
 
 // DELETE /api/addresses/:addressId - Delete address
-router.delete("/:addressId", AddressController.deleteAddress);
+router.delete("/:addressId", asyncHandler(AddressController.deleteAddress));
 
 // POST /api/addresses/:addressId/set-default - Set address as default
-router.post("/:addressId/set-default", AddressController.setDefaultAddress);
+router.post(
+  "/:addressId/set-default",
+  asyncHandler(AddressController.setDefaultAddress)
+);
 
 export default router;
