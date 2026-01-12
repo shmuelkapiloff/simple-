@@ -51,6 +51,13 @@ router.put(
   asyncHandler(AuthController.updateProfile)
 );
 
+// POST /api/auth/change-password - Change password (authenticated)
+router.post(
+  "/change-password",
+  authenticate,
+  asyncHandler(AuthController.changePassword)
+);
+
 // POST /api/auth/logout - Logout user
 router.post("/logout", authenticate, asyncHandler(AuthController.logout));
 

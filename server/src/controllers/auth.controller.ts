@@ -6,12 +6,9 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   updateProfileSchema,
+  changePasswordSchema,
 } from "../validators/auth.validator";
-import {
-  ValidationError,
-  UnauthorizedError,
-  log,
-} from "../utils/asyncHandler";
+import { ValidationError, UnauthorizedError, log } from "../utils/asyncHandler";
 
 export class AuthController {
   /**
@@ -157,6 +154,31 @@ export class AuthController {
     res.status(200).json({
       success: true,
       message: "Logged out successfully",
+    });
+  }
+
+  /**
+   * Change password (authenticated)
+   * POST /api/auth/change-password
+   */
+  static async changePassword(req: Request, res: Response) {
+    const userId = (req as any).userId;
+    const validated = changePasswordSchema.parse(req.body);
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    log.info("Password change requested", { userId });
+    const result = await AuthService.changePassword(
+      userId,
+      validated.currentPassword,
+      validated.newPassword
+    );
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
     });
   }
 }

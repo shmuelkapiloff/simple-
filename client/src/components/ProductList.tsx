@@ -11,20 +11,25 @@ import {
   setError,
   setCart,
 } from "../app/cartSlice";
+import { selectIsAuthenticated, requireAuth } from "../app/authSlice";
 import { useEffect, useMemo, useState } from "react";
 
 export default function ProductList() {
   const dispatch = useDispatch();
   const sessionId = useSelector(selectSessionId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const cartItems = useSelector(selectCartItems); // ✅ קבל את כל העגלה פעם אחת
   const { data: products = [], error, isLoading } = useGetProductsQuery();
   const [addToCartMutation] = useAddToCartMutation();
   const [addingProductId, setAddingProductId] = useState<string | null>(null);
 
   // Load cart from server to sync state
-  const { data: serverCart } = useGetCartQuery(sessionId || "", {
-    skip: !sessionId,
-  });
+  const { data: serverCart, refetch: refetchCart } = useGetCartQuery(
+    undefined,
+    {
+      skip: !isAuthenticated,
+    }
+  );
 
   // Sync server cart to local state
   useEffect(() => {
@@ -54,11 +59,14 @@ export default function ProductList() {
   }, [dispatch, sessionId]);
 
   const handleAddToCart = async (product: any) => {
-    if (!sessionId) {
+    if (!isAuthenticated) {
       if (import.meta.env.DEV) {
-        console.warn("No session ID available");
+        console.warn("User not authenticated");
       }
-      dispatch(setError("Session not initialized"));
+      dispatch(
+        requireAuth({ view: "login", message: "נא להתחבר כדי להוסיף לעגלה" })
+      );
+      dispatch(setError("נא להתחבר כדי להוסיף לעגלה"));
       return;
     }
 
@@ -72,7 +80,6 @@ export default function ProductList() {
       setAddingProductId(product._id);
 
       const requestData = {
-        sessionId,
         productId: product._id,
         quantity: 1,
       };
@@ -81,13 +88,11 @@ export default function ProductList() {
       const response = await addToCartMutation(requestData).unwrap();
 
       if (import.meta.env.DEV) {
-        console.log(
-          "✅ Added to cart:",
-          product.name,
-          "|",
-          response.items.length,
-          "items"
-        );
+        console.log("✅ Add to cart response:", {
+          itemsLength: response.items?.length,
+          total: response.total,
+          items: response.items,
+        });
       }
 
       // ✅ עדכן את ה-Redux state מיד עם התגובה מהשרת
@@ -102,6 +107,10 @@ export default function ProductList() {
       }
 
       // ✅ UI יתעדכן אוטומטית דרך RTK Query cache invalidation
+      // וגם מבצעים refetch מיידי כדי לוודא עדכון מהשרת
+      try {
+        await refetchCart();
+      } catch {}
     } catch (error: any) {
       console.error("Add to cart failed:", error);
 
@@ -184,6 +193,11 @@ export default function ProductList() {
                 src={product.image}
                 alt={product.name}
                 className="w-full h-48 object-cover rounded-t-lg"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src =
+                    "https://placehold.co/600x400?text=No+Image";
+                }}
               />
               <div className="p-4">
                 <div className="flex items-center mb-2">

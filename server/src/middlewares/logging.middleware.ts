@@ -24,15 +24,18 @@ export function requestLoggerMiddleware(
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    logger.info({
-      requestId,
-      method: req.method,
-      path: req.originalUrl || req.url,
-      status: res.statusCode,
-      durationMs: duration,
-      contentLength: res.getHeader("content-length"),
-      userAgent: req.headers["user-agent"],
-    }, "HTTP Request");
+    logger.info(
+      {
+        requestId,
+        method: req.method,
+        path: req.originalUrl || req.url,
+        status: res.statusCode,
+        durationMs: duration,
+        contentLength: res.getHeader("content-length"),
+        userAgent: req.headers["user-agent"],
+      },
+      "HTTP Request"
+    );
   });
 
   next();

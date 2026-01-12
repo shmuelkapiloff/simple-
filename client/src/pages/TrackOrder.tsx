@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useTrackOrderQuery } from "../app/api";
 
 const formatDateTime = (value?: string) => {
@@ -47,6 +47,8 @@ const statusBadge = (status?: string) => {
 
 const TrackOrder: React.FC = () => {
   const { orderId = "" } = useParams<{ orderId: string }>();
+  const [searchParams] = useSearchParams();
+  const paymentStatus = searchParams.get("payment");
   const { data, isLoading, error } = useTrackOrderQuery(orderId, {
     skip: !orderId,
   });
@@ -115,6 +117,21 @@ const TrackOrder: React.FC = () => {
   return (
     <main className="min-h-screen bg-gray-50 py-8" dir="rtl">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Payment Success Alert */}
+        {paymentStatus === "success" && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h3 className="text-lg font-semibold text-green-800 mb-2">
+              ✅ התשלום בוצע בהצלחה!
+            </h3>
+            <p className="text-green-700 text-sm">
+              ✓ התשלום אושר (Inline Elements או Stripe Redirect)
+              <br />
+              ✓ העגלה שלך נוקתה ממוצרים
+              <br />✓ ההזמנה נרשמה במערכת ותוכל לעקוב אחריה כאן
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between">

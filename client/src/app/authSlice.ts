@@ -16,6 +16,9 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  showAuthModal: boolean;
+  authModalView: "login" | "register";
+  authPromptMessage: string | null;
 }
 
 interface LoginCredentials {
@@ -45,6 +48,9 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   isAuthenticated: !!localStorage.getItem("token"),
+  showAuthModal: false,
+  authModalView: "login",
+  authPromptMessage: null,
 };
 
 // Async thunks
@@ -238,6 +244,54 @@ export const logout = createAsyncThunk<void>(
   }
 );
 
+interface ChangePasswordCredentials {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export const changePassword = createAsyncThunk<
+  { message: string },
+  ChangePasswordCredentials
+>(
+  "auth/changePassword",
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return rejectWithValue("Not authenticated");
+      }
+
+      const response = await fetch(
+        "http://localhost:4001/api/auth/change-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            currentPassword: credentials.currentPassword,
+            newPassword: credentials.newPassword,
+            confirmPassword: credentials.confirmPassword,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Change password failed");
+      }
+
+      return data.data || data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Change password failed");
+    }
+  }
+);
+
 // Slice
 const authSlice = createSlice({
   name: "auth",
@@ -248,6 +302,28 @@ const authSlice = createSlice({
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
+    },
+    requireAuth: (
+      state,
+      action: PayloadAction<{ view?: "login" | "register"; message?: string }>
+    ) => {
+      state.showAuthModal = true;
+      state.authModalView = action.payload.view || "login";
+      state.authPromptMessage = action.payload.message || null;
+    },
+    openAuthModal: (
+      state,
+      action: PayloadAction<"login" | "register" | undefined>
+    ) => {
+      state.showAuthModal = true;
+      state.authModalView = action.payload || "login";
+    },
+    closeAuthModal: (state) => {
+      state.showAuthModal = false;
+      state.authPromptMessage = null;
+    },
+    setAuthModalView: (state, action: PayloadAction<"login" | "register">) => {
+      state.authModalView = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -268,6 +344,8 @@ const authSlice = createSlice({
         state.token = action.payload.data.token;
         state.isAuthenticated = true;
         state.error = null;
+        state.showAuthModal = false;
+        state.authPromptMessage = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -287,6 +365,8 @@ const authSlice = createSlice({
         state.token = action.payload.data.token;
         state.isAuthenticated = true;
         state.error = null;
+        state.showAuthModal = false;
+        state.authPromptMessage = null;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
@@ -331,6 +411,10 @@ const authSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         state.error = null;
+        state.showAuthModal = false;
+        state.authPromptMessage = null;
+        state.authModalView = "login";
+        localStorage.removeItem("token");
       })
       .addCase(logout.rejected, (state) => {
         state.isLoading = false;
@@ -339,6 +423,25 @@ const authSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         state.error = null;
+        state.showAuthModal = false;
+        state.authPromptMessage = null;
+        state.authModalView = "login";
+        localStorage.removeItem("token");
+      });
+
+    // Change Password
+    builder
+      .addCase(changePassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as string) || "Failed to change password";
       });
   },
 });
@@ -351,9 +454,22 @@ export const selectIsAuthenticated = (state: { auth: AuthState }) =>
 export const selectAuthLoading = (state: { auth: AuthState }) =>
   state.auth.isLoading;
 export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;
+export const selectShowAuthModal = (state: { auth: AuthState }) =>
+  state.auth.showAuthModal;
+export const selectAuthModalView = (state: { auth: AuthState }) =>
+  state.auth.authModalView;
+export const selectAuthPromptMessage = (state: { auth: AuthState }) =>
+  state.auth.authPromptMessage;
 
 // Actions
-export const { clearError, setLoading } = authSlice.actions;
+export const {
+  clearError,
+  setLoading,
+  requireAuth,
+  openAuthModal,
+  closeAuthModal,
+  setAuthModalView,
+} = authSlice.actions;
 
 // Export reducer
 export default authSlice.reducer;

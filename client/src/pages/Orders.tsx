@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectUser, selectIsAuthenticated } from "../app/authSlice";
-import { useGetUserOrdersQuery, useCancelOrderMutation } from "../app/api";
+import {
+  useGetUserOrdersQuery,
+  useCancelOrderMutation,
+  useGetPaymentStatusQuery,
+} from "../app/api";
 import type { RootState } from "../app/store";
 import { useToast } from "../components/ToastProvider";
 
@@ -12,6 +16,168 @@ type OrderStatus =
   | "shipped"
   | "delivered"
   | "cancelled";
+
+interface OrderCardProps {
+  order: any;
+  onTrack: (orderId: string) => void;
+  onReorder: (orderId: string) => void;
+  onDownloadInvoice: (orderId: string) => void;
+  onCancel: (orderId: string) => void;
+  getStatusBadge: (status: OrderStatus) => JSX.Element;
+  getPaymentStatusBadge: (status?: string) => JSX.Element;
+}
+
+// ✅ Separate OrderCard component with payment status polling
+const OrderCard: React.FC<OrderCardProps> = ({
+  order,
+  onTrack,
+  onReorder,
+  onDownloadInvoice,
+  onCancel,
+  getStatusBadge,
+  getPaymentStatusBadge,
+}) => {
+  const { addToast } = useToast();
+  const { data: paymentStatus } = useGetPaymentStatusQuery(order._id, {
+    pollingInterval: order.status === "pending" ? 10000 : 0, // Poll every 10s if pending
+  });
+
+  const handleRetryPayment = () => {
+    if (!order.checkoutUrl) {
+      addToast("כתובת התשלום אינה זמינה", "error");
+      return;
+    }
+    window.location.href = order.checkoutUrl;
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      {/* Order Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center space-x-4 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">
+                הזמנה #{order.orderNumber}
+              </h3>
+              {getStatusBadge(order.status)}
+              {/* ✅ Payment Status Badge */}
+              {getPaymentStatusBadge(paymentStatus?.paymentStatus)}
+            </div>
+            <p className="text-sm text-gray-500">
+              📅 הוזמן ב-
+              {new Date(order.createdAt).toLocaleDateString("he-IL")} 🕐{" "}
+              {new Date(order.createdAt).toLocaleTimeString("he-IL", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-gray-900">
+              ₪{(order.total ?? 0).toLocaleString()}
+            </p>
+            <p className="text-sm text-gray-500">
+              {order.items?.length ?? 0} פריטים
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Order Items */}
+      <div className="p-6">
+        <div className="space-y-4">
+          {order.items.map((item: any, index: number) => (
+            <div key={index} className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                📦
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">
+                  {item.product.name}
+                </h4>
+                <p className="text-sm text-gray-500">
+                  כמות: {item.quantity} × ₪{(item.price ?? 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="font-semibold text-gray-900">
+                ₪{(item.quantity * (item.price ?? 0)).toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ✅ Payment Status Message for Failed/Pending */}
+        {paymentStatus?.paymentStatus === "failed" && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-800">
+              ❌ התשלום נכשל. אנא נסה שוב או צור קשר לתמיכה.
+            </p>
+          </div>
+        )}
+        {paymentStatus?.paymentStatus === "pending" && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              ⏳ התשלום עדיין בתהליך. אנא אל תרענן את הדף.
+            </p>
+          </div>
+        )}
+
+        {/* Order Actions */}
+        <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200">
+          <button
+            onClick={() => onTrack(order._id)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            📍 מעקב הזמנה
+          </button>
+          <button
+            onClick={() => onReorder(order._id)}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          >
+            🔄 הזמן שוב
+          </button>
+          <button
+            onClick={() => onDownloadInvoice(order._id)}
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+          >
+            📄 הורד חשבונית
+          </button>
+
+          {/* ✅ Retry Payment Button for Failed/Pending */}
+          {(paymentStatus?.paymentStatus === "failed" ||
+            paymentStatus?.paymentStatus === "pending") && (
+            <button
+              onClick={handleRetryPayment}
+              className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+            >
+              💳 נסה שוב
+            </button>
+          )}
+
+          {(order.status === "pending" || order.status === "processing") && (
+            <button
+              onClick={() => onCancel(order._id)}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              ❌ בטל הזמנה
+            </button>
+          )}
+          {order.status === "delivered" && (
+            <button
+              onClick={() =>
+                console.log("🔧 TODO: Open review modal for:", order._id)
+              }
+              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
+            >
+              ⭐ כתוב ביקורת
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Orders: React.FC = () => {
   const navigate = useNavigate();
@@ -89,6 +255,39 @@ const Orders: React.FC = () => {
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}
       >
         {config.icon} {config.text}
+      </span>
+    );
+  };
+
+  // ✅ Payment status badge component
+  const getPaymentStatusBadge = (paymentStatus?: string) => {
+    if (!paymentStatus)
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          💳 ממתין
+        </span>
+      );
+    if (paymentStatus === "paid")
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          💰 שולם
+        </span>
+      );
+    if (paymentStatus === "pending")
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          ⏳ בתהליך
+        </span>
+      );
+    if (paymentStatus === "failed")
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          ❌ נכשל
+        </span>
+      );
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+        {paymentStatus}
       </span>
     );
   };
@@ -289,113 +488,16 @@ const Orders: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {filteredOrders.map((order) => (
-              <div
+              <OrderCard
                 key={order._id}
-                className="bg-white rounded-lg shadow-sm overflow-hidden"
-              >
-                {/* Order Header */}
-                <div className="p-6 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center space-x-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          הזמנה #{order.orderNumber}
-                        </h3>
-                        {getStatusBadge(order.status)}
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">
-                        📅 הוזמן ב-
-                        {new Date(order.createdAt).toLocaleDateString(
-                          "he-IL"
-                        )}{" "}
-                        🕐{" "}
-                        {new Date(order.createdAt).toLocaleTimeString("he-IL", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">
-                        ₪{(order.total ?? 0).toLocaleString()}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {order.items?.length ?? 0} פריטים
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Order Items */}
-                <div className="p-6">
-                  <div className="space-y-4">
-                    {order.items.map((item, index) => (
-                      <div key={index} className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                          📦
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">
-                            {item.product.name}
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            כמות: {item.quantity} × ₪
-                            {(item.price ?? 0).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="font-semibold text-gray-900">
-                          ₪
-                          {(item.quantity * (item.price ?? 0)).toLocaleString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Order Actions */}
-                  <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200">
-                    <button
-                      onClick={() => handleTrackOrder(order._id)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      📍 מעקב הזמנה
-                    </button>
-                    <button
-                      onClick={() => handleReorder(order._id)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      🔄 הזמן שוב
-                    </button>
-                    <button
-                      onClick={() => handleDownloadInvoice(order._id)}
-                      className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                    >
-                      📄 הורד חשבונית
-                    </button>
-                    {(order.status === "pending" ||
-                      order.status === "processing") && (
-                      <button
-                        onClick={() => handleCancelOrder(order._id)}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                      >
-                        ❌ בטל הזמנה
-                      </button>
-                    )}
-                    {order.status === "delivered" && (
-                      <button
-                        onClick={() =>
-                          console.log(
-                            "🔧 TODO: Open review modal for:",
-                            order._id
-                          )
-                        }
-                        className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
-                      >
-                        ⭐ כתוב ביקורת
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+                order={order}
+                onTrack={handleTrackOrder}
+                onReorder={handleReorder}
+                onDownloadInvoice={handleDownloadInvoice}
+                onCancel={handleCancelOrder}
+                getStatusBadge={getStatusBadge}
+                getPaymentStatusBadge={getPaymentStatusBadge}
+              />
             ))}
           </div>
         )}

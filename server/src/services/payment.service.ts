@@ -3,9 +3,17 @@ import { PaymentModel, PaymentStatus } from "../models/payment.model";
 import { OrderModel } from "../models/order.model";
 import { PaymentProvider } from "./payments/payment.provider";
 import { MockProvider } from "./payments/mock.provider";
+import { StripeProvider } from "./payments/stripe.provider";
 
+// Register payment providers here - easy to add PayPal, Square, etc.
 const providers: Record<string, PaymentProvider> = {
   mock: new MockProvider(),
+  stripe: process.env.STRIPE_SECRET_KEY
+    ? new StripeProvider()
+    : new MockProvider(),
+  // Add more providers as needed:
+  // paypal: new PayPalProvider(),
+  // square: new SquareProvider(),
 };
 
 const mapToOrderPaymentStatus = (

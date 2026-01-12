@@ -240,6 +240,37 @@ export class AuthService {
   }
 
   /**
+   * Change password (authenticated user)
+   */
+  static async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ) {
+    // Get user with password field
+    const user = await UserModel.findById(userId).select("+password");
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      throw new Error("Current password is incorrect");
+    }
+
+    // Update password (will be hashed by pre-save middleware)
+    user.password = newPassword;
+    user.lastUpdated = new Date();
+    await user.save();
+
+    return {
+      message: "Password changed successfully",
+    };
+  }
+
+  /**
    * ==========================================
    * 🛠️ HELPER METHODS
    * ==========================================
@@ -342,4 +373,3 @@ export class AuthService {
     return userObject;
   }
 }
-

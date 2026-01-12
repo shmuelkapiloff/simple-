@@ -50,7 +50,6 @@ export class AuthMiddleware {
 
       logger.info(`✅ User authenticated: ${user.email}`);
 
-      
       next();
     } catch (error: any) {
       t.error(error);
@@ -216,4 +215,3 @@ export const authRateLimit = AuthMiddleware.createRateLimit();
 
 // Alias for backward compatibility
 export const authenticate = AuthMiddleware.requireAuth;
-

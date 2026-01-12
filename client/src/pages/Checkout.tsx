@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { selectIsAuthenticated } from "../app/authSlice";
 import {
   selectCartItems,
   selectCartTotal,
   selectSessionId,
+  clearCart,
 } from "../app/cartSlice";
 import {
   Address,
@@ -13,9 +14,11 @@ import {
   useCreateAddressMutation,
   useCreateOrderMutation,
   useCreatePaymentIntentMutation,
+  useClearCartMutation,
   useGetPaymentStatusQuery,
 } from "../app/api";
 import { useToast } from "../components/ToastProvider";
+import { StripeElementsForm } from "../components/StripeElementsForm";
 
 const Stepper: React.FC<{ step: number }> = ({ step }) => {
   const steps = ["עגלה", "כתובת", "תשלום", "סקירה"];
@@ -63,22 +66,28 @@ const Stepper: React.FC<{ step: number }> = ({ step }) => {
 };
 
 const paymentLabels: Record<string, string> = {
-  credit_card: "כרטיס אשראי",
-  paypal: "PayPal",
-  cash: "מזומן",
+  stripe: "כרטיס אשראי (Stripe)",
 };
 
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
   const { addToast } = useToast();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const items = useSelector(selectCartItems);
   const total = useSelector(selectCartTotal);
   const sessionId = useSelector(selectSessionId);
+  const paymentSuccess = searchParams.get("payment") === "success";
+  const paymentCancelled = searchParams.get("payment") === "cancelled";
+  const returnedOrderId = searchParams.get("orderId");
 
   const [step, setStep] = useState(0); // 0 cart summary, 1 address, 2 payment, 3 review
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("credit_card");
+  const [paymentMethod, setPaymentMethod] = useState<string>("stripe"); // "stripe" (redirect) or "stripe-elements" (inline)
+  const [useInlineElements, setUseInlineElements] = useState(false); // Toggle inline vs redirect
+  const [currentOrder, setCurrentOrder] = useState<any>(null); // Store order for inline payment
+  const [currentIntent, setCurrentIntent] = useState<any>(null); // Store intent for inline payment
 
   const { data: addresses = [], isLoading: isAddressesLoading } =
     useGetAddressesQuery(undefined, {
@@ -90,18 +99,35 @@ const Checkout: React.FC = () => {
     useCreateOrderMutation();
   const [createPaymentIntent, { isLoading: isCreatingPayment }] =
     useCreatePaymentIntentMutation();
+  const [clearCartMutation] = useClearCartMutation();
 
+  // ✅ Poll payment status on return from Stripe ONLY
+  const { data: paymentStatus } = useGetPaymentStatusQuery(
+    returnedOrderId || "",
+    {
+      skip: !returnedOrderId, // Only poll if returning from payment
+      pollingInterval: returnedOrderId && !paymentSuccess ? 3000 : 0, // Poll every 3s until confirmed
+    }
+  );
+
+  // ✅ Handle return from Stripe redirect - confirm payment before clearing cart
   useEffect(() => {
-    if (!isAuthenticated) {
-      addToast("יש להתחבר כדי לבצע הזמנה", "error");
-      navigate("/login");
-      return;
+    if (returnedOrderId && paymentStatus?.paymentStatus === "paid") {
+      addToast("✅ התשלום הסתיים בהצלחה!", "success");
+      try {
+        // ✅ ONLY clear cart after confirmed paid status
+        clearCartMutation({ sessionId })
+          .unwrap()
+          .catch(() => {});
+        dispatch(clearCart());
+        navigate(`/orders/${returnedOrderId}`);
+      } catch (e) {
+        console.error("Clear cart or navigate failed:", e);
+      }
+    } else if (returnedOrderId && paymentCancelled) {
+      addToast("ביטלת את התשלום — העגלה שלך שמורה", "info");
     }
-    if (!sessionId) {
-      addToast("בעיה בסשן עגלה — נסה לרענן", "error");
-      navigate("/");
-    }
-  }, [isAuthenticated, sessionId, addToast, navigate]);
+  }, [returnedOrderId, paymentStatus?.paymentStatus, paymentCancelled]);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -122,7 +148,6 @@ const Checkout: React.FC = () => {
     }
   }, [addresses, selectedAddress]);
 
-  const canProceedAddress = !!selectedAddress || !isAddressesLoading;
   const currencyTotal = useMemo(() => `₪${total.toLocaleString()}`, [total]);
 
   const placeOrder = async () => {
@@ -134,10 +159,10 @@ const Checkout: React.FC = () => {
           street: selectedAddress.street,
           city: selectedAddress.city,
           state: selectedAddress.state,
-          postalCode: selectedAddress.postalCode ?? selectedAddress.zipCode,
+          postalCode: selectedAddress.zipCode || "",
           country: selectedAddress.country,
         },
-        paymentMethod,
+        paymentMethod: paymentMethod as "stripe",
       }).unwrap();
       addToast(
         `הזמנה נוצרה בהצלחה! מס' הזמנה: ${order.orderNumber}`,
@@ -148,22 +173,42 @@ const Checkout: React.FC = () => {
       const intent = await createPaymentIntent({ orderId: order._id }).unwrap();
 
       if (intent.status === "succeeded") {
+        // ✅ Immediate success (e.g., mock setup) - clear cart now
         addToast("התשלום אושר בהצלחה", "success");
-        navigate("/orders");
+        try {
+          await clearCartMutation({ sessionId }).unwrap();
+          dispatch(clearCart());
+        } catch (clearError) {
+          console.error("Failed to clear cart:", clearError);
+        }
+        navigate(`/orders/${order._id}`);
         return;
       }
 
-      if (intent.checkoutUrl) {
-        // בדמו של mock אפשר לפתוח בלשונית חדשה
-        try {
-          window.open(intent.checkoutUrl, "_blank");
-          addToast("נפתח דף תשלום", "info");
-        } catch {
-          addToast("פתח את קישור התשלום מהפרטים", "info");
-        }
+      // ✅ For inline Elements: store order & intent, show form
+      if (useInlineElements && intent.clientSecret) {
+        setCurrentOrder(order);
+        setCurrentIntent(intent);
+        addToast("אנא הזן פרטי כרטיס", "info");
+        // Form will be displayed in render via conditional, and on success will redirect
+        // ⚠️ DO NOT clear cart - inline form will redirect to return URL which triggers cart clear via useEffect
+        return;
       }
 
-      // אחרי יצירת intent, אפשר להציג סטטוס או להפנות לעמוד ההזמנות
+      // ✅ For redirect: open Stripe, user will return to /checkout?payment=success&orderId=X
+      if (intent.checkoutUrl) {
+        addToast("מעביר אותך לדף התשלום...", "info");
+        // ⚠️ DO NOT clear cart here - wait for return from Stripe
+        setTimeout(() => {
+          if (intent.checkoutUrl) {
+            window.location.href = intent.checkoutUrl;
+          }
+        }, 500);
+        return;
+      }
+
+      // Fallback: redirect to orders page
+      addToast("המשך לעמוד ההזמנות", "info");
       navigate("/orders");
     } catch (e: any) {
       const msg = e?.data?.message || e?.message || "שגיאה ביצירת הזמנה";
@@ -175,12 +220,37 @@ const Checkout: React.FC = () => {
     <main className="min-h-screen bg-gray-50 py-8" dir="rtl">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">תהליך הזמנה</h1>
-          <p className="text-gray-600">זרימה ברורה עד אישור הזמנה</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                תהליך הזמנה
+              </h1>
+              <p className="text-gray-600">זרימה ברורה עד אישור הזמנה</p>
+            </div>
+            {/* Sticky Total */}
+            <div className="text-right">
+              <p className="text-sm text-gray-500">סכום כולל</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {currencyTotal}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {items.length} מוצרים
+              </p>
+            </div>
+          </div>
         </header>
 
         <div className="bg-white rounded-lg shadow-sm p-6">
           <Stepper step={step} />
+
+          {/* Empty Cart Warning */}
+          {items.length === 0 && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 font-semibold">
+                ⚠️ העגלה ריקה - בחר מוצרים כדי להמשיך
+              </p>
+            </div>
+          )}
 
           {/* Step 0: Cart Summary */}
           {step === 0 && (
@@ -332,17 +402,24 @@ const Checkout: React.FC = () => {
 
               <div className="flex justify-between mt-6">
                 <button
-                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded"
+                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
                   onClick={() => setStep(0)}
                 >
                   ⬅️ חזרה לעגלה
                 </button>
                 <button
-                  disabled={!canProceedAddress}
-                  className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
-                  onClick={() => setStep(2)}
+                  disabled={!selectedAddress || isAddressesLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  onClick={() => {
+                    if (!selectedAddress) {
+                      addToast("בחר כתובת כדי להמשיך", "error");
+                      return;
+                    }
+                    setStep(2);
+                  }}
+                  title={!selectedAddress ? "בחר כתובת קודם" : ""}
                 >
-                  המשך לתשלום
+                  {isAddressesLoading ? "טוען..." : "המשך לתשלום"}
                 </button>
               </div>
             </section>
@@ -357,36 +434,81 @@ const Checkout: React.FC = () => {
               >
                 💳 שיטת תשלום
               </h2>
-              <fieldset className="space-y-2">
-                <legend className="sr-only">בחר שיטת תשלום</legend>
-                {[
-                  { key: "credit_card", label: "כרטיס אשראי" },
-                  { key: "paypal", label: "PayPal" },
-                  { key: "cash", label: "מזומן" },
-                ].map((opt) => (
-                  <label
-                    key={opt.key}
-                    className="flex items-center gap-3 p-3 border rounded"
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === opt.key}
-                      onChange={() => setPaymentMethod(opt.key)}
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
+
+              {/* Test Card Information */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                <p className="font-semibold mb-2">🧪 מספרי אשראי לבדיקה:</p>
+                <ul className="space-y-1 font-mono text-xs">
+                  <li>
+                    ✓ חדש: <code>4242 4242 4242 4242</code>
+                  </li>
+                  <li>
+                    ✗ דחיה: <code>4000 0000 0000 0002</code>
+                  </li>
+                  <li>
+                    3D: <code>4000 2500 0000 3010</code>
+                  </li>
+                  <li>אחרי זה הכנס כל תאריך ו-CVC</li>
+                </ul>
+              </div>
+
+              {/* Payment Method Selection */}
+              <fieldset className="space-y-3 mb-4">
+                <legend className="font-medium text-gray-900 mb-2">
+                  בחר שיטת תשלום:
+                </legend>
+                <label className="flex items-center gap-3 p-3 border rounded cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    checked={!useInlineElements}
+                    onChange={() => setUseInlineElements(false)}
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">
+                      🔗 Stripe Redirect
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      עבור ל-Stripe כדי להזין פרטי כרטיס. בטוח וקל.
+                    </p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-3 border rounded cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    checked={useInlineElements}
+                    onChange={() => setUseInlineElements(true)}
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">
+                      💻 Inline Elements
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      הזן פרטי כרטיס ישירות כאן. מהיר יותר.
+                    </p>
+                  </div>
+                </label>
               </fieldset>
+
+              {/* Inline Elements Info */}
+              {useInlineElements && (
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                  <p>📌 לאחר התשלום הצליח, תוידלג לדף ההזמנה שלך אוטומטית.</p>
+                </div>
+              )}
+
               <div className="flex justify-between mt-6">
                 <button
-                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded"
+                  disabled={isCreatingOrder || isCreatingPayment}
+                  className="px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200 disabled:opacity-50"
                   onClick={() => setStep(1)}
                 >
                   ⬅️ חזרה לכתובת
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                  disabled={isCreatingOrder || isCreatingPayment}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   onClick={() => setStep(3)}
                 >
                   המשך לסקירה
@@ -412,6 +534,38 @@ const Checkout: React.FC = () => {
                   ערוך עגלה
                 </button>
               </div>
+
+              {/* Info Alert */}
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-900">
+                  📋 בדוק את הפרטים שלך. לאחר לחיצה על "אשר הזמנה", תועבר דף
+                  התשלום של Stripe.
+                </p>
+              </div>
+
+              {/* ✅ Inline Payment Form - if waiting for inline payment */}
+              {currentOrder &&
+                currentIntent?.clientSecret &&
+                useInlineElements && (
+                  <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <h3 className="font-semibold text-gray-900 mb-3">
+                      💳 הזן פרטי כרטיס
+                    </h3>
+                    <StripeElementsForm
+                      clientSecret={currentIntent.clientSecret}
+                      orderId={currentOrder._id}
+                      onSuccess={() => {
+                        addToast("✅ תשלום מאושר!", "success");
+                      }}
+                      onError={(err) => {
+                        addToast(`❌ ${err}`, "error");
+                        setCurrentOrder(null);
+                        setCurrentIntent(null);
+                      }}
+                      isSubmitting={isCreatingPayment}
+                    />
+                  </div>
+                )}
 
               <div className="space-y-4">
                 {items.length === 0 ? (
@@ -468,7 +622,7 @@ const Checkout: React.FC = () => {
                         {selectedAddress.state
                           ? `, ${selectedAddress.state}`
                           : ""}{" "}
-                        {selectedAddress.postalCode ?? selectedAddress.zipCode}
+                        {selectedAddress.zipCode}
                       </p>
                       <p className="text-sm text-gray-600">
                         {selectedAddress.country}
@@ -489,7 +643,9 @@ const Checkout: React.FC = () => {
                     </button>
                   </div>
                   <p className="font-medium text-gray-900">
-                    {paymentLabels[paymentMethod] || paymentMethod}
+                    {useInlineElements
+                      ? "💻 Inline Elements"
+                      : "🔗 Stripe Redirect"}
                   </p>
                 </div>
               </div>
@@ -497,31 +653,42 @@ const Checkout: React.FC = () => {
               <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                 <div>
                   <p className="text-sm text-gray-500">סכום כולל</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-blue-600">
                     {currencyTotal}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <button
-                    className="px-4 py-2 bg-gray-100 text-gray-800 rounded"
+                    disabled={
+                      isCreatingOrder || isCreatingPayment || currentOrder
+                    }
+                    className="px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200 disabled:opacity-50"
                     onClick={() => setStep(2)}
                   >
                     ⬅️ חזרה לתשלום
                   </button>
-                  <button
-                    disabled={
-                      items.length === 0 ||
-                      isCreatingOrder ||
-                      isCreatingPayment ||
-                      !selectedAddress
-                    }
-                    className="px-4 py-2 bg-green-600 text-white rounded disabled:bg-gray-400"
-                    onClick={placeOrder}
-                  >
-                    {isCreatingOrder || isCreatingPayment
-                      ? "מייצר הזמנה/תשלום..."
-                      : "אשר הזמנה"}
-                  </button>
+                  {!currentOrder && (
+                    <button
+                      disabled={
+                        items.length === 0 ||
+                        isCreatingOrder ||
+                        isCreatingPayment ||
+                        !selectedAddress
+                      }
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                      onClick={placeOrder}
+                      title={!selectedAddress ? "בחר כתובת קודם" : ""}
+                    >
+                      {isCreatingOrder || isCreatingPayment ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          עיבוד...
+                        </>
+                      ) : (
+                        "✓ אשר הזמנה ותשלום"
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </section>

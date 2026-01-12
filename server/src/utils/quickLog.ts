@@ -12,7 +12,10 @@ export const log = {
   // לוג מהיר ליציאה מוצלחת
   out: (service: string, func: string, startTime: number, result?: any) => {
     const duration = Date.now() - startTime;
-    logger.info({ service, func, duration }, `✅ ${service}.${func} (${duration}ms)`);
+    logger.info(
+      { service, func, duration },
+      `✅ ${service}.${func} (${duration}ms)`
+    );
   },
 
   // לוג שגיאה

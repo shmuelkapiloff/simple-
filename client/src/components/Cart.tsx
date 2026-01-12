@@ -12,7 +12,7 @@ import {
   setCart,
   setError,
 } from "../app/cartSlice";
-import { selectIsAuthenticated } from "../app/authSlice";
+import { selectIsAuthenticated, requireAuth } from "../app/authSlice";
 import {
   useGetCartQuery,
   useUpdateCartQuantityMutation,
@@ -67,12 +67,19 @@ const Cart: React.FC = () => {
     error,
     isLoading,
   } = useGetCartQuery(sessionId || "", {
-    skip: !sessionId,
+    skip: !sessionId || !isAuthenticated,
   });
 
   // Sync server cart to local state
   useEffect(() => {
     if (serverCart && sessionId) {
+      if (import.meta.env.DEV) {
+        console.log("📦 Syncing cart from server:", {
+          itemsLength: serverCart.items?.length,
+          items: serverCart.items,
+          total: serverCart.total,
+        });
+      }
       dispatch(
         setCart({
           items: serverCart.items,
@@ -116,6 +123,13 @@ const Cart: React.FC = () => {
     productId: string,
     newQuantity: number
   ) => {
+    if (!isAuthenticated) {
+      dispatch(
+        requireAuth({ view: "login", message: "התחבר כדי לעדכן את העגלה" })
+      );
+      return;
+    }
+
     if (!sessionId) return;
 
     try {
@@ -135,6 +149,13 @@ const Cart: React.FC = () => {
 
   // Remove item handler
   const handleRemoveItem = async (productId: string) => {
+    if (!isAuthenticated) {
+      dispatch(
+        requireAuth({ view: "login", message: "התחבר כדי לנהל את העגלה" })
+      );
+      return;
+    }
+
     if (!sessionId) return;
 
     try {
@@ -153,6 +174,13 @@ const Cart: React.FC = () => {
 
   // Clear cart handler
   const handleClearCart = async () => {
+    if (!isAuthenticated) {
+      dispatch(
+        requireAuth({ view: "login", message: "התחבר כדי לנהל את העגלה" })
+      );
+      return;
+    }
+
     if (!sessionId) return;
 
     try {

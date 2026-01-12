@@ -7,6 +7,11 @@ import {
   selectUser,
   selectIsAuthenticated,
   selectAuthLoading,
+  selectShowAuthModal,
+  selectAuthModalView,
+  selectAuthPromptMessage,
+  openAuthModal,
+  closeAuthModal as closeAuthModalAction,
 } from "../app/authSlice";
 import { selectCartItemCount } from "../app/cartSlice";
 import { AuthModal } from "./AuthModal";
@@ -24,9 +29,14 @@ export const NavBar: React.FC = () => {
     selectCartItemCount(state)
   );
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalView, setAuthModalView] = useState<"login" | "register">(
-    "login"
+  const showAuthModal = useSelector((state: RootState) =>
+    selectShowAuthModal(state)
+  );
+  const authModalView = useSelector((state: RootState) =>
+    selectAuthModalView(state)
+  );
+  const authPromptMessage = useSelector((state: RootState) =>
+    selectAuthPromptMessage(state)
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -49,13 +59,11 @@ export const NavBar: React.FC = () => {
   }, [dispatch, isAuthenticated, isLoading, user]); // Added user to dependencies
 
   const handleLogin = () => {
-    setAuthModalView("login");
-    setIsAuthModalOpen(true);
+    dispatch(openAuthModal("login"));
   };
 
   const handleRegister = () => {
-    setAuthModalView("register");
-    setIsAuthModalOpen(true);
+    dispatch(openAuthModal("register"));
   };
 
   const handleLogout = async () => {
@@ -69,7 +77,7 @@ export const NavBar: React.FC = () => {
   };
 
   const closeAuthModal = () => {
-    setIsAuthModalOpen(false);
+    dispatch(closeAuthModalAction());
   };
 
   const toggleUserMenu = () => {
@@ -93,13 +101,13 @@ export const NavBar: React.FC = () => {
 
   return (
     <>
-      <nav className="bg-white shadow-lg border-b border-gray-200">
+      <nav className="fixed top-0 left-0 right-0 bg-white shadow-lg border-b border-gray-200 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Debug Info */}
           {process.env.NODE_ENV === "development" && (
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-1">
               <p className="text-blue-800 text-xs text-center">
-                � <strong>Debug:</strong> isAuthenticated:{" "}
+                🐛 <strong>Debug:</strong> isAuthenticated:{" "}
                 {isAuthenticated ? "YES" : "NO"} | User: {user?.name || "NONE"}{" "}
                 | Loading: {isLoading ? "YES" : "NO"}
               </p>
@@ -234,6 +242,21 @@ export const NavBar: React.FC = () => {
                         📦 ההזמנות שלי
                       </button>
 
+                      {(user as any).role === "admin" && (
+                        <>
+                          <hr className="my-1" />
+                          <button
+                            className="block w-full text-left px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 font-semibold"
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              navigate("/admin/stats");
+                            }}
+                          >
+                            🏢 מרכז ניהול
+                          </button>
+                        </>
+                      )}
+
                       <hr className="my-1" />
 
                       <button
@@ -272,9 +295,10 @@ export const NavBar: React.FC = () => {
 
       {/* Authentication Modal */}
       <AuthModal
-        isOpen={isAuthModalOpen}
+        isOpen={showAuthModal}
         onClose={closeAuthModal}
         initialView={authModalView}
+        message={authPromptMessage}
       />
     </>
   );

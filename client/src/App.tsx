@@ -10,6 +10,11 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import TrackOrder from "./pages/TrackOrder";
 import Checkout from "./pages/Checkout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminStats from "./pages/admin/AdminStats";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminUsers from "./pages/admin/AdminUsers";
 import { verifyToken } from "./app/authSlice";
 import type { AppDispatch } from "./app/store";
 
@@ -31,14 +36,24 @@ function App() {
         {/* Navigation Bar with Authentication */}
         <NavBar />
 
-        <main>
+        <main className="pt-16">
           <Routes>
             <Route path="/" element={<ProductList />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:orderId" element={<TrackOrder />} />
             <Route path="/track/:orderId" element={<TrackOrder />} />
             <Route path="/checkout" element={<Checkout />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminDashboard />}>
+              <Route index element={<AdminStats />} />
+              <Route path="stats" element={<AdminStats />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
           </Routes>
         </main>
 

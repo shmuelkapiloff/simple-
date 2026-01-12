@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { ApiLogger } from "../utils/apiLogger";
+import { logout, requireAuth } from "./authSlice";
 
 // Product type להתאמה לשרת
 export interface Product {
@@ -121,7 +122,7 @@ interface CreateOrderRequest {
     postalCode: string;
     country: string;
   };
-  paymentMethod?: string;
+  paymentMethod?: "stripe"; // currently only Stripe is allowed
   notes?: string;
 }
 
@@ -187,6 +188,17 @@ const baseQueryWithInterceptor = async (
 
     if (result.error) {
       ApiLogger.endCall(callId, null, result.error);
+
+      // Auth guard: if token expired/unauthorized, force login modal
+      if (result.error.status === 401) {
+        api.dispatch(logout());
+        api.dispatch(
+          requireAuth({
+            view: "login",
+            message: "התחבר כדי להמשיך",
+          })
+        );
+      }
     } else {
       ApiLogger.endCall(callId, result.data);
     }
@@ -201,7 +213,16 @@ const baseQueryWithInterceptor = async (
 export const api = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithInterceptor,
-  tagTypes: ["Product", "Cart", "Order", "Address"],
+  tagTypes: [
+    "Product",
+    "Cart",
+    "Order",
+    "Address",
+    "AdminProduct",
+    "AdminUser",
+    "AdminOrder",
+    "AdminStats",
+  ],
   endpoints: (builder) => ({
     // GET /api/products - רשימת מוצרים
     getProducts: builder.query<Product[], void>({
@@ -469,6 +490,182 @@ export const api = createApi({
       },
       invalidatesTags: ["Address"],
     }),
+
+    // === ADMIN PRODUCT ENDPOINTS === //
+
+    // GET /api/admin/products?includeInactive=true - רשימת כל מוצרים (admin)
+    getAdminProducts: builder.query<
+      Product[],
+      { includeInactive?: boolean } | void
+    >({
+      query: (params) => ({
+        url: "admin/products",
+        params: params ? { includeInactive: params.includeInactive } : {},
+      }),
+      transformResponse: (response: ApiResponse<any>) => {
+        // Handle both array and object responses
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.products && Array.isArray(response.data.products)) {
+          return response.data.products;
+        }
+        return [];
+      },
+      providesTags: ["AdminProduct"],
+    }),
+
+    // POST /api/admin/products - יצירת מוצר חדש (admin)
+    createAdminProduct: builder.mutation<
+      Product,
+      Omit<Product, "_id" | "createdAt" | "updatedAt" | "rating">
+    >({
+      query: (body) => ({
+        url: "admin/products",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<Product>) => response.data!,
+      invalidatesTags: ["AdminProduct", "Product"],
+    }),
+
+    // PUT /api/admin/products/:productId - עדכון מוצר (admin)
+    updateAdminProduct: builder.mutation<
+      Product,
+      { productId: string; body: Partial<Product> }
+    >({
+      query: ({ productId, body }) => ({
+        url: `admin/products/${productId}`,
+        method: "PUT",
+        body,
+      }),
+      transformResponse: (response: ApiResponse<Product>) => response.data!,
+      invalidatesTags: (_, __, { productId }) => [
+        { type: "AdminProduct", id: productId },
+        "AdminProduct",
+        { type: "Product", id: productId },
+      ],
+    }),
+
+    // DELETE /api/admin/products/:productId - מחיקה רכה של מוצר (admin)
+    deleteAdminProduct: builder.mutation<Product, string>({
+      query: (productId) => ({
+        url: `admin/products/${productId}`,
+        method: "DELETE",
+      }),
+      transformResponse: (response: ApiResponse<Product>) => response.data!,
+      invalidatesTags: ["AdminProduct", "Product"],
+    }),
+
+    // === ADMIN USER ENDPOINTS === //
+
+    // GET /api/admin/users?page=1&limit=20 - רשימת משתמשים (admin)
+    getAdminUsers: builder.query<
+      {
+        users: any[];
+        total: number;
+        page: number;
+        limit: number;
+      },
+      { page?: number; limit?: number } | void
+    >({
+      query: (params) => ({
+        url: "admin/users",
+        params: params || {},
+      }),
+      transformResponse: (response: ApiResponse<any>) => response.data!,
+      providesTags: ["AdminUser"],
+    }),
+
+    // PUT /api/admin/users/:userId/role - עדכון תפקיד משתמש (admin)
+    updateUserRole: builder.mutation<
+      any,
+      { userId: string; role: "user" | "admin" }
+    >({
+      query: ({ userId, role }) => ({
+        url: `admin/users/${userId}/role`,
+        method: "PUT",
+        body: { role },
+      }),
+      transformResponse: (response: ApiResponse<any>) => response.data!,
+      invalidatesTags: ["AdminUser"],
+    }),
+
+    // === ADMIN ORDER ENDPOINTS === //
+
+    // GET /api/admin/orders?status=pending - רשימת הזמנות (admin)
+    getAdminOrders: builder.query<
+      Order[],
+      {
+        status?:
+          | "pending"
+          | "processing"
+          | "shipped"
+          | "delivered"
+          | "cancelled";
+      } | void
+    >({
+      query: (params) => ({
+        url: "admin/orders",
+        params: params || {},
+      }),
+      transformResponse: (response: ApiResponse<any>) => {
+        // Handle both array and object responses
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (response.data?.orders && Array.isArray(response.data.orders)) {
+          return response.data.orders;
+        }
+        return [];
+      },
+      providesTags: ["AdminOrder"],
+    }),
+
+    // PUT /api/admin/orders/:orderId/status - עדכון סטטוס הזמנה (admin)
+    updateOrderStatus: builder.mutation<
+      Order,
+      {
+        orderId: string;
+        status:
+          | "pending"
+          | "processing"
+          | "shipped"
+          | "delivered"
+          | "cancelled";
+        message?: string;
+      }
+    >({
+      query: ({ orderId, status, message }) => ({
+        url: `admin/orders/${orderId}/status`,
+        method: "PUT",
+        body: { status, message },
+      }),
+      transformResponse: (response: ApiResponse<Order>) => response.data!,
+      invalidatesTags: (_, __, { orderId }) => [
+        { type: "AdminOrder", id: orderId },
+        "AdminOrder",
+        { type: "Order", id: orderId },
+      ],
+    }),
+
+    // === ADMIN STATS ENDPOINTS === //
+
+    // GET /api/admin/stats/summary - סיכום סטטיסטיקה (admin)
+    getAdminStatsSummary: builder.query<
+      {
+        totalSales: number;
+        totalOrders: number;
+        pendingOrders: number;
+        lowStockProducts: number;
+        totalUsers: number;
+      },
+      void
+    >({
+      query: () => "admin/stats/summary",
+      transformResponse: (response: ApiResponse<any>) => response.data!,
+      providesTags: ["AdminStats"],
+    }),
   }),
 });
 
@@ -501,4 +698,14 @@ export const {
   useUpdateAddressMutation,
   useDeleteAddressMutation,
   useSetDefaultAddressMutation,
+  // Admin
+  useGetAdminProductsQuery,
+  useCreateAdminProductMutation,
+  useUpdateAdminProductMutation,
+  useDeleteAdminProductMutation,
+  useGetAdminUsersQuery,
+  useUpdateUserRoleMutation,
+  useGetAdminOrdersQuery,
+  useUpdateOrderStatusMutation,
+  useGetAdminStatsSummaryQuery,
 } = api;

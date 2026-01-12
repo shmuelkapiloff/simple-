@@ -1,0 +1,232 @@
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { changePassword, selectAuthLoading, selectAuthError } from "../app/authSlice";
+import type { RootState } from "../app/store";
+
+interface ChangePasswordModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state: RootState) => selectAuthLoading(state));
+  const error = useSelector((state: RootState) => selectAuthError(state));
+
+  const [formData, setFormData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.currentPassword) {
+      errors.currentPassword = "Current password is required";
+    }
+
+    if (!formData.newPassword) {
+      errors.newPassword = "New password is required";
+    } else if (formData.newPassword.length < 6) {
+      errors.newPassword = "Password must be at least 6 characters";
+    }
+
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = "Confirm password is required";
+    } else if (formData.newPassword !== formData.confirmPassword) {
+      errors.confirmPassword = "Passwords don't match";
+    }
+
+    if (formData.currentPassword === formData.newPassword) {
+      errors.newPassword = "New password must be different from current password";
+    }
+
+    setLocalErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const result = await dispatch(
+      changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword,
+      }) as any
+    );
+
+    if (result.type === "auth/changePassword/fulfilled") {
+      setSuccessMessage("🎉 Password changed successfully!");
+      setFormData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setLocalErrors({});
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        onClose();
+        setSuccessMessage("");
+      }, 2000);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+    // Clear error for this field when user starts typing
+    if (localErrors[name]) {
+      setLocalErrors({
+        ...localErrors,
+        [name]: "",
+      });
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setLocalErrors({});
+    setSuccessMessage("");
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" dir="rtl">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          🔐 שינוי סיסמה
+        </h2>
+
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-green-800">
+            {successMessage}
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-red-800">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Current Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              סיסמה נוכחית
+            </label>
+            <input
+              type="password"
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={handleInputChange}
+              disabled={isLoading}
+              className={`w-full px-4 py-2 border rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                localErrors.currentPassword
+                  ? "border-red-500"
+                  : "border-gray-300"
+              } disabled:bg-gray-100`}
+              placeholder="הקלד סיסמה נוכחית"
+            />
+            {localErrors.currentPassword && (
+              <p className="text-red-600 text-sm mt-1">
+                {localErrors.currentPassword}
+              </p>
+            )}
+          </div>
+
+          {/* New Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              סיסמה חדשה
+            </label>
+            <input
+              type="password"
+              name="newPassword"
+              value={formData.newPassword}
+              onChange={handleInputChange}
+              disabled={isLoading}
+              className={`w-full px-4 py-2 border rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                localErrors.newPassword ? "border-red-500" : "border-gray-300"
+              } disabled:bg-gray-100`}
+              placeholder="הקלד סיסמה חדשה"
+            />
+            {localErrors.newPassword && (
+              <p className="text-red-600 text-sm mt-1">
+                {localErrors.newPassword}
+              </p>
+            )}
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              אימות סיסמה
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              disabled={isLoading}
+              className={`w-full px-4 py-2 border rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                localErrors.confirmPassword
+                  ? "border-red-500"
+                  : "border-gray-300"
+              } disabled:bg-gray-100`}
+              placeholder="אשר סיסמה חדשה"
+            />
+            {localErrors.confirmPassword && (
+              <p className="text-red-600 text-sm mt-1">
+                {localErrors.confirmPassword}
+              </p>
+            )}
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50"
+            >
+              ביטול
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {isLoading ? "⏳ משנה..." : "💾 שנה סיסמה"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default ChangePasswordModal;

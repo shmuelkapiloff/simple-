@@ -99,7 +99,13 @@ export const cartSlice = createSlice({
       state.itemCount = itemCount;
       state.error = null;
 
-      console.log("📥 Cart set:", { itemCount, total });
+      if (import.meta.env.DEV) {
+        console.log("📥 Cart updated:", {
+          itemCount,
+          total,
+          itemsLength: items.length,
+        });
+      }
     },
 
     // Add item optimistically (before API call)

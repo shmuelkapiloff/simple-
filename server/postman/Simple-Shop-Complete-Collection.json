@@ -1068,10 +1068,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"shippingAddress\": {\n    \"street\": \"הרצל 10\",\n    \"city\": \"תל אביב\",\n    \"postalCode\": \"67890\",\n    \"country\": \"Israel\"\n  },\n  \"paymentMethod\": \"credit_card\",\n  \"notes\": \"נא לארוז מתנה\"\n}"
+              "raw": "{\n  \"shippingAddress\": {\n    \"street\": \"הרצל 10\",\n    \"city\": \"תל אביב\",\n    \"postalCode\": \"67890\",\n    \"country\": \"Israel\"\n  },\n  \"paymentMethod\": \"stripe\",\n  \"sessionId\": \"cs_test_123\",\n  \"notes\": \"נא לארוז מתנה\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] },
-            "description": "יצירת הזמנה מהעגלה\n\n**Required:**\n- shippingAddress (object with street, city, postalCode, country)\n- paymentMethod (string: credit_card, paypal, cash)\n\n**Optional:**\n- notes (string)\n\n**Prerequisites:**\n1. User must be logged in (authToken)\n2. Cart must have items"
+            "description": "יצירת הזמנה מהעגלה\n\n**Required:**\n- shippingAddress (object with street, city, postalCode, country)\n- paymentMethod: stripe\n- sessionId (מ-Stripe Checkout / create-intent)\n\n**Optional:**\n- notes (string)\n\n**Prerequisites:**\n1. User must be logged in (authToken)\n2. Cart must have items\n3. Stripe payment intent/session created"
           },
           "event": [
             {

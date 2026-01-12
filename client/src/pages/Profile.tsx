@@ -6,6 +6,7 @@ import {
   selectAuthError,
 } from "../app/authSlice";
 import AddressManager from "../components/AddressManager";
+import ChangePasswordModal from "../components/ChangePasswordModal";
 import type { RootState } from "../app/store";
 
 const Profile: React.FC = () => {
@@ -17,6 +18,7 @@ const Profile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"profile" | "addresses">(
     "profile"
   );
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -52,8 +54,7 @@ const Profile: React.FC = () => {
   };
 
   const handlePasswordChange = () => {
-    // TODO: בעתיד נוסיף modal לשינוי סיסמה
-    console.log("🔧 TODO: Open password change modal");
+    setIsPasswordModalOpen(true);
   };
 
   const handleDeleteAccount = () => {
@@ -303,6 +304,12 @@ const Profile: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </main>
   );
 };
