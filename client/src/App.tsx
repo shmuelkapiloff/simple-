@@ -10,6 +10,8 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import TrackOrder from "./pages/TrackOrder";
 import Checkout from "./pages/Checkout";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminStats from "./pages/admin/AdminStats";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -45,6 +47,8 @@ function App() {
             <Route path="/orders/:orderId" element={<TrackOrder />} />
             <Route path="/track/:orderId" element={<TrackOrder />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />}>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import {
   login,
   clearError,
@@ -150,6 +151,17 @@ export const Login: React.FC<LoginProps> = ({ onSwitch, onClose }) => {
             "התחבר"
           )}
         </button>
+
+        {/* Forgot Password Link */}
+        <div className="text-center">
+          <Link
+            to="/forgot-password"
+            onClick={onClose}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            שכחת את הסיסמה?
+          </Link>
+        </div>
 
         {/* Switch to Register */}
         <div className="text-center text-sm text-gray-600">
