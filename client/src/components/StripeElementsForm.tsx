@@ -12,7 +12,7 @@ interface StripeElementsFormProps {
 /**
  * 🎭 DEMO MODE - Stripe Elements Form (ללא תלות ב-@stripe/react-stripe-js)
  * להתקנת Stripe אמיתי: npm install @stripe/react-stripe-js @stripe/stripe-js
- * 
+ *
  * גרסה זו משתמשת בכרטיסי מבחן:
  * - 4242 4242 4242 4242 = הצלחה
  * - 4000 0000 0000 0002 = דחייה
@@ -74,14 +74,21 @@ export const StripeElementsForm: React.FC<StripeElementsFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 p-6 rounded-lg border">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 bg-gray-50 p-6 rounded-lg border"
+    >
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
         <p className="text-sm text-blue-800 font-semibold">
           🎭 DEMO MODE - כרטיסי מבחן:
         </p>
         <ul className="text-xs text-blue-700 mt-2 space-y-1">
-          <li>✅ הצלחה: <code>4242 4242 4242 4242</code></li>
-          <li>❌ דחייה: <code>4000 0000 0000 0002</code></li>
+          <li>
+            ✅ הצלחה: <code>4242 4242 4242 4242</code>
+          </li>
+          <li>
+            ❌ דחייה: <code>4000 0000 0000 0002</code>
+          </li>
           <li>📅 תאריך תפוגה: כל תאריך עתידי</li>
           <li>🔒 CVC: כל 3 ספרות</li>
         </ul>
@@ -136,9 +143,7 @@ export const StripeElementsForm: React.FC<StripeElementsFormProps> = ({
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t">
-        <p className="text-xs text-gray-600">
-          🔒 התשלום מוצפן באופן מאובטח
-        </p>
+        <p className="text-xs text-gray-600">🔒 התשלום מוצפן באופן מאובטח</p>
         <button
           type="submit"
           disabled={loading || isSubmitting}

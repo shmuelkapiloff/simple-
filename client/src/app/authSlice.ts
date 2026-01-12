@@ -253,75 +253,69 @@ interface ChangePasswordCredentials {
 export const changePassword = createAsyncThunk<
   { message: string },
   ChangePasswordCredentials
->(
-  "auth/changePassword",
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
+>("auth/changePassword", async (credentials, { rejectWithValue }) => {
+  try {
+    const token = localStorage.getItem("token");
 
-      if (!token) {
-        return rejectWithValue("Not authenticated");
-      }
-
-      const response = await fetch(
-        "http://localhost:4001/api/auth/change-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            currentPassword: credentials.currentPassword,
-            newPassword: credentials.newPassword,
-            confirmPassword: credentials.confirmPassword,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || "Change password failed");
-      }
-
-      return data.data || data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Change password failed");
+    if (!token) {
+      return rejectWithValue("Not authenticated");
     }
+
+    const response = await fetch(
+      "http://localhost:4001/api/auth/change-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: credentials.currentPassword,
+          newPassword: credentials.newPassword,
+          confirmPassword: credentials.confirmPassword,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return rejectWithValue(data.message || "Change password failed");
+    }
+
+    return data.data || data;
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Change password failed");
   }
-);
+});
 
 export const forgotPassword = createAsyncThunk<
   { message: string; resetToken?: string },
   string
->(
-  "auth/forgotPassword",
-  async (email, { rejectWithValue }) => {
-    try {
-      const response = await fetch(
-        "http://localhost:4001/api/auth/forgot-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || "Failed to send reset email");
+>("auth/forgotPassword", async (email, { rejectWithValue }) => {
+  try {
+    const response = await fetch(
+      "http://localhost:4001/api/auth/forgot-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
       }
+    );
 
-      return data.data || data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to send reset email");
+    const data = await response.json();
+
+    if (!response.ok) {
+      return rejectWithValue(data.message || "Failed to send reset email");
     }
+
+    return data.data || data;
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Failed to send reset email");
   }
-);
+});
 
 interface ResetPasswordCredentials {
   token: string;
@@ -332,36 +326,33 @@ interface ResetPasswordCredentials {
 export const resetPassword = createAsyncThunk<
   { message: string },
   ResetPasswordCredentials
->(
-  "auth/resetPassword",
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const response = await fetch(
-        `http://localhost:4001/api/auth/reset-password/${credentials.token}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            password: credentials.newPassword,
-            confirmPassword: credentials.confirmPassword,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || "Failed to reset password");
+>("auth/resetPassword", async (credentials, { rejectWithValue }) => {
+  try {
+    const response = await fetch(
+      `http://localhost:4001/api/auth/reset-password/${credentials.token}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: credentials.newPassword,
+          confirmPassword: credentials.confirmPassword,
+        }),
       }
+    );
 
-      return data.data || data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to reset password");
+    const data = await response.json();
+
+    if (!response.ok) {
+      return rejectWithValue(data.message || "Failed to reset password");
     }
+
+    return data.data || data;
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Failed to reset password");
   }
-);
+});
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -525,7 +516,8 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) || "Failed to send reset email";
+        state.error =
+          (action.payload as string) || "Failed to send reset email";
       });
 
     // Reset Password

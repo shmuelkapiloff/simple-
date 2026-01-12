@@ -13,3 +13,4 @@ export async function getProduct(req: Request, res: Response) {
   if (!product) return res.status(404).json(fail("Product not found"));
   res.json(ok(product));
 }
+
