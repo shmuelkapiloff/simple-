@@ -1,14 +1,15 @@
 import { Router } from "express";
 import { AddressController } from "../controllers/addresses.controller";
-import { authenticate } from "../middlewares/auth.middleware";
+import { requireAuth } from "../middlewares/auth.middleware";
 import { asyncHandler } from "../utils/asyncHandler";
+import { validateAddressId } from "../middlewares/validateObjectId.middleware";
 
 const router = Router();
 
 /**
  * All address routes require authentication
  */
-router.use(authenticate);
+router.use(requireAuth);
 
 /**
  * Address CRUD operations
@@ -21,20 +22,33 @@ router.get("/", asyncHandler(AddressController.getAddresses));
 router.get("/default", asyncHandler(AddressController.getDefaultAddress));
 
 // GET /api/addresses/:addressId - Get address by ID
-router.get("/:addressId", asyncHandler(AddressController.getAddressById));
+router.get(
+  "/:addressId",
+  validateAddressId,
+  asyncHandler(AddressController.getAddressById)
+);
 
 // POST /api/addresses - Create new address
 router.post("/", asyncHandler(AddressController.createAddress));
 
 // PUT /api/addresses/:addressId - Update address
-router.put("/:addressId", asyncHandler(AddressController.updateAddress));
+router.put(
+  "/:addressId",
+  validateAddressId,
+  asyncHandler(AddressController.updateAddress)
+);
 
 // DELETE /api/addresses/:addressId - Delete address
-router.delete("/:addressId", asyncHandler(AddressController.deleteAddress));
+router.delete(
+  "/:addressId",
+  validateAddressId,
+  asyncHandler(AddressController.deleteAddress)
+);
 
 // POST /api/addresses/:addressId/set-default - Set address as default
 router.post(
   "/:addressId/set-default",
+  validateAddressId,
   asyncHandler(AddressController.setDefaultAddress)
 );
 

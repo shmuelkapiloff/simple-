@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   useGetAddressesQuery,
   useCreateAddressMutation,
@@ -54,8 +54,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
         country: "Israel",
       });
     } catch (error: any) {
-      console.error("Failed to save address:", error);
-      alert(error?.data?.message || "שגיאה בשמירת הכתובת");
+      alert(error?.data?.message || "׳©׳’׳™׳׳” ׳‘׳©׳׳™׳¨׳× ׳”׳›׳×׳•׳‘׳×");
     }
   };
 
@@ -72,13 +71,12 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
   };
 
   const handleDelete = async (addressId: string) => {
-    if (!window.confirm("האם אתה בטוח שברצונך למחוק כתובת זו?")) return;
+    if (!window.confirm("׳”׳׳ ׳׳×׳” ׳‘׳˜׳•׳— ׳©׳‘׳¨׳¦׳•׳ ׳ ׳׳׳—׳•׳§ ׳›׳×׳•׳‘׳× ׳–׳•?")) return;
 
     try {
       await deleteAddress({ addressId }).unwrap();
     } catch (error: any) {
-      console.error("Failed to delete address:", error);
-      alert(error?.data?.message || "שגיאה במחיקת הכתובת");
+      alert(error?.data?.message || "׳©׳’׳™׳׳” ׳‘׳׳—׳™׳§׳× ׳”׳›׳×׳•׳‘׳×");
     }
   };
 
@@ -86,8 +84,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
     try {
       await setDefaultAddress({ addressId }).unwrap();
     } catch (error: any) {
-      console.error("Failed to set default address:", error);
-      alert(error?.data?.message || "שגיאה בהגדרת כתובת ברירת מחדל");
+      alert(error?.data?.message || "׳©׳’׳™׳׳” ׳‘׳”׳’׳“׳¨׳× ׳›׳×׳•׳‘׳× ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳");
     }
   };
 
@@ -122,7 +119,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-        שגיאה בטעינת כתובות
+        ׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳× ׳›׳×׳•׳‘׳•׳×
       </div>
     );
   }
@@ -131,13 +128,13 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
     <div className="space-y-4" dir="rtl">
       {/* Header */}
       <header className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">📍 הכתובות שלי</h2>
+        <h2 className="text-xl font-semibold text-gray-900">נ“ ׳”׳›׳×׳•׳‘׳•׳× ׳©׳׳™</h2>
         {!isAddingNew && (
           <button
             onClick={() => setIsAddingNew(true)}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
           >
-            ➕ הוסף כתובת חדשה
+            ג• ׳”׳•׳¡׳£ ׳›׳×׳•׳‘׳× ׳—׳“׳©׳”
           </button>
         )}
       </header>
@@ -146,17 +143,17 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
       {isAddingNew && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {editingId ? "ערוך כתובת" : "כתובת חדשה"}
+            {editingId ? "׳¢׳¨׳•׳ ׳›׳×׳•׳‘׳×" : "׳›׳×׳•׳‘׳× ׳—׳“׳©׳”"}
           </h3>
 
           <form
             onSubmit={handleSubmit}
             className="space-y-4"
-            aria-label={editingId ? "ערוך כתובת" : "הוסף כתובת חדשה"}
+            aria-label={editingId ? "׳¢׳¨׳•׳ ׳›׳×׳•׳‘׳×" : "׳”׳•׳¡׳£ ׳›׳×׳•׳‘׳× ׳—׳“׳©׳”"}
           >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                רחוב ומספר בית
+                ׳¨׳—׳•׳‘ ׳•׳׳¡׳₪׳¨ ׳‘׳™׳×
               </label>
               <input
                 type="text"
@@ -166,14 +163,14 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
-                placeholder="רחוב הרצל 123"
+                placeholder="׳¨׳—׳•׳‘ ׳”׳¨׳¦׳ 123"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  עיר
+                  ׳¢׳™׳¨
                 </label>
                 <input
                   type="text"
@@ -183,13 +180,13 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  placeholder="תל אביב"
+                  placeholder="׳×׳ ׳׳‘׳™׳‘"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  מדינה/אזור
+                  ׳׳“׳™׳ ׳”/׳׳–׳•׳¨
                 </label>
                 <input
                   type="text"
@@ -199,7 +196,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  placeholder="מרכז"
+                  placeholder="׳׳¨׳›׳–"
                 />
               </div>
             </div>
@@ -207,7 +204,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  מיקוד
+                  ׳׳™׳§׳•׳“
                 </label>
                 <input
                   type="text"
@@ -223,7 +220,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  מדינה
+                  ׳׳“׳™׳ ׳”
                 </label>
                 <input
                   type="text"
@@ -233,7 +230,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  placeholder="ישראל"
+                  placeholder="׳™׳©׳¨׳׳"
                 />
               </div>
             </div>
@@ -243,14 +240,14 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
                 type="submit"
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
               >
-                💾 שמור
+                נ’¾ ׳©׳׳•׳¨
               </button>
               <button
                 type="button"
                 onClick={handleCancel}
                 className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-md transition-colors"
               >
-                ❌ ביטול
+                ג ׳‘׳™׳˜׳•׳
               </button>
             </div>
           </form>
@@ -260,17 +257,17 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
       {/* Address List */}
       {addresses.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <div className="text-6xl mb-4">📍</div>
+          <div className="text-6xl mb-4">נ“</div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">
-            אין כתובות שמורות
+            ׳׳™׳ ׳›׳×׳•׳‘׳•׳× ׳©׳׳•׳¨׳•׳×
           </h3>
-          <p className="text-gray-600 mb-4">הוסף כתובת חדשה כדי להתחיל</p>
+          <p className="text-gray-600 mb-4">׳”׳•׳¡׳£ ׳›׳×׳•׳‘׳× ׳—׳“׳©׳” ׳›׳“׳™ ׳׳”׳×׳—׳™׳</p>
           {!isAddingNew && (
             <button
               onClick={() => setIsAddingNew(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
             >
-              ➕ הוסף כתובת
+              ג• ׳”׳•׳¡׳£ ׳›׳×׳•׳‘׳×
             </button>
           )}
         </div>
@@ -298,7 +295,7 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
               {address.isDefault && (
                 <div className="flex items-center gap-2 mb-2">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    ⭐ ברירת מחדל
+                    ג­ ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳
                   </span>
                 </div>
               )}
@@ -320,20 +317,20 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
                       onClick={() => handleSetDefault(address._id)}
                       className="text-xs px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
                     >
-                      ⭐ הגדר כברירת מחדל
+                      ג­ ׳”׳’׳“׳¨ ׳›׳‘׳¨׳™׳¨׳× ׳׳—׳“׳
                     </button>
                   )}
                   <button
                     onClick={() => handleEdit(address)}
                     className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
                   >
-                    ✏️ ערוך
+                    גן¸ ׳¢׳¨׳•׳
                   </button>
                   <button
                     onClick={() => handleDelete(address._id)}
                     className="text-xs px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
                   >
-                    🗑️ מחק
+                    נ—‘ן¸ ׳׳—׳§
                   </button>
                 </div>
               )}
@@ -346,3 +343,4 @@ export const AddressManager: React.FC<AddressManagerProps> = ({
 };
 
 export default AddressManager;
+

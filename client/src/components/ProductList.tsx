@@ -60,13 +60,10 @@ export default function ProductList() {
 
   const handleAddToCart = async (product: any) => {
     if (!isAuthenticated) {
-      if (import.meta.env.DEV) {
-        console.warn("User not authenticated");
-      }
       dispatch(
-        requireAuth({ view: "login", message: "נא להתחבר כדי להוסיף לעגלה" })
+        requireAuth({ view: "login", message: "Please sign in to add to cart" })
       );
-      dispatch(setError("נא להתחבר כדי להוסיף לעגלה"));
+      dispatch(setError("Please sign in to add to cart"));
       return;
     }
 
@@ -84,18 +81,10 @@ export default function ProductList() {
         quantity: 1,
       };
 
-      // 📡 שלח לשרת - חכה לתשובה לפני עדכון UI
+      // Send to server and wait for response
       const response = await addToCartMutation(requestData).unwrap();
 
-      if (import.meta.env.DEV) {
-        console.log("✅ Add to cart response:", {
-          itemsLength: response.items?.length,
-          total: response.total,
-          items: response.items,
-        });
-      }
-
-      // ✅ עדכן את ה-Redux state מיד עם התגובה מהשרת
+      // Update Redux state with server response
       if (response) {
         dispatch(
           setCart({
@@ -106,15 +95,12 @@ export default function ProductList() {
         );
       }
 
-      // ✅ UI יתעדכן אוטומטית דרך RTK Query cache invalidation
-      // וגם מבצעים refetch מיידי כדי לוודא עדכון מהשרת
+      // UI will update automatically through RTK Query cache invalidation
       try {
         await refetchCart();
       } catch {}
     } catch (error: any) {
-      console.error("Add to cart failed:", error);
-
-      // ⚠️ הצג הודעת שגיאה
+      // Display error message to user
       dispatch(setError("Failed to add item to cart"));
     } finally {
       // Clear loading state

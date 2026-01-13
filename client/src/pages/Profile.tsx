@@ -39,8 +39,7 @@ const Profile: React.FC = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // TODO: בעתיד נוסיף API call לעדכון הפרופיל
-      console.log("🔧 TODO: Update profile with:", formData);
+      // TODO: In the future, add API call to update the profile
       // For now, just toggle editing mode
     }
     setIsEditing(!isEditing);
@@ -60,11 +59,11 @@ const Profile: React.FC = () => {
   const handleDeleteAccount = () => {
     if (
       window.confirm(
-        "האם אתה בטוח שברצונך למחוק את החשבון? פעולה זו בלתי הפיכה."
+        "Are you sure you want to delete your account? This action is irreversible."
       )
     ) {
-      // TODO: בעתיד נוסיף API call למחיקת חשבון
-      console.log("🔧 TODO: Delete account API call");
+      // TODO: Feature - Add API call for account deletion
+      // This is a future feature requiring additional security measures
     }
   };
 
@@ -240,17 +239,19 @@ const Profile: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => console.log("🔧 TODO: Download user data")}
-                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
+                    disabled
+                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors opacity-50 cursor-not-allowed"
+                    title="Feature coming soon"
                   >
-                    📥 הורדת נתונים אישיים
+                    📥 Download Personal Data
                   </button>
 
                   <button
-                    onClick={() => console.log("🔧 TODO: Privacy settings")}
-                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
+                    disabled
+                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors opacity-50 cursor-not-allowed"
+                    title="Feature coming soon"
                   >
-                    🔒 הגדרות פרטיות
+                    🔒 Privacy Settings
                   </button>
                 </div>
               </div>

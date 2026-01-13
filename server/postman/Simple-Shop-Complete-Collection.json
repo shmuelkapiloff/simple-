@@ -1,7 +1,7 @@
-{
+﻿{
   "info": {
     "name": "Simple Shop - Complete API Collection",
-    "description": "Collection מלא לבדיקת כל endpoints של Simple Shop\n\n🔐 Authentication: JWT Token\n📦 Features: Products, Cart, Orders, Auth\n\n**How to use:**\n1. הרץ את השרת: `npm run dev`\n2. הרץ את Auth → Register או Login\n3. Token נשמר אוטומטית\n4. כל ה-requests משתמשים בטוקן\n\nCreated: December 2025",
+    "description": "Collection מלא לבדיקת כל endpoints של Simple Shop\n\n Authentication: JWT Token\n Features: Products, Cart, Orders, Auth\n\n**How to use:**\n1. הרץ את השרת: `npm run dev`\n2. הרץ את Auth → Register או Login\n3. Token נשמר אוטומטית\n4. כל ה-requests משתמשים בטוקן\n\nCreated: December 2025",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -9,14 +9,13 @@
     "bearer": [
       {
         "key": "token",
-        "value": "{{authToken}}",
-        "type": "string"
+        "value": "{{authToken}}"
       }
     ]
   },
   "item": [
     {
-      "name": "🏥 Health Check",
+      "name": "Health Check",
       "item": [
         {
           "name": "Health Check",
@@ -25,8 +24,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "health"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
             },
             "description": "בדיקת תקינות השרת - MongoDB, Redis, Uptime"
           },
@@ -50,8 +54,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/health/ping",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "health", "ping"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health",
+                "ping"
+              ]
             },
             "description": "בדיקה מהירה - pong"
           },
@@ -71,7 +81,7 @@
       ]
     },
     {
-      "name": "🔐 Authentication",
+      "name": "Authentication",
       "item": [
         {
           "name": "Register New User",
@@ -85,12 +95,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"bizz0123456789k@gmail.com\",\n  \"password\": \"Admin123!\"\n}"
+              "raw": "{\n \"name\": \"Test User\",\n \"email\": \"bizz0123456789k@gmail.com\",\n \"password\": \"Admin123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             },
             "description": "הרשמת משתמש חדש\n\n**Required:**\n- name (string)\n- email (string)\n- password (string, min 6 chars)"
           },
@@ -142,12 +158,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"bizz0123456789k@gmail.com\",\n  \"password\": \"Admin123!\"\n}"
+              "raw": "{\n \"email\": \"bizz0123456789k@gmail.com\",\n \"password\": \"Admin123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "description": "התחברות למערכת\n\n**Required:**\n- email\n- password"
           },
@@ -196,8 +218,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/verify",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "verify"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify"
+              ]
             },
             "description": "בדיקת תקינות Token"
           },
@@ -231,8 +259,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/auth/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "profile"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
             },
             "description": "קבלת פרטי המשתמש המחובר"
           },
@@ -265,12 +299,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+972501234567\"\n}"
+              "raw": "{\n \"name\": \"Updated Name\",\n \"phone\": \"+972501234567\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "profile"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
             },
             "description": "עדכון פרטי הפרופיל של המשתמש (שם וטלפון)\n\n**Optional:**\n- name (string)\n- phone (string)"
           },
@@ -298,8 +338,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "logout"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
             },
             "description": "התנתקות מהמערכת"
           },
@@ -338,12 +384,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+              "raw": "{\n \"email\": \"test@example.com\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/forgot-password",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "forgot-password"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
             },
             "description": "בקשה לאיפוס סיסמה\n\n**Required:**\n- email (string)\n\n**Note:** דוא\"ל עם קישור איפוס יישלח לכתובת"
           },
@@ -387,12 +439,19 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"newPassword\": \"newPassword123\"\n}"
+              "raw": "{\n \"newPassword\": \"newPassword123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/reset-password/{{resetToken}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "reset-password", "{{resetToken}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password",
+                "{{resetToken}}"
+              ]
             },
             "description": "איפוס סיסמה עם טוקן\n\n**Required:**\n- token (from email link) - ב-URL param\n- newPassword (string, min 6 chars) - בbody\n\n**Usage (dev/test):**\n1. הרץ Forgot Password – הטוקן נשמר ב-resetToken אוטומטית\n2. הרץ Reset Password – ה-URL משתמש ב-{{resetToken}}\n\n**Production:** אם אין resetToken בתגובה, העתק מהדוא\"ל והדבק ב-resetToken (environment/collection var)"
           },
@@ -416,7 +475,7 @@
       ]
     },
     {
-      "name": "📦 Products",
+      "name": "Products",
       "item": [
         {
           "name": "Get All Products",
@@ -425,8 +484,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/products",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "products"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ]
             },
             "description": "קבלת רשימת כל המוצרים"
           },
@@ -463,8 +527,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/products/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "products", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
             },
             "description": "קבלת מוצר בודד לפי ID"
           },
@@ -549,8 +619,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/products?search=laptop&category=electronics&minPrice=500&maxPrice=2000&sort=price_asc",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "products"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
               "query": [
                 {
                   "key": "search",
@@ -601,7 +676,7 @@
       ]
     },
     {
-      "name": "👤 Profile & Addresses (P1)",
+      "name": "Profile & Addresses (P1)",
       "item": [
         {
           "name": "Get All Addresses",
@@ -610,8 +685,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/addresses",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "addresses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "addresses"
+              ]
             },
             "description": "קבלת כל הכתובות של המשתמש"
           },
@@ -645,8 +725,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/addresses/default",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "addresses", "default"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "default"
+              ]
             },
             "description": "קבלת הכתובת ברירת המחדל"
           },
@@ -724,8 +810,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/addresses/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "addresses", "{{addressId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "{{addressId}}"
+              ]
             },
             "description": "קבלת כתובת ספציפית לפי ID"
           },
@@ -814,12 +906,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"label\": \"home\",\n  \"street\": \"הרצל 10\",\n  \"city\": \"תל אביב\",\n  \"postalCode\": \"67890\",\n  \"country\": \"Israel\",\n  \"isDefault\": false\n}"
+              "raw": "{\n \"label\": \"home\",\n \"street\": \"הרצל 10\",\n \"city\": \"תל אביב\",\n \"postalCode\": \"67890\",\n \"country\": \"Israel\",\n \"isDefault\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/addresses",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "addresses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "addresses"
+              ]
             },
             "description": "יצירת כתובת חדשה\n\n**Required:**\n- label: home|work|other\n- street\n- city\n- postalCode\n\n**Optional:**\n- country (default: Israel)\n- isDefault (default: false, אם כתובת ראשונה תהיה default)"
           },
@@ -855,12 +952,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"label\": \"work\",\n  \"street\": \"בן גוריון 50\",\n  \"city\": \"ירושלים\",\n  \"postalCode\": \"91234\",\n  \"country\": \"Israel\"\n}"
+              "raw": "{\n \"label\": \"work\",\n \"street\": \"בן גוריון 50\",\n \"city\": \"ירושלים\",\n \"postalCode\": \"91234\",\n \"country\": \"Israel\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/addresses/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "addresses", "{{addressId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "{{addressId}}"
+              ]
             },
             "description": "עדכון כתובת קיימת"
           },
@@ -940,8 +1043,15 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/addresses/{{addressId}}/set-default",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "addresses", "{{addressId}}", "set-default"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "{{addressId}}",
+                "set-default"
+              ]
             },
             "description": "הגדרת כתובת כברירת מחדל\n\nאם כבר יש כתובת default, היא תושנה ל-false"
           },
@@ -1021,8 +1131,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/addresses/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "addresses", "{{addressId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "addresses",
+                "{{addressId}}"
+              ]
             },
             "description": "מחיקת כתובת\n\nאם הכתובת היא default, כתובת אחרת תהפוך ל-default"
           },
@@ -1095,7 +1211,7 @@
       ]
     },
     {
-      "name": "🛒 Cart",
+      "name": "Cart",
       "item": [
         {
           "name": "Get Cart",
@@ -1104,8 +1220,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/cart",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cart"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart"
+              ]
             },
             "description": "קבלת עגלת הקניות (User או Guest)"
           },
@@ -1139,12 +1260,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
+              "raw": "{\n \"productId\": \"{{productId}}\",\n \"quantity\": 2\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/cart/add",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cart", "add"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart",
+                "add"
+              ]
             },
             "description": "הוספת מוצר לעגלה\n\n**Required:**\n- productId\n- quantity"
           },
@@ -1208,12 +1335,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 5\n}"
+              "raw": "{\n \"productId\": \"{{productId}}\",\n \"quantity\": 5\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/cart/update",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cart", "update"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart",
+                "update"
+              ]
             },
             "description": "עדכון כמות מוצר בעגלה"
           },
@@ -1245,12 +1378,18 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\"\n}"
+              "raw": "{\n \"productId\": \"{{productId}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/cart/remove",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cart", "remove"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart",
+                "remove"
+              ]
             },
             "description": "הסרת מוצר מהעגלה"
           },
@@ -1275,8 +1414,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/cart/clear",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cart", "clear"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart",
+                "clear"
+              ]
             },
             "description": "ריקון העגלה לגמרי"
           },
@@ -1301,8 +1446,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/cart/count",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cart", "count"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cart",
+                "count"
+              ]
             },
             "description": "קבלת מספר הפריטים בעגלה"
           },
@@ -1326,20 +1477,32 @@
       ]
     },
     {
-      "name": "🧾 Orders",
+      "name": "Orders",
       "item": [
         {
           "name": "Create Order",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"shippingAddress\": {\n    \"street\": \"הרצל 10\",\n    \"city\": \"תל אביב\",\n    \"postalCode\": \"67890\",\n    \"country\": \"Israel\"\n  },\n  \"paymentMethod\": \"stripe\",\n  \"sessionId\": \"cs_test_123\",\n  \"notes\": \"נא לארוז מתנה\"\n}"
+              "raw": "{\n \"shippingAddress\": {\n \"street\": \"הרצל 10\",\n \"city\": \"תל אביב\",\n \"postalCode\": \"67890\",\n \"country\": \"Israel\"\n },\n \"paymentMethod\": \"stripe\",\n \"sessionId\": \"cs_test_123\",\n \"notes\": \"נא לארוז מתנה\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ]
+            },
             "description": "יצירת הזמנה מהעגלה\n\n**Required:**\n- shippingAddress (object with street, city, postalCode, country)\n- paymentMethod: stripe\n- sessionId (מ-Stripe Checkout / create-intent)\n\n**Optional:**\n- notes (string)\n\n**Prerequisites:**\n1. User must be logged in (authToken)\n2. Cart must have items\n3. Stripe payment intent/session created"
           },
           "event": [
@@ -1492,7 +1655,16 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ]
+            },
             "description": "רשימת ההזמנות של המשתמש"
           },
           "event": [
@@ -1514,7 +1686,17 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{orderId}}"
+              ]
+            },
             "description": "פרטי הזמנה"
           },
           "event": [
@@ -1536,7 +1718,18 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/orders/track/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "track", "{{orderId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/track/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "track",
+                "{{orderId}}"
+              ]
+            },
             "description": "עקיבה אחרי הזמנה (ציבורי - בלא צורך בטוקן)\n\nמחזיר:\n- orderNumber\n- status\n- estimatedDelivery\n- trackingHistory (כל השינויים)\n- items\n- totalAmount\n\n**Prerequisites:**\n- orderId must be set (create an order first)"
           },
           "event": [
@@ -1605,7 +1798,18 @@
           "request": {
             "method": "POST",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "cancel"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{orderId}}",
+                "cancel"
+              ]
+            },
             "description": "ביטול הזמנה"
           },
           "event": [
@@ -1624,7 +1828,7 @@
       ]
     },
     {
-      "name": "🛠️ Admin",
+      "name": "Admin",
       "item": [
         {
           "name": "Admin - List Products",
@@ -1633,10 +1837,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/admin/products?includeInactive=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "products"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products"
+              ],
               "query": [
-                { "key": "includeInactive", "value": "true", "description": "Include inactive (soft-deleted)" }
+                {
+                  "key": "includeInactive",
+                  "value": "true",
+                  "description": "Include inactive (soft-deleted)"
+                }
               ]
             },
             "description": "רשימת מוצרים כולל לא פעילים\n\n**Prerequisites:**\n- User must be logged in\n- User must have role: admin"
@@ -1711,12 +1925,27 @@
           "name": "Admin - Create Product",
           "request": {
             "method": "POST",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"SKU-1001\",\n  \"name\": \"Admin Product\",\n  \"description\": \"Created via admin\",\n  \"price\": 199.99,\n  \"category\": \"general\",\n  \"image\": \"https://via.placeholder.com/300\",\n  \"stock\": 50\n}"
+              "raw": "{\n \"sku\": \"SKU-1001\",\n \"name\": \"Admin Product\",\n \"description\": \"Created via admin\",\n \"price\": 199.99,\n \"category\": \"general\",\n \"image\": \"https://via.placeholder.com/300\",\n \"stock\": 50\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/admin/products", "host": ["{{baseUrl}}"], "path": ["api", "admin", "products"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products"
+              ]
+            },
             "description": "יצירת מוצר חדש (אדמין)\n\n**Prerequisites:**\n- User must be logged in\n- User must have role: admin"
           },
           "event": [
@@ -1772,12 +2001,28 @@
           "name": "Admin - Update Product",
           "request": {
             "method": "PUT",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"price\": 149.99,\n  \"stock\": 80,\n  \"featured\": true\n}"
+              "raw": "{\n \"price\": 149.99,\n \"stock\": 80,\n \"featured\": true\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/admin/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "products", "{{productId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products",
+                "{{productId}}"
+              ]
+            },
             "description": "עדכון מוצר (אדמין)\n\n**Prerequisites:** Admin role required"
           },
           "event": [
@@ -1807,7 +2052,18 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/admin/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "products", "{{productId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "products",
+                "{{productId}}"
+              ]
+            },
             "description": "השבתת מוצר (isActive=false)\n\n**Prerequisites:** Admin role required"
           },
           "event": [
@@ -1838,11 +2094,23 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/admin/users?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "users"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             },
             "description": "רשימת משתמשים (פגינציה)\n\n**Prerequisites:** Admin role required"
@@ -1877,9 +2145,29 @@
           "name": "Admin - Update User Role",
           "request": {
             "method": "PUT",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
-            "body": { "mode": "raw", "raw": "{\n  \"role\": \"admin\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/admin/users/{{userId}}/role", "host": ["{{baseUrl}}"], "path": ["api", "admin", "users", "{{userId}}", "role"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{userId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{userId}}",
+                "role"
+              ]
+            },
             "description": "עדכון role למשתמש (user/admin)"
           },
           "event": [
@@ -1903,9 +2191,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/admin/orders?status=pending",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "orders"],
-              "query": [ { "key": "status", "value": "pending" } ]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
             },
             "description": "רשימת הזמנות עם פילטר סטטוס\n\n**Prerequisites:** Admin role required"
           },
@@ -1938,12 +2237,29 @@
           "name": "Admin - Update Order Status",
           "request": {
             "method": "PUT",
-            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"shipped\",\n  \"message\": \"שוגר מהמחסן\"\n}"
+              "raw": "{\n \"status\": \"shipped\",\n \"message\": \"שוגר מהמחסן\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/admin/orders/{{orderId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "admin", "orders", "{{orderId}}", "status"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/orders/{{orderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "orders",
+                "{{orderId}}",
+                "status"
+              ]
+            },
             "description": "עדכון סטטוס הזמנה + Tracking entry\n\n**Prerequisites:** Admin role required"
           },
           "event": [
@@ -1972,7 +2288,18 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/admin/stats/summary", "host": ["{{baseUrl}}"], "path": ["api", "admin", "stats", "summary"] },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats",
+                "summary"
+              ]
+            },
             "description": "סיכום סטטיסטיקות: מכירות, הזמנות פתוחות, מלאי נמוך, משתמשים\n\n**Prerequisites:** Admin role required"
           },
           "event": [

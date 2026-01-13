@@ -59,7 +59,6 @@ cartSchema.pre("save", async function (next) {
     }
 
     this.total = total;
-    console.log(`💰 Cart total calculated: ${total}`);
   }
   next();
 });

@@ -1,55 +1,122 @@
 // server/src/utils/simpleLogger.ts
-type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
+import pino from "pino";
 
+const isDevelopment = process.env.NODE_ENV !== "production";
+const LOG_LEVEL = process.env.LOG_LEVEL || (isDevelopment ? "debug" : "info");
+
+/**
+ * Production-ready logger using Pino
+ * Automatically handles JSON logging in production, pretty printing in development
+ */
+const pinoLogger = pino({
+  level: LOG_LEVEL,
+  timestamp: pino.stdTimeFunctions.isoTime,
+  ...(isDevelopment && {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "SYS:standard",
+        ignore: "pid,hostname",
+        singleLine: false,
+      },
+    },
+  }),
+});
+
+/**
+ * SimpleLogger - Backward compatible logger with production features
+ * Integrates with Pino for structured logging
+ */
 class SimpleLogger {
   private static colors = {
-    INFO: "\x1b[36m", // כחול
-    WARN: "\x1b[33m", // צהוב
-    ERROR: "\x1b[31m", // אדום
-    DEBUG: "\x1b[35m", // סגול
-    SUCCESS: "\x1b[32m", // ירוק
+    INFO: "\x1b[36m",
+    WARN: "\x1b[33m",
+    ERROR: "\x1b[31m",
+    DEBUG: "\x1b[35m",
+    SUCCESS: "\x1b[32m",
     RESET: "\x1b[0m",
   };
 
-  private static format(
-    level: LogLevel,
-    service: string,
-    message: string,
-    data?: any
-  ): string {
-    const timestamp = new Date().toISOString().substr(11, 12); // רק שעה
-    const color = this.colors[level];
-    const reset = this.colors.RESET;
-
-    let result = `${color}${timestamp} [${service}] ${message}${reset}`;
-    if (data) {
-      result += ` ${JSON.stringify(data)}`;
-    }
-    return result;
-  }
-
   static info(service: string, message: string, data?: any) {
-    console.log(this.format("INFO", service, message, data));
+    pinoLogger.info({ service, ...data }, message);
   }
 
   static success(service: string, message: string, data?: any) {
-    console.log(this.format("INFO", service, `✅ ${message}`, data));
+    pinoLogger.info({ service, level: "success", ...data }, `✓ ${message}`);
   }
 
   static warn(service: string, message: string, data?: any) {
-    console.log(this.format("WARN", service, `⚠️ ${message}`, data));
+    pinoLogger.warn({ service, ...data }, message);
   }
 
   static error(service: string, message: string, error?: any) {
-    console.log(
-      this.format("ERROR", service, `❌ ${message}`, error?.message || error)
-    );
+    const errorData =
+      error instanceof Error
+        ? {
+            service,
+            error: {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+            },
+          }
+        : { service, error };
+
+    pinoLogger.error(errorData, message);
   }
 
   static debug(service: string, message: string, data?: any) {
-    if (process.env.LOG_LEVEL === "debug") {
-      console.log(this.format("DEBUG", service, `🔍 ${message}`, data));
-    }
+    pinoLogger.debug({ service, ...data }, message);
+  }
+
+  /**
+   * Log performance metrics
+   */
+  static performance(
+    service: string,
+    operation: string,
+    durationMs: number,
+    data?: any
+  ) {
+    const level = durationMs > 1000 ? "warn" : "debug";
+    pinoLogger[level](
+      { service, operation, durationMs, ...data },
+      `${operation} completed in ${durationMs}ms`
+    );
+  }
+
+  /**
+   * Log API request/response
+   */
+  static request(
+    service: string,
+    method: string,
+    path: string,
+    statusCode: number,
+    durationMs: number
+  ) {
+    const level = statusCode >= 400 ? "warn" : "info";
+    pinoLogger[level](
+      { service, method, path, statusCode, durationMs },
+      `${method} ${path} - ${statusCode} (${durationMs}ms)`
+    );
+  }
+
+  /**
+   * Log database operations
+   */
+  static database(
+    service: string,
+    operation: string,
+    collection: string,
+    durationMs: number,
+    data?: any
+  ) {
+    pinoLogger.debug(
+      { service, operation, collection, durationMs, ...data },
+      `DB ${operation} on ${collection} (${durationMs}ms)`
+    );
   }
 }
 

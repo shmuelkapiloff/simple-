@@ -113,7 +113,7 @@ const Checkout: React.FC = () => {
   // ✅ Handle return from Stripe redirect - confirm payment before clearing cart
   useEffect(() => {
     if (returnedOrderId && paymentStatus?.paymentStatus === "paid") {
-      addToast("✅ התשלום הסתיים בהצלחה!", "success");
+      addToast("✅ Payment completed successfully!", "success");
       try {
         // ✅ ONLY clear cart after confirmed paid status
         clearCartMutation({ sessionId })
@@ -122,10 +122,10 @@ const Checkout: React.FC = () => {
         dispatch(clearCart());
         navigate(`/orders/${returnedOrderId}`);
       } catch (e) {
-        console.error("Clear cart or navigate failed:", e);
+        // Log error silently - cart clearing is non-critical
       }
     } else if (returnedOrderId && paymentCancelled) {
-      addToast("ביטלת את התשלום — העגלה שלך שמורה", "info");
+      addToast("Payment cancelled — your cart is saved", "info");
     }
   }, [returnedOrderId, paymentStatus?.paymentStatus, paymentCancelled]);
 
@@ -174,12 +174,12 @@ const Checkout: React.FC = () => {
 
       if (intent.status === "succeeded") {
         // ✅ Immediate success (e.g., mock setup) - clear cart now
-        addToast("התשלום אושר בהצלחה", "success");
+        addToast("Payment confirmed successfully", "success");
         try {
           await clearCartMutation({ sessionId }).unwrap();
           dispatch(clearCart());
         } catch (clearError) {
-          console.error("Failed to clear cart:", clearError);
+          // Log error silently - cart clearing is non-critical
         }
         navigate(`/orders/${order._id}`);
         return;

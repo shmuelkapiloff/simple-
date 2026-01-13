@@ -60,54 +60,6 @@ export class AuthMiddleware {
   }
 
   /**
-   * Optional auth middleware - continues even if no token
-   * Useful for routes that work for both authenticated and guest users
-   */
-  // static async optionalAuth(req: Request, res: Response, next: NextFunction) {
-  //   const t = track("AuthMiddleware", "optionalAuth");
-
-  //   try {
-  //     // Get token from Authorization header or cookies
-  //     let token = "";
-
-  //     const authHeader = req.headers.authorization;
-  //     if (authHeader && authHeader.startsWith("Bearer ")) {
-  //       token = authHeader.split(" ")[1];
-  //     } else if (req.cookies?.token) {
-  //       token = req.cookies.token;
-  //     }
-
-  //     // If no token, continue without authentication
-  //     if (!token) {
-  //       logger.info("⚪ No token provided - continuing as guest");
-  //       t.success({ authenticated: false });
-  //       return next();
-  //     }
-
-  //     // Try to verify token
-  //     try {
-  //       const user = await AuthService.verifyToken(token);
-  //       req.userId = user._id;
-  //       req.user = user;
-
-  //       logger.info(`✅ User optionally authenticated: ${user.email}`);
-  //       t.success({ userId: user._id, authenticated: true });
-  //     } catch (tokenError) {
-  //       // Invalid token, but continue as guest
-  //       logger.info("⚠️ Invalid token provided - continuing as guest");
-  //       t.success({ authenticated: false, tokenError: true });
-  //     }
-
-  //     next();
-  //   } catch (error: any) {
-  //     t.error(error);
-  //     // Even if middleware fails, continue as guest
-  //     logger.info("⚠️ Auth middleware error - continuing as guest");
-  //     next();
-  //   }
-  // }
-
-  /**
    * Admin-only middleware
    * Requires authentication and admin role (when implemented)
    */

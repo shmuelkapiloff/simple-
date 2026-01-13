@@ -165,12 +165,11 @@ const OrderCard: React.FC<OrderCardProps> = ({
           )}
           {order.status === "delivered" && (
             <button
-              onClick={() =>
-                console.log("🔧 TODO: Open review modal for:", order._id)
-              }
-              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
+              disabled
+              className="px-4 py-2 bg-yellow-600 text-white rounded-md opacity-50 cursor-not-allowed transition-colors"
+              title="Review feature coming soon"
             >
-              ⭐ כתוב ביקורת
+              ⭐ Write Review
             </button>
           )}
         </div>
@@ -297,8 +296,8 @@ const Orders: React.FC = () => {
   };
 
   const handleReorder = (orderId: string) => {
-    console.log("🔧 TODO: Add order items to cart:", orderId);
-    addToast(`הזמנה מחדש ${orderId} — בקרוב נוסיף תכונה זו! 🛒`, "info");
+    // TODO: Feature - Implement reorder functionality to add items back to cart
+    addToast(`Reorder ${orderId} — This feature is coming soon! 🛒`, "info");
   };
 
   const handleCancelOrder = async (orderId: string) => {
@@ -308,18 +307,17 @@ const Orders: React.FC = () => {
 
     try {
       await cancelOrderMutation({ orderId }).unwrap();
-      addToast("ההזמנה בוטלה בהצלחה! ✅", "success");
+      addToast("Order cancelled successfully! ✅", "success");
     } catch (error: any) {
-      console.error("Cancel order error:", error);
       const errorMessage =
-        error?.data?.message || "שגיאה בביטול ההזמנה. אנא נסה שוב.";
+        error?.data?.message || "Failed to cancel order. Please try again.";
       addToast(errorMessage, "error");
     }
   };
 
   const handleDownloadInvoice = (orderId: string) => {
-    console.log("🔧 TODO: Generate and download invoice for:", orderId);
-    addToast(`הורדת חשבונית ${orderId} — בקרוב! 📄`, "info");
+    // TODO: Feature - Implement invoice generation and download functionality
+    addToast(`Invoice download for ${orderId} — coming soon! 📄`, "info");
   };
 
   if (isLoading) {

@@ -55,7 +55,9 @@ async function main() {
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error(err);
+  // Log critical startup error
+  if (typeof console !== "undefined") {
+    console.error("[CRITICAL]", err instanceof Error ? err.message : err);
+  }
   process.exit(1);
 });

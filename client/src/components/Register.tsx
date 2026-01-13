@@ -84,12 +84,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitch, onClose }) => {
         })
       ).unwrap();
 
-      console.log("✅ Registration successful:", result);
-
       // Close modal on success
       onClose();
     } catch (error: any) {
-      console.error("❌ Registration error:", error);
       // Error will be handled by authSlice
     }
   };

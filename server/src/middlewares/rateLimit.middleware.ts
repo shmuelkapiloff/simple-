@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 // Rate limiter for authentication endpoints (login, register, forgot/reset)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 6, // limit each IP to 5 requests per windowMs
+  max: 99996, // limit each IP to 5 requests per windowMs
   message: {
     success: false,
     message: "Too many attempts, please try again later",

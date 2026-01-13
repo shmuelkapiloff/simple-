@@ -5,7 +5,6 @@ import ProductList from "./components/ProductList";
 import Cart from "./components/Cart";
 import { NavBar } from "./components/NavBar";
 import { ToastProvider } from "./components/ToastProvider";
-import { DebugPanel } from "./components/DebugPanel";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import TrackOrder from "./pages/TrackOrder";
@@ -60,9 +59,6 @@ function App() {
             </Route>
           </Routes>
         </main>
-
-        {/* 🔧 Debug Panel - רק בפיתוח */}
-        <DebugPanel />
       </div>
     </ToastProvider>
   );
