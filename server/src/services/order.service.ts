@@ -48,16 +48,21 @@ export class OrderService {
     const orderNumber = await this.generateOrderNumber();
 
     // Create order
-    const order = await OrderModel.create({
+    const createData: any = {
       orderNumber,
       user: userId,
       items: orderItems,
       totalAmount,
       paymentMethod: orderData.paymentMethod || 'stripe',
       shippingAddress: orderData.shippingAddress,
-      billingAddress: orderData.billingAddress,
       notes: orderData.notes,
-    });
+    };
+
+    if (orderData.billingAddress) {
+      createData.billingAddress = orderData.billingAddress;
+    }
+
+    const order = await OrderModel.create(createData);
 
     // Clear cart
     await CartModel.findOneAndUpdate(
