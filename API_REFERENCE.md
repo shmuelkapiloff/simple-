@@ -27,7 +27,15 @@
 |--------|----------|-------------|------|
 | GET | `/api/products` | כל המוצרים | ❌ |
 | GET | `/api/products/:id` | מוצר בודד | ❌ |
-| GET | `/api/products?search=...&category=...&minPrice=...&maxPrice=...&sort=...` | חיפוש וסינון | ❌ |
+| GET | `/api/products/categories/list` | רשימת קטגוריות | ❌ |
+
+**Query Parameters ל-GET `/api/products`:**
+- `search` - חיפוש בשם/תיאור
+- `category` - סינון לפי קטגוריה
+- `minPrice` - מחיר מינימום
+- `maxPrice` - מחיר מקסימום
+- `featured` - true/false למוצרים מומלצים
+- `sort` - price_asc/price_desc/name_asc/name_desc/rating_desc/newest
 
 ---
 
@@ -59,11 +67,21 @@
 ## 🧾 Orders
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | `/api/orders` | יצירה | ✅ |
+| POST | `/api/orders` | יצירה (body: `shippingAddress`, `billingAddress?`, `paymentMethod?`, `notes?`) | ✅ |
 | GET | `/api/orders` | שלי | ✅ |
 | GET | `/api/orders/:id` | פרטים | ✅ |
 | GET | `/api/orders/track/:id` | עקיבה (ציבורי) | ❌ |
 | POST | `/api/orders/:id/cancel` | ביטול | ✅ |
+
+---
+
+## 💳 Payments
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/payments/create-intent` | יצירת payment intent (body: `orderId`) | ✅ |
+| POST | `/api/payments/checkout` | Alias ל-create-intent | ✅ |
+| GET | `/api/payments/:orderId/status` | בדיקת סטטוס תשלום | ✅ |
+| POST | `/api/payments/webhook` | Stripe webhook | ❌ |
 
 ---
 

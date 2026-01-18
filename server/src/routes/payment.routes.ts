@@ -13,6 +13,8 @@ router.use(requireAuth);
 
 // POST /api/payments/create-intent - Create payment intent for an order
 router.post("/create-intent", PaymentController.createIntent);
+// Alias for better naming
+router.post("/checkout", PaymentController.createIntent);
 
 // GET /api/payments/:orderId/status - Get payment status for an order
 router.get("/:orderId/status", validateOrderId, PaymentController.getStatus);

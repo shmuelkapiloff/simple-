@@ -11,33 +11,18 @@ export const shippingAddressSchema = z.object({
 
 // Payment method enum - currently only Stripe; add more later if needed
 export const PaymentMethodEnum = z.enum([
-  "stripe", // Online payment via Stripe (requires sessionId)
+  "stripe", // Online payment via Stripe
 ]);
 
 export type PaymentMethod = z.infer<typeof PaymentMethodEnum>;
 
-// Create order validation with conditional sessionId requirement
-export const createOrderSchema = z
-  .object({
-    sessionId: z.string().min(1, "Session ID is required").optional(),
-    shippingAddress: shippingAddressSchema,
-    billingAddress: shippingAddressSchema.optional(),
-    paymentMethod: PaymentMethodEnum.default("stripe"),
-    notes: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      // Require sessionId only for Stripe payments
-      if (data.paymentMethod === "stripe" && !data.sessionId) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "sessionId is required for Stripe payments",
-      path: ["sessionId"],
-    }
-  );
+// Create order validation - sessionId removed (guest mode disabled)
+export const createOrderSchema = z.object({
+  shippingAddress: shippingAddressSchema,
+  billingAddress: shippingAddressSchema.optional(),
+  paymentMethod: PaymentMethodEnum.default("stripe"),
+  notes: z.string().optional(),
+});
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 

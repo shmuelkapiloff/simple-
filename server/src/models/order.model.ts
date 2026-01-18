@@ -41,6 +41,12 @@ export interface IOrder extends Document {
     postalCode: string;
     country: string;
   };
+  billingAddress?: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
   trackingHistory: ITrackingHistory[]; // ⬅️ חדש
   estimatedDelivery?: Date; // ⬅️ חדש
   notes?: string;
@@ -135,6 +141,16 @@ const OrderSchema = new Schema<IOrder>(
         type: String,
         required: true,
       },
+      country: {
+        type: String,
+        default: "Israel",
+      },
+    },
+
+    billingAddress: {
+      street: String,
+      city: String,
+      postalCode: String,
       country: {
         type: String,
         default: "Israel",

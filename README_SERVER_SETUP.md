@@ -141,18 +141,43 @@ DELETE /api/addresses/:id
 2. `docs/ARCHITECTURE_OVERVIEW.md` - System design
 3. `docs/CLIENT_SERVER_INTEGRATION.md` - How to use with React
 4. `docs/SERVER_IMPLEMENTATION_PATTERNS.md` - Code examples
-5. `docs/SERVER_CHECKLIST.md` - What to do next
+5. `API_REFERENCE.md` - Complete API reference
+6. `API_ENDPOINTS_DOCUMENTATION.md` - Detailed endpoint docs
+7. `docs/DATABASE_SCHEMA_COMPLETE.md` - Database schemas
 
 ## Environment Variables (server/.env)
 
-```
+```env
+# Server
 PORT=4001
 NODE_ENV=development
+
+# Database
 MONGO_URI=mongodb://localhost:27017/simple-shop
+
+# Redis (optional - if using caching)
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret-key
+
+# Authentication
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_IN=7d
+
+# CORS
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
+# Logging
 LOG_LEVEL=info
+
+# Email (for password reset)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+EMAIL_FROM=noreply@simpleshop.com
+
+# Stripe (for payments)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 ## Configuration Files
@@ -161,6 +186,26 @@ LOG_LEVEL=info
 **server/src/config/env.ts** - Environment variables  
 **server/src/app.ts** - Main app setup
 **server/src/server.ts** - Server startup
+
+## NPM Scripts
+
+```bash
+# Development
+npm run dev              # הרצת שרת עם hot-reload
+
+# Build & Production
+npm run build            # קומפילציה ל-JavaScript
+npm start                # הרצת השרת המקומפל
+
+# Database
+npm run seed             # איכולס מסד נתונים עם מוצרים לדוגמה
+npm run make-admin       # הפיכת משתמש ל-admin
+                         # שימוש: npm run make-admin user@example.com
+
+# Testing
+npm test                 # הרצת בדיקות Jest
+npm run test:watch       # בדיקות במצב watch
+```
 
 ## Files Changed
 

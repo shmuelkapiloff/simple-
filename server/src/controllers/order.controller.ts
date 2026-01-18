@@ -18,7 +18,6 @@ export class OrderController {
 
     log.info("Order creation started", {
       userId,
-      sessionId: validated.sessionId,
     });
     const order = await OrderService.createOrder(userId, validated);
 

@@ -53,8 +53,9 @@ export class OrderService {
       user: userId,
       items: orderItems,
       totalAmount,
-      paymentMethod: orderData.paymentMethod || 'credit_card',
+      paymentMethod: orderData.paymentMethod || 'stripe',
       shippingAddress: orderData.shippingAddress,
+      billingAddress: orderData.billingAddress,
       notes: orderData.notes,
     });
 

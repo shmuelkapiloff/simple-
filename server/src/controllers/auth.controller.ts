@@ -177,6 +177,7 @@ export class AuthController {
     );
 
     res.status(200).json({
+      1
       success: true,
       message: result.message,
     });

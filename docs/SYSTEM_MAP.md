@@ -97,7 +97,7 @@ graph TB
         subgraph "🧠 State Management"
             Redux[⚡ Redux Store]
             AuthSlice["🔐 authSlice<br/>user: User | null<br/>token: string<br/>isAuthenticated: boolean"]
-            CartSlice["🛒 cartSlice<br/>items: CartItem[]<br/>total: number<br/>sessionId: string"]
+            CartSlice["🛒 cartSlice<br/>items: CartItem[]<br/>total: number<br/>userId: string"]
             ApiSlice["🌐 apiSlice<br/>RTK Query<br/>Auto-caching"]
         end
     end
@@ -123,7 +123,7 @@ graph TB
         
         subgraph "⚙️ Services Layer"
             AuthService["🔐 AuthService<br/>User validation<br/>JWT generation<br/>Password hashing<br/>Profile management"]
-            CartService["🛒 CartService<br/>Cart operations<br/>Guest/User merge<br/>Session handling"]
+            CartService["🛒 CartService<br/>Cart operations<br/>Auth-only carts<br/>Totals & stock validation"]
             ProductService["📦 ProductService<br/>Product queries<br/>Stock management"]
             OrderService["📦 OrderService<br/>Order creation<br/>Order tracking<br/>Status updates"]
         end
@@ -133,8 +133,8 @@ graph TB
         subgraph "💾 MongoDB"
             Users["👤 users<br/>_id<br/>name<br/>email<br/>passwordHash"]
             Products["📦 products<br/>_id<br/>name<br/>price<br/>stock<br/>image"]
-            Carts["🛒 carts<br/>userId<br/>sessionId<br/>items[]"]
-            Orders["📦 orders<br/>_id<br/>userId<br/>items[]<br/>total<br/>status<br/>createdAt"]
+            Carts["🛒 carts<br/>userId<br/>items[]"]
+            Orders["📦 orders<br/>_id<br/>userId<br/>items[]<br/>total<br/>status<br/>billingAddress?<br/>createdAt"]
         end
         
         subgraph "⚡ Redis Cache"

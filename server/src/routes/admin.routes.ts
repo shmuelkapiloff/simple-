@@ -3,8 +3,7 @@ import { AdminController } from "../controllers/admin.controller";
 import { requireAdmin } from "../middlewares/auth.middleware";
 import {
   validateProductId,
-  validateUserId,
-  validateOrderId,
+  validateObjectId,
 } from "../middlewares/validateObjectId.middleware";
 
 const router = Router();
@@ -24,13 +23,17 @@ router.delete(
 
 // Users
 router.get("/users", AdminController.listUsers);
-router.put("/users/:id/role", validateUserId, AdminController.updateUserRole);
+router.put(
+  "/users/:id/role",
+  validateObjectId("id"),
+  AdminController.updateUserRole
+);
 
 // Orders
 router.get("/orders", AdminController.listOrders);
 router.put(
   "/orders/:id/status",
-  validateOrderId,
+  validateObjectId("id"),
   AdminController.updateOrderStatus
 );
 

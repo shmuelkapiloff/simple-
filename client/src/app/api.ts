@@ -19,6 +19,16 @@ export interface Product {
   updatedAt: string;
 }
 
+// Product filters
+export interface ProductFilters {
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+  featured?: boolean;
+  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'rating_desc' | 'newest';
+}
+
 // API Response type מהשרת
 interface ApiResponse<T> {
   success: boolean;
@@ -224,13 +234,32 @@ export const api = createApi({
     "AdminStats",
   ],
   endpoints: (builder) => ({
-    // GET /api/products - רשימת מוצרים
-    getProducts: builder.query<Product[], void>({
-      query: () => "products",
+    // GET /api/products - רשימת מוצרים עם סינון וחיפוש
+    getProducts: builder.query<Product[], ProductFilters | void>({
+      query: (filters) => {
+        const params = new URLSearchParams();
+        if (filters) {
+          if (filters.category) params.append('category', filters.category);
+          if (filters.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
+          if (filters.maxPrice !== undefined) params.append('maxPrice', filters.maxPrice.toString());
+          if (filters.search) params.append('search', filters.search);
+          if (filters.featured !== undefined) params.append('featured', filters.featured.toString());
+          if (filters.sort) params.append('sort', filters.sort);
+        }
+        const queryString = params.toString();
+        return queryString ? `products?${queryString}` : 'products';
+      },
       // RTK Query מצפה למערך, אבל השרת מחזיר { data: [...] }
       transformResponse: (response: ApiResponse<Product[]>) =>
         response.data || [],
       providesTags: ["Product"],
+    }),
+
+    // GET /api/products/categories/list - רשימת קטגוריות
+    getCategories: builder.query<string[], void>({
+      query: () => "products/categories/list",
+      transformResponse: (response: ApiResponse<string[]>) =>
+        response.data || [],
     }),
 
     // GET /api/products/:id - מוצר בודד
@@ -674,6 +703,7 @@ export const {
   // Products
   useGetProductsQuery,
   useGetProductQuery,
+  useGetCategoriesQuery,
   // Cart
   useGetCartQuery,
   useGetCartCountQuery,

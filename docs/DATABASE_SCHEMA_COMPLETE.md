@@ -38,6 +38,10 @@ user = {
   email: "user@example.com",                  // ייחודי - אימייל
   password: "$2a$10$encrypted...",            // מוצפן (bcrypt)
   name: "יוסי כהן",                           // שם המשתמש
+  phone: "+972-50-1234567",                   // אופציונלי - טלפון
+  role: "user",                               // "user" או "admin"
+  resetPasswordToken: "token123abc",          // אופציונלי - עבור שחזור סיסמה
+  resetPasswordExpires: "2024-12-17T10:30:00Z", // תוקף הטוקן
   isActive: true,                             // האם חשבון פעיל
   lastLogin: "2024-12-16T10:30:00Z",          // מתי התחבר לאחרונה
   createdAt: "2024-01-15T10:00:00Z",          // אוטומטי - תאריך יצירה
@@ -52,6 +56,10 @@ user = {
 | `email` | String | ✅ | אימייל ייחודי בתחום |
 | `password` | String | ✅ | סיסמה מוצפנת (bcrypt) |
 | `name` | String | ✅ | שם המשתמש (2-50 תווים) |
+| `phone` | String | ❌ | טלפון אופציונלי |
+| `role` | String | ✅ | "user" או "admin" (ברירת מחדל: "user") |
+| `resetPasswordToken` | String | ❌ | טוקן לשחזור סיסמה |
+| `resetPasswordExpires` | Date | ❌ | תוקף טוקן שחזור סיסמה |
 | `isActive` | Boolean | ❌ | ברירת מחדל: true |
 | `lastLogin` | Date | ❌ | מתי התחבר בפעם האחרונה |
 | `createdAt` | Date | ✅ | אוטומטי |
@@ -115,26 +123,27 @@ product = {
 
 ## 🛒 3. CART Model (עגלת קניות)
 
-**תיאור:** מאחסן עגלות קניות של משתמשים (מחוברים ואורחים).
+**תיאור:** מאחסן עגלות קניות של משתמשים מחוברים בלבד.
+
+**⚠️ חשוב:** העגלה דורשת אימות. אין תמיכה באורחים.
 
 ```typescript
 cart = {
   _id: "507f1f77bcf86cd799439031",           // אוטומטי
-  sessionId: "sess_abc123xyz789",            // ID של סשן (אורח)
-  userId: "507f1f77bcf86cd799439011",        // ObjectId של משתמש (אם מחובר)
+  userId: "507f1f77bcf86cd799439011",        // ObjectId של משתמש (חובה, ייחודי)
   items: [
     {
       product: "507f1f77bcf86cd799439021",  // ObjectId של מוצר
       quantity: 2,                           // כמות
-      lockedPrice: null                      // null = משתמש בחנות, value = נעול בתשלום
+      price: 99.90                           // מחיר יחידה
     },
     {
       product: "507f1f77bcf86cd799439022",
       quantity: 1,
-      lockedPrice: null
+      price: 149.00
     }
   ],
-  total: 199.80,                             // סכום כולל מחושב
+  total: 348.80,                             // סכום כולל מחושב
   createdAt: "2024-12-16T10:00:00Z",         // אוטומטי
   updatedAt: "2024-12-16T14:30:00Z"          // אוטומטי
 }
@@ -144,33 +153,33 @@ cart = {
 | שדה | סוג | חובה | תיאור |
 |-----|-----|------|-------|
 | `_id` | ObjectId | ✅ | אוטומטי |
-| `sessionId` | String | ✅ | מזהה סשן (עבור אורחים) |
-| `userId` | ObjectId | ❌ | ObjectId של משתמש (אם מחובר) |
+| `userId` | ObjectId | ✅ | מזהה משתמש (ייחודי, indexed) |
 | `items[]` | Array | ✅ | מערך של פריטים בעגלה |
 | `items[].product` | ObjectId | ✅ | קישור ל-Product |
 | `items[].quantity` | Number | ✅ | כמות (min: 1) |
-| `items[].lockedPrice` | Number | ❌ | null = מחיר עדכני, ערך = נעול |
+| `items[].price` | Number | ✅ | מחיר יחידה (מתעדכן מהמוצר) |
 | `total` | Number | ❌ | סכום כולל מחושב |
 | `createdAt` | Date | ✅ | אוטומטי |
 | `updatedAt` | Date | ✅ | אוטומטי |
 
 ### ⚙️ Cart Logic:
 ```
-עגלה בעגלה = מחיר עדכני?
-├─ אם lockedPrice = null → YES, משתמשים בـ product.price הנוכחי
-└─ אם lockedPrice = 150 → NO, משתמשים בערך הנעול (150)
+מגבלות:
+• עגלה אחת למשתמש (userId unique)
+• דורש אימות JWT לכל פעולות עגלה
+• אין תמיכה באורחים - חובה להירשם
 
 סכום כולל:
-total = Σ (item.lockedPrice ?? product.price) × item.quantity
+total = Σ (item.price × item.quantity)
 
-⚠️ חשוב: עד רגע Checkout המחיר תמיד עדכני!
+⚠️ חשוב: המחיר מתעדכן מהמוצר בכל פעם!
 ```
 
 **שימוש:**
-- ✅ שמירת פריטים לאורח (sessionId)
 - ✅ שמירת פריטים למשתמש מחובר (userId)
 - ✅ הצגת עגלה עדכנית עם מחירים עדכניים
 - ✅ חישוב סכום כולל
+- ✅ עגלה אחת למשתמש
 
 ---
 
@@ -194,7 +203,7 @@ order = {
   ],
   totalAmount: 199.80,                       // סכום סופי של ההזמנה
   status: "pending",                         // pending | processing | shipped | delivered | cancelled
-  paymentMethod: "credit_card",              // credit_card | paypal | cash_on_delivery
+  paymentMethod: "stripe",                   // stripe | credit_card | paypal | cash_on_delivery (default: stripe)
   paymentStatus: "pending",                  // pending | paid | failed | refunded
   shippingAddress: {
     street: "רחוב הרצל 10",
@@ -202,8 +211,26 @@ order = {
     postalCode: "67890",
     country: "Israel"
   },
+  billingAddress: {                          // אופציונלי - אם לא סופק נשתמש ב-shipping
+    street: "רחוב הרצל 10",
+    city: "תל אביב",
+    postalCode: "67890",
+    country: "Israel"
+  },
   notes: "שלח בעדיפות גבוהה",                // הערות אופציונליות
   estimatedDelivery: "2024-12-20T23:59:59Z", // תאריך משוער
+  trackingHistory: [                         // מעקב סטטוס ההזמנה
+    {
+      status: "pending",
+      timestamp: "2024-12-16T10:00:00Z",
+      note: "ההזמנה נוצרה"
+    },
+    {
+      status: "confirmed",
+      timestamp: "2024-12-16T10:30:00Z",
+      note: "התשלום אושר"
+    }
+  ],
   createdAt: "2024-12-16T10:00:00Z",         // אוטומטי
   updatedAt: "2024-12-16T14:30:00Z"          // אוטומטי
 }
@@ -222,12 +249,17 @@ order = {
 | `items[].quantity` | Number | ✅ | לא | כמות (min: 1) |
 | `items[].image` | String | ❌ | לא | URL או emoji |
 | `totalAmount` | Number | ✅ | לא | סכום כולל סופי |
-| `status` | String | ✅ | לא | pending/processing/shipped/delivered/cancelled |
-| `paymentMethod` | String | ✅ | לא | credit_card/paypal/cash_on_delivery |
+| `status` | String | ✅ | לא | pending/confirmed/processing/shipped/delivered/cancelled |
+| `paymentMethod` | String | ✅ | לא | stripe/credit_card/paypal/cash_on_delivery |
 | `paymentStatus` | String | ✅ | לא | pending/paid/failed/refunded |
 | `shippingAddress` | Object | ✅ | לא | כתובת משלוח |
+| `billingAddress` | Object | ❌ | לא | כתובת לחיוב (אופציונלי, ברירת מחדל כמו shipping) |
 | `notes` | String | ❌ | לא | הערות אופציונליות |
 | `estimatedDelivery` | Date | ❌ | לא | תאריך משוער |
+| `trackingHistory[]` | Array | ❌ | לא | מעקב שינויי סטטוס |
+| `trackingHistory[].status` | String | ✅ | לא | סטטוס ברגע זה |
+| `trackingHistory[].timestamp` | Date | ✅ | לא | מתי השינוי אירע |
+| `trackingHistory[].note` | String | ❌ | לא | הערה על השינוי |
 | `createdAt` | Date | ✅ | לא | אוטומטי |
 | `updatedAt` | Date | ✅ | לא | אוטומטי |
 
@@ -252,7 +284,48 @@ order = {
 
 ---
 
-## 🔗 Relationships (קשרים בין מודלים)
+## � 5. ADDRESS Model (כתובת)
+
+**תיאור:** מאחסן כתובות משלוח של משתמשים.
+
+```typescript
+address = {
+  _id: "507f1f77bcf86cd799439051",           // אוטומטי
+  userId: "507f1f77bcf86cd799439011",        // ObjectId של משתמש
+  label: "home",                              // home | work | other
+  street: "רחוב הרצל 10",                     // רחוב ומספר
+  city: "תל אביב",                            // עיר
+  postalCode: "67890",                        // מיקוד
+  country: "Israel",                          // מדינה
+  isDefault: true,                            // כתובת ברירת מחדל
+  createdAt: "2024-12-16T10:00:00Z",         // אוטומטי
+  updatedAt: "2024-12-16T14:30:00Z"          // אוטומטי
+}
+```
+
+### Address Fields:
+| שדה | סוג | חובה | תיאור |
+|-----|-----|------|-------|
+| `_id` | ObjectId | ✅ | אוטומטי |
+| `userId` | ObjectId | ✅ | קישור ל-User |
+| `label` | String | ✅ | home/work/other |
+| `street` | String | ✅ | כתובת רחוב |
+| `city` | String | ✅ | עיר |
+| `postalCode` | String | ✅ | מיקוד |
+| `country` | String | ✅ | מדינה |
+| `isDefault` | Boolean | ❌ | ברירת מחדל: false |
+| `createdAt` | Date | ✅ | אוטומטי |
+| `updatedAt` | Date | ✅ | אוטומטי |
+
+**שימוש:**
+- ✅ שמירת כתובות משתמש
+- ✅ בחירת כתובת משלוח בהזמנה
+- ✅ ניהול מספר כתובות למשתמש
+- ✅ כתובת ברירת מחדל
+
+---
+
+## �🔗 Relationships (קשרים בין מודלים)
 
 ```
 ┌─────────────┐
@@ -281,10 +354,10 @@ order = {
 │    CART     │
 │  (עגלה)     │
 └──────┬──────┘
-       │ (חובה: sessionId או userId)
+     │ (חובה: userId - Guest mode הוסר)
        │
        ▼
-    USER (optional)
+   USER (required)
 ```
 
 ### Relationship Details:
@@ -306,18 +379,11 @@ Order2.items[].product = "prod1"
 Order3.items[].product = "prod1"
 ```
 
-#### 🔹 USER → CART (1:1 או 0:1)
+#### 🔹 USER → CART (1:1)
 ```javascript
-// משתמש מחובר אחד יכול להיות לו Cart אחד
+// משתמש מחובר אחד יכול להיות לו Cart אחד (Guest mode הוסר)
 User._id = "user123"
 Cart.userId = "user123"
-```
-
-#### 🔹 SESSION → CART (1:1)
-```javascript
-// סשן אחד יכול להיות לו Cart אחד (עבור אורחים)
-session = "sess_abc123"
-Cart.sessionId = "sess_abc123"
 ```
 
 #### 🔹 PRODUCT → CART (N:M דרך Cart.items)
@@ -351,11 +417,11 @@ Cart2.items[].product = "prod1"
        ┌────────────┐                ┌──────────────┐
        │   ORDER    │                │     CART     │
        │            │                │              │
-       │ • _id (PK) │                │ • _id (PK)   │
-       │ • user(FK) │                │ • sessionId  │
-       │ • items[]  │                │ • userId(FK) │
-       │ • total    │                │ • items[]    │
-       │ • status   │                │ • total      │
+      │ • _id (PK) │                │ • _id (PK)   │
+      │ • user(FK) │                │ • userId(FK) │
+      │ • items[]  │                │ • items[]    │
+      │ • total    │                │ • total      │
+      │ • status   │                │              │
        └────┬───────┘                └──────────────┘
             │                             │
             │ N:M (דרך items)            │ N:M (דרך items)
@@ -401,7 +467,7 @@ N:M = Many-to-Many (הרבה לרבה)
 3. לקוח לוחץ "הוסף לעגלה":
    POST /api/cart/items
    {
-     sessionId: "sess_123",
+     userId: "user123",  // נדרש JWT
      productId: "prod1",
      quantity: 2
    }
@@ -501,11 +567,6 @@ N:M = Many-to-Many (הרבה לרבה)
 ### קבל עגלה למשתמש מחובר:
 ```javascript
 Cart.findOne({ userId: user._id }).populate('items.product')
-```
-
-### קבל עגלה לאורח:
-```javascript
-Cart.findOne({ sessionId: sessionId }).populate('items.product')
 ```
 
 ### קבל הזמנות של משתמש:

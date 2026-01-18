@@ -423,6 +423,13 @@ Authorization: Bearer <JWT_TOKEN>
     "postalCode": "61000",
     "country": "Israel"
   },
+  "billingAddress": {
+    "street": "Dizengoff 50",
+    "city": "Tel Aviv",
+    "postalCode": "62000",
+    "country": "Israel"
+  },
+  "paymentMethod": "stripe",
   "notes": "Ring the bell"
 }
 ```

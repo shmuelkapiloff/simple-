@@ -2,6 +2,8 @@ import {
   useGetProductsQuery,
   useAddToCartMutation,
   useGetCartQuery,
+  useGetCategoriesQuery,
+  ProductFilters,
 } from "../app/api";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -19,9 +21,17 @@ export default function ProductList() {
   const sessionId = useSelector(selectSessionId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const cartItems = useSelector(selectCartItems); // ✅ קבל את כל העגלה פעם אחת
-  const { data: products = [], error, isLoading } = useGetProductsQuery();
   const [addToCartMutation] = useAddToCartMutation();
   const [addingProductId, setAddingProductId] = useState<string | null>(null);
+
+  // Filters state
+  const [filters, setFilters] = useState<ProductFilters>({});
+  const [searchInput, setSearchInput] = useState("");
+  const [priceInputs, setPriceInputs] = useState({ min: "", max: "" });
+
+  // Fetch products with filters
+  const { data: products = [], error, isLoading } = useGetProductsQuery(filters);
+  const { data: categories = [] } = useGetCategoriesQuery();
 
   // Load cart from server to sync state
   const { data: serverCart, refetch: refetchCart } = useGetCartQuery(
@@ -57,6 +67,47 @@ export default function ProductList() {
       dispatch(initializeCart());
     }
   }, [dispatch, sessionId]);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchInput || undefined }));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Handle price inputs with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        minPrice: priceInputs.min ? parseFloat(priceInputs.min) : undefined,
+        maxPrice: priceInputs.max ? parseFloat(priceInputs.max) : undefined,
+      }));
+    }, 800); // longer debounce for price to allow completing the number
+    return () => clearTimeout(timer);
+  }, [priceInputs]);
+
+  // Filter handlers
+  const handleCategoryChange = (category: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      category: category === "all" ? undefined : category,
+    }));
+  };
+
+  const handleSortChange = (sort: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      sort: sort === "default" ? undefined : (sort as any),
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({});
+    setSearchInput("");
+    setPriceInputs({ min: "", max: "" });
+  };
 
   const handleAddToCart = async (product: any) => {
     if (!isAuthenticated) {
@@ -141,28 +192,119 @@ export default function ProductList() {
     );
   }
 
-  if (!isLoading && !error && products.length === 0) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <div className="text-6xl mb-4">🛍️</div>
-        <h3 className="text-2xl font-semibold text-gray-900 mb-2">
-          אין מוצרים זמינים
-        </h3>
-        <p className="text-gray-600 mb-6">נסה לרענן או לחזור בהמשך.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-        >
-          רענן דף
-        </button>
-      </div>
-    );
-  }
-
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" dir="rtl">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">מוצרים</h1>
+      {/* Filters Section */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              חיפוש
+            </label>
+            <input
+              type="text"
+              placeholder="חפש מוצר..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              קטגוריה
+            </label>
+            <select
+              value={filters.category || "all"}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">כל הקטגוריות</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              מיון
+            </label>
+            <select
+              value={filters.sort || "default"}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="default">ברירת מחדל (חדשים)</option>
+              <option value="price_asc">מחיר: נמוך לגבוה</option>
+              <option value="price_desc">מחיר: גבוה לנמוך</option>
+              <option value="name_asc">שם: א-ת</option>
+              <option value="name_desc">שם: ת-א</option>
+              <option value="rating_desc">דירוג</option>
+            </select>
+          </div>
+
+          {/* Price Range */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              טווח מחירים
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder="מינימום"
+                value={priceInputs.min}
+                onChange={(e) =>
+                  setPriceInputs((prev) => ({ ...prev, min: e.target.value }))
+                }
+                className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <input
+                type="number"
+                placeholder="מקסימום"
+                value={priceInputs.max}
+                onChange={(e) =>
+                  setPriceInputs((prev) => ({ ...prev, max: e.target.value }))
+                }
+                className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Clear Filters */}
+        {(filters.category || filters.search || filters.sort || filters.minPrice !== undefined || filters.maxPrice !== undefined) && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={clearFilters}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              נקה סינון
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* No Results Message */}
+      {!isLoading && products.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-lg shadow-md">
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            לא נמצאו מוצרים מתאימים
+          </h3>
+          <p className="text-gray-600 mb-4">
+            נסה לשנות את הסינון או לחפש משהו אחר
+          </p>
+        </div>
+      )}
+
+      {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((product) => {
           // ✅ חישוב פשוט מהמיפוי
@@ -176,13 +318,12 @@ export default function ProductList() {
               className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
             >
               <img
-                src={product.image}
+                src={product.image || "https://placehold.co/600x400?text=No+Image"}
                 alt={product.name}
                 className="w-full h-48 object-cover rounded-t-lg"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src =
-                    "https://placehold.co/600x400?text=No+Image";
+                  e.currentTarget.src = "https://placehold.co/600x400/e2e8f0/64748b?text=No+Image";
                 }}
               />
               <div className="p-4">
@@ -261,9 +402,12 @@ export default function ProductList() {
         })}
       </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-gray-600">מציג {products.length} מוצרים</p>
-      </div>
+      {/* Product Count - only show if there are products */}
+      {products.length > 0 && (
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">מציג {products.length} מוצרים</p>
+        </div>
+      )}
     </main>
   );
 }

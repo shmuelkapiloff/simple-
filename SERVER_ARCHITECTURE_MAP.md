@@ -72,37 +72,38 @@ graph TD
 
 ### **📤 הוספת מוצר לעגלה:**
 ```
-1. POST /api/cart/add
+1. POST /api/cart/add (+ JWT Token)
    ↓
-2. cart.routes.ts → CartController.addToCart
+2. requireAuth middleware → מאמת משתמש
    ↓
-3. CartController → CartService.addToCart
+3. cart.routes.ts → CartController.addToCart
    ↓
-4. CartService:
+4. CartController → CartService.addToCart
+   ↓
+5. CartService:
    ├── ✅ בדיקת מוצר (MongoDB)
-   ├── 🔍 קבלת עגלה נוכחית (Redis → MongoDB)
+   ├── 🔍 קבלת עגלה נוכחית לפי userId (MongoDB)
    ├── ➕ הוספת פריט
-   ├── ⚡ עדכון Redis (מיידי)
-   └── ⏰ עדכון MongoDB (debounced)
+   └── 💾 שמירה ב-MongoDB
    ↓
-5. Response → Client
+6. Response → Client
 ```
 
 ### **🔍 קבלת עגלה:**
 ```
-1. GET /api/cart?sessionId=xxx
+1. GET /api/cart (+ JWT Token)
    ↓
-2. cart.routes.ts → CartController.getCart  
+2. requireAuth middleware → מאמת משתמש
    ↓
-3. CartController → CartService.getCart
+3. cart.routes.ts → CartController.getCart  
    ↓
-4. CartService:
-   ├── ⚡ חיפוש ב-Redis (מהיר)
-   ├── 🔍 אם לא נמצא → MongoDB
-   ├── 📥 שמירה ב-Redis לפעם הבאה
+4. CartController → CartService.getCart
+   ↓
+5. CartService:
+   ├── 🔍 חיפוש לפי userId ב-MongoDB
    └── 🔄 Population של product data
    ↓
-5. Response → Client
+6. Response → Client
 ```
 
 ---
@@ -129,19 +130,22 @@ MongoDB (simple_shop):
 │   ├── _id, name, price, stock
 │   ├── category, image, description
 │   └── featured, rating, isActive
-└── 🛒 carts collection
-    ├── sessionId, userId (optional)
-    ├── items[] (populated products)
-    ├── total, createdAt, updatedAt
-    └── indexes על sessionId ו-userId
+├── 🛒 carts collection
+│   ├── userId (required, unique, indexed)
+│   ├── items[] (populated products)
+│   ├── total, createdAt, updatedAt
+│   └── מגבלה: עגלה אחת למשתמש
+└── 👤 users collection
+    ├── email, password (hashed)
+    ├── name, phone, role
+    ├── resetPasswordToken, resetPasswordExpires
+    └── createdAt, updatedAt
 ```
 
 ### **⚡ Cache Layer (Redis):**
 ```
-Redis Keys:
-├── cart:guest:SESSION_ID → Cart JSON
-├── cart:user:USER_ID → Cart JSON  
-└── TTL: 3600s (1 hour)
+Redis לא נמצא בשימוש כרגע עבור מערכת העגלה.
+העגלה מאוחסנת ישירות ב-MongoDB.
 ```
 
 ---
@@ -160,14 +164,14 @@ GET /api/products        → רשימת כל המוצרים
 GET /api/products/:id    → מוצר ספציפי לפי ID
 ```
 
-### **🛒 Cart Endpoints:**
+### **🛒 Cart Endpoints (🔐 כולם דורשים אימות):**
 ```
-GET    /api/cart                 → קבלת עגלה
-GET    /api/cart/count           → ספירת פריטים
-POST   /api/cart/add             → הוספת פריט
-PUT    /api/cart/update          → עדכון כמות
-DELETE /api/cart/remove          → הסרת פריט  
-DELETE /api/cart/clear           → ניקוי עגלה
+GET    /api/cart                 → קבלת עגלה (דורש JWT)
+GET    /api/cart/count           → ספירת פריטים (דורש JWT)
+POST   /api/cart/add             → הוספת פריט (דורש JWT)
+PUT    /api/cart/update          → עדכון כמות (דורש JWT)
+DELETE /api/cart/remove          → הסרת פריט (דורש JWT)
+DELETE /api/cart/clear           → ניקוי עגלה (דורש JWT)
 ```
 
 ---
@@ -266,32 +270,34 @@ export async function getProductById(id: string) {
 
 #### **Layer 1: Route (cart.routes.ts)**
 ```typescript
-router.post("/add", CartController.addToCart)
+router.post("/add", requireAuth, CartController.addToCart)
 ```
-- מקבל body: `{ sessionId, productId, quantity }`
+- דורש JWT authentication
+- מקבל body: `{ productId, quantity }`
 
 #### **Layer 2: Controller (cart.controller.ts)**
 ```typescript
 static async addToCart(req: Request, res: Response) {
-  const { sessionId, productId, quantity } = req.body;
+  const { productId, quantity } = req.body;
+  const userId = (req as any).userId; // מה-auth middleware
   
   // ✅ בדיקת שדות חובה
-  if (!sessionId || !productId || !quantity) {
+  if (!productId || !quantity) {
     return sendError(res, 400, "Missing required fields");
   }
   
-  const cart = await CartService.addToCart(sessionId, productId, quantity);
+  const cart = await CartService.addToCart(userId, productId, quantity);
   sendSuccess(res, cart, "Item added to cart");
 }
 ```
-- שולף נתונים מה-body
+- שולף userId מה-request (מאימות)
 - **✅ בודק שדות חובה**
 - קורא ל-Service
 - **טיפול בשגיאות ספציפיות** (stock, not found)
 
 #### **Layer 3: Service (cart.service.ts)**
 ```typescript
-static async addToCart(sessionId, productId, quantity) {
+static async addToCart(userId, productId, quantity) {
   // 1. ✅ בדיקת מוצר
   const product = await ProductModel.findById(productId);
   if (!product) throw new Error("Product not found");
@@ -299,11 +305,14 @@ static async addToCart(sessionId, productId, quantity) {
   // 2. ✅ בדיקת מלאי
   if (product.stock < quantity) throw new Error("Insufficient stock");
   
-  // 3. קבלת עגלה נוכחית
-  let cart = await this.getCart(sessionId);
+  // 3. קבלת עגלה נוכחית לפי userId
+  let cart = await CartModel.findOne({ userId });
+  if (!cart) {
+    cart = new CartModel({ userId, items: [], total: 0 });
+  }
   
   // 4. הוספה/עדכון כמות
-  const existingItem = cart.items.find(item => item.product === productId);
+  const existingItem = cart.items.find(item => item.product.toString() === productId);
   if (existingItem) {
     existingItem.quantity += quantity; // עדכון
   } else {
@@ -313,27 +322,24 @@ static async addToCart(sessionId, productId, quantity) {
   // 5. חישוב סכום
   cart.total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   
-  // 6. ⚡ עדכון Redis מיידי
-  await this.updateCartInCache(cartId, cart);
-  
-  // 7. ⏰ תזמון שמירה ל-MongoDB (5 שניות)
-  // לא חוסם!
+  // 6. 💾 שמירה ב-MongoDB
+  await cart.save();
   
   return cart;
 }
 ```
-- **7 שלבים מפורטים**
+- **6 שלבים מפורטים**
 - בדיקות תקינות מלאות
-- Cache strategy חכם
+- שמירה ישירה ב-MongoDB
 
-#### **Layer 4: Cache & Database**
-- Redis - עדכון מיידי
-- MongoDB - עדכון debounced
+#### **Layer 4: Database**
+- MongoDB - שמירה מיידית
 
 **תוצאה:**
 - ✅ 200 OK + עגלה מעודכנת
 - ❌ 404 Not Found (מוצר לא קיים)
 - ❌ 400 Bad Request (אין מלאי)
+- ❌ 401 Unauthorized (לא מאומת)
 
 ---
 
@@ -341,9 +347,10 @@ static async addToCart(sessionId, productId, quantity) {
 
 #### **Layer 1: Route (cart.routes.ts)**
 ```typescript
-router.get("/", CartController.getCart)
+router.get("/", requireAuth, CartController.getCart)
 ```
-- מקבל query: `?sessionId=xxx`
+- דורש JWT authentication
+- userId יוצא מה-token
 
 #### **Layer 2: Controller (cart.controller.ts)**
 ```typescript

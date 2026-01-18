@@ -1,9 +1,93 @@
 import { ProductModel } from "../models/product.model";
 
-export async function listProducts() {
-  return ProductModel.find({ isActive: true }).lean();
+export interface ProductFilters {
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+  featured?: boolean;
+  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'rating_desc' | 'newest';
+}
+
+const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400/e2e8f0/64748b?text=Product+Image";
+
+export async function listProducts(filters: ProductFilters = {}) {
+  const query: any = { isActive: true };
+
+  // Category filter
+  if (filters.category) {
+    query.category = filters.category;
+  }
+
+  // Price range filter
+  if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+    query.price = {};
+    if (filters.minPrice !== undefined) {
+      query.price.$gte = filters.minPrice;
+    }
+    if (filters.maxPrice !== undefined) {
+      query.price.$lte = filters.maxPrice;
+    }
+  }
+
+  // Featured filter
+  if (filters.featured !== undefined) {
+    query.featured = filters.featured;
+  }
+
+  // Search filter (name or description)
+  if (filters.search) {
+    query.$or = [
+      { name: { $regex: filters.search, $options: 'i' } },
+      { description: { $regex: filters.search, $options: 'i' } },
+    ];
+  }
+
+  // Build sort object
+  let sort: any = { createdAt: -1 }; // default: newest first
+  if (filters.sort) {
+    switch (filters.sort) {
+      case 'price_asc':
+        sort = { price: 1 };
+        break;
+      case 'price_desc':
+        sort = { price: -1 };
+        break;
+      case 'name_asc':
+        sort = { name: 1 };
+        break;
+      case 'name_desc':
+        sort = { name: -1 };
+        break;
+      case 'rating_desc':
+        sort = { rating: -1 };
+        break;
+      case 'newest':
+        sort = { createdAt: -1 };
+        break;
+    }
+  }
+
+  const products = await ProductModel.find(query).sort(sort).lean();
+  
+  // Ensure all products have valid images
+  return products.map(product => ({
+    ...product,
+    image: product.image && product.image.startsWith('http') ? product.image : DEFAULT_PRODUCT_IMAGE
+  }));
 }
 
 export async function getProductById(id: string) {
-  return ProductModel.findById(id).lean();
+  const product = await ProductModel.findById(id).lean();
+  if (product) {
+    return {
+      ...product,
+      image: product.image && product.image.startsWith('http') ? product.image : DEFAULT_PRODUCT_IMAGE
+    };
+  }
+  return product;
+}
+
+export async function getCategories() {
+  return ProductModel.distinct('category', { isActive: true });
 }

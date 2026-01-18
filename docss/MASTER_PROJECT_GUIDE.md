@@ -822,13 +822,19 @@ Store completed orders
   ],
   "totalAmount": 1999.98,
   "status": "pending",  // or "confirmed", "shipped", "delivered"
-  "paymentStatus": "pending",  // or "confirmed", "failed"
+  "paymentStatus": "pending",  // or "paid", "failed", "refunded"
+  "paymentMethod": "stripe",   // default: stripe
   "shippingAddress": {
     "street": "123 Main St",
     "city": "NYC",
     "country": "USA"
   },
-  "stripePaymentId": "pi_...",
+  "billingAddress": {
+    "street": "123 Main St",
+    "city": "NYC",
+    "country": "USA"
+  },
+  "notes": "Please call before delivery",
   "createdAt": "2024-01-13T10:30:00Z",
   "updatedAt": "2024-01-13T10:30:00Z"
 }
