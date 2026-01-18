@@ -652,7 +652,258 @@ cancelled          ← בוטלה
 
 ---
 
-## 📊 **Performance Expectations**
+## �️ **Client Implementation Guide (React/TypeScript)**
+
+### **Step 1️⃣: Validate Cart**
+בדוק שיש items בעגלה לפני יצירת order:
+
+```typescript
+const { data: cart } = await api.getCart();
+
+if (!cart || cart.items.length === 0) {
+  throw new Error("🛒 Cart is empty - add items before checkout");
+}
+
+console.log(`✅ Cart has ${cart.items.length} items, total: ${cart.total}`);
+```
+
+### **Step 2️⃣: Create Order**
+צור order דרך ה-API עם shipping address:
+
+```typescript
+const shippingAddress = {
+  street: "הרצל 10",
+  city: "תל אביב",
+  postalCode: "61000",
+  country: "Israel"
+};
+
+const response = await fetch('http://localhost:4001/api/orders', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}` // ⚠️ חובה!
+  },
+  body: JSON.stringify({ shippingAddress })
+});
+
+if (!response.ok) {
+  throw new Error(`❌ Order creation failed: ${response.statusText}`);
+}
+
+const { data } = await response.json();
+const { order, payment } = data;
+
+console.log(`✅ Order created: ${order.orderNumber}`);
+console.log(`📦 Status: ${order.status} (pending_payment)`);
+console.log(`💳 Ready for payment!`);
+```
+
+**Response you get back:**
+```json
+{
+  "order": {
+    "_id": "507f...",
+    "orderNumber": "ORD-2026-001",
+    "status": "pending_payment",
+    "totalAmount": 1998
+  },
+  "payment": {
+    "clientSecret": "pi_xxx_secret",
+    "checkoutUrl": "https://checkout.stripe.com/..."
+  }
+}
+```
+
+### **Step 3️⃣: Send to Stripe**
+
+#### **Option A - Redirect (Easiest)** ✅ מומלץ
+```typescript
+// User clicks "Pay Now" → redirect to Stripe Checkout
+window.location.href = payment.checkoutUrl;
+// Stripe will handle everything, then redirect back to you
+```
+
+#### **Option B - Embed Stripe Elements** (More Control)
+```typescript
+import { loadStripe } from '@stripe/js';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+const stripe = await loadStripe('pk_test_YOUR_KEY');
+
+const handlePayment = async () => {
+  const { error, paymentIntent } = await stripe.confirmCardPayment(
+    payment.clientSecret,
+    {
+      payment_method: {
+        card: cardElement,
+        billing_details: { name: 'Customer Name' }
+      }
+    }
+  );
+
+  if (error) {
+    console.error('❌ Payment failed:', error.message);
+    return;
+  }
+
+  if (paymentIntent.status === 'succeeded') {
+    console.log('✅ Payment succeeded! Waiting for server confirmation...');
+  }
+};
+```
+
+### **Step 4️⃣: Poll Payment Status**
+המתן עד שה-server יאשר את התשלום דרך webhook:
+
+```typescript
+const pollPaymentStatus = () => {
+  const maxAttempts = 60; // 60 seconds
+  let attempts = 0;
+
+  const interval = setInterval(async () => {
+    attempts++;
+
+    try {
+      const res = await fetch(
+        `http://localhost:4001/api/payments/${order._id}/status`,
+        {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        }
+      );
+
+      const { data } = await res.json();
+      const { orderPaymentStatus } = data;
+
+      if (orderPaymentStatus === 'paid') {
+        console.log('🎉 Payment confirmed by server!');
+        clearInterval(interval);
+        navigate(`/orders/${order._id}`);
+      } else if (attempts >= maxAttempts) {
+        console.warn('⏱️ Payment confirmation timeout - check manually');
+        clearInterval(interval);
+      } else {
+        console.log(`⏳ Waiting for payment confirmation... (${attempts}s)`);
+      }
+    } catch (error) {
+      console.error('❌ Status check failed:', error);
+    }
+  }, 1000); // Check every 1 second
+};
+
+// Start polling after payment
+pollPaymentStatus();
+```
+
+### **Step 5️⃣: Handle Errors**
+
+```typescript
+const createOrderWithErrorHandling = async () => {
+  try {
+    // 1. Get cart
+    const { data: cart } = await api.getCart();
+    if (!cart?.items.length) {
+      throw new Error("🛒 Your cart is empty");
+    }
+
+    // 2. Create order
+    const orderResponse = await fetch('http://localhost:4001/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ shippingAddress })
+    });
+
+    if (!orderResponse.ok) {
+      const { message } = await orderResponse.json();
+      throw new Error(`📦 ${message}`);
+    }
+
+    const { data: { order, payment } } = await orderResponse.json();
+
+    // 3. Send to Stripe
+    window.location.href = payment.checkoutUrl;
+
+  } catch (error) {
+    console.error('❌ Checkout error:', error.message);
+    // Show toast/alert to user
+    setError(error.message);
+  }
+};
+```
+
+### **Complete Flow Example** 🚀
+
+```typescript
+// CheckoutPage.tsx
+import React, { useState } from 'react';
+
+export const CheckoutPage: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { authToken } = useAuth();
+
+  const handleCheckout = async () => {
+    try {
+      setIsLoading(true);
+
+      // ✅ Step 1: Get cart
+      const cartResponse = await fetch('http://localhost:4001/api/cart', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const { data: cart } = await cartResponse.json();
+
+      if (!cart?.items.length) {
+        alert('🛒 Cart is empty');
+        return;
+      }
+
+      // ✅ Step 2: Create order
+      const orderResponse = await fetch(
+        'http://localhost:4001/api/orders',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            shippingAddress: {
+              street: formData.street,
+              city: formData.city,
+              postalCode: formData.zip,
+              country: 'Israel'
+            }
+          })
+        }
+      );
+      const { data: { order, payment } } = await orderResponse.json();
+
+      // ✅ Step 3: Redirect to Stripe
+      window.location.href = payment.checkoutUrl;
+
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Checkout</h1>
+      <button onClick={handleCheckout} disabled={isLoading}>
+        {isLoading ? '⏳ Processing...' : '💳 Pay Now'}
+      </button>
+    </div>
+  );
+};
+```
+
+---
+
+## �📊 **Performance Expectations**
 
 | Endpoint | Cache Hit | Cache Miss | Error Rate |
 |----------|-----------|------------|------------|
