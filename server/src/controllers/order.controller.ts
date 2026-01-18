@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { OrderService } from "../services/order.service";
+import { PaymentService } from "../services/payment.service";
 import { createOrderSchema } from "../validators/order.validator";
 import { UnauthorizedError, log } from "../utils/asyncHandler";
 
@@ -7,6 +8,14 @@ export class OrderController {
   /**
    * Create new order
    * POST /api/orders
+   *
+   * Flow:
+   * 1. יצור order עם סטטוס "pending_payment"
+   * 2. יצור payment intent עבור Stripe
+   * 3. מחזיר clientSecret ל-CLIENT
+   * 4. CLIENT משלם דרך Stripe
+   * 5. Stripe שולח webhook
+   * 6. Server מאמת ועדכן order
    */
   static async createOrder(req: Request, res: Response) {
     const userId = (req as any).userId;
@@ -16,15 +25,39 @@ export class OrderController {
       throw new UnauthorizedError();
     }
 
-    log.info("Order creation started", {
-      userId,
-    });
+    log.info("Order creation started", { userId });
+
+    // 1️⃣ Create order with status = "pending_payment"
     const order = await OrderService.createOrder(userId, validated);
+
+    // 2️⃣ Create payment intent for Stripe
+    const paymentIntentResult = await PaymentService.createPaymentIntent(
+      userId,
+      order._id.toString()
+    );
+
+    // 3️⃣ Update order with paymentIntentId
+    order.paymentIntentId =
+      paymentIntentResult.payment.providerPaymentId ||
+      paymentIntentResult.payment._id.toString();
+    order.paymentProvider = "stripe";
+    await order.save();
+
+    log.info("Payment intent created", {
+      orderId: order._id,
+      status: order.status,
+    });
 
     res.status(201).json({
       success: true,
-      data: { order },
-      message: "Order created successfully",
+      data: {
+        order,
+        payment: {
+          clientSecret: paymentIntentResult.clientSecret,
+          checkoutUrl: paymentIntentResult.checkoutUrl,
+        },
+      },
+      message: "Order created. Complete payment to confirm.",
     });
   }
 

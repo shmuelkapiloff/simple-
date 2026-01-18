@@ -12,7 +12,8 @@ try {
     Write-Host "   Status: $($data.status)"
     Write-Host "   MongoDB: $($data.data.mongodb)"
     Write-Host "   Redis: $($data.data.redis)"
-} catch {
+}
+catch {
     Write-Host "   ❌ Failed: $_" -ForegroundColor Red
 }
 
@@ -22,7 +23,8 @@ try {
     $response = Invoke-WebRequest -Uri "http://localhost:4001/" -Method GET
     Write-Host "   ✅ Status: $($response.StatusCode)" -ForegroundColor Green
     Write-Host "   Response: API is working"
-} catch {
+}
+catch {
     Write-Host "   ❌ Failed: $_" -ForegroundColor Red
 }
 

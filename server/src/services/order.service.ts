@@ -1,4 +1,8 @@
-import { OrderModel, CreateOrderInput, TrackingResponse } from "../models/order.model";
+import {
+  OrderModel,
+  CreateOrderInput,
+  TrackingResponse,
+} from "../models/order.model";
 import { CartModel } from "../models/cart.model";
 import { ProductModel } from "../models/product.model";
 
@@ -6,7 +10,10 @@ export class OrderService {
   /**
    * Create new order from cart
    */
-  static async createOrder(userId: string, orderData: Partial<CreateOrderInput>) {
+  static async createOrder(
+    userId: string,
+    orderData: Partial<CreateOrderInput>
+  ) {
     // Get user's cart
     const cart = await CartModel.findOne({ userId }).populate("items.product");
 
@@ -14,7 +21,7 @@ export class OrderService {
       throw new Error("Cart is empty");
     }
 
-    // Verify stock and prepare order items
+    // ✅ Verify stock (but DON'T reduce it yet!)
     const orderItems = [];
     let totalAmount = 0;
 
@@ -38,22 +45,21 @@ export class OrderService {
       });
 
       totalAmount += (item.lockedPrice || product.price) * item.quantity;
-
-      // Reduce stock
-      product.stock -= item.quantity;
-      await product.save();
+      // ⚠️ לא משנים את המלאי כאן - רק אחרי שתשלום אושר!
     }
 
     // Generate order number
     const orderNumber = await this.generateOrderNumber();
 
-    // Create order
+    // ✅ Create order with status = "pending_payment" (payment not yet verified)
     const createData: any = {
       orderNumber,
       user: userId,
       items: orderItems,
       totalAmount,
-      paymentMethod: orderData.paymentMethod || 'stripe',
+      status: "pending_payment", // ← נחכה לתשלום
+      paymentStatus: "pending", // ← עדיין לא שולם
+      paymentMethod: orderData.paymentMethod || "stripe",
       shippingAddress: orderData.shippingAddress,
       notes: orderData.notes,
     };
@@ -64,11 +70,7 @@ export class OrderService {
 
     const order = await OrderModel.create(createData);
 
-    // Clear cart
-    await CartModel.findOneAndUpdate(
-      { userId },
-      { items: [], total: 0 }
-    );
+    // ⚠️ עדיין לא נקינו את העגלה - זה יקרה רק כשתשלום יאושר!
 
     return order;
   }
@@ -95,7 +97,7 @@ export class OrderService {
    */
   static async getOrderById(orderId: string, userId?: string) {
     const query: any = { _id: orderId };
-    
+
     if (userId) {
       query.user = userId;
     }
@@ -137,8 +139,8 @@ export class OrderService {
    * Update order status and add tracking entry
    */
   static async updateOrderStatus(
-    orderId: string, 
-    newStatus: string, 
+    orderId: string,
+    newStatus: string,
     message?: string
   ) {
     const order = await OrderModel.findById(orderId);
@@ -148,7 +150,14 @@ export class OrderService {
     }
 
     // Validate status transition
-    const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ];
     if (!validStatuses.includes(newStatus)) {
       throw new Error("Invalid status");
     }
@@ -179,7 +188,7 @@ export class OrderService {
     }
 
     // Can only cancel pending/confirmed orders
-    if (!['pending', 'confirmed'].includes(order.status)) {
+    if (!["pending", "confirmed"].includes(order.status)) {
       throw new Error(`Cannot cancel order with status: ${order.status}`);
     }
 
@@ -191,7 +200,11 @@ export class OrderService {
     }
 
     // Update status
-    await this.updateOrderStatus(orderId, 'cancelled', 'Order cancelled by user');
+    await this.updateOrderStatus(
+      orderId,
+      "cancelled",
+      "Order cancelled by user"
+    );
 
     return order;
   }
@@ -213,7 +226,10 @@ export class OrderService {
       createdAt: { $gte: startOfDay, $lte: endOfDay },
     });
 
-    const orderNumber = `ORD-${year}${month}${day}-${String(count + 1).padStart(3, "0")}`;
+    const orderNumber = `ORD-${year}${month}${day}-${String(count + 1).padStart(
+      3,
+      "0"
+    )}`;
 
     return orderNumber;
   }

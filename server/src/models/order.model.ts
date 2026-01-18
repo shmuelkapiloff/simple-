@@ -50,6 +50,10 @@ export interface IOrder extends Document {
   trackingHistory: ITrackingHistory[]; // ⬅️ חדש
   estimatedDelivery?: Date; // ⬅️ חדש
   notes?: string;
+  // ⬅️ חדש - Payment Verification
+  paymentIntentId?: string;
+  paymentVerifiedAt?: Date;
+  paymentProvider?: "stripe" | "paypal" | "mock";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -125,7 +129,7 @@ const OrderSchema = new Schema<IOrder>(
     paymentMethod: {
       type: String,
       required: true,
-      enum: ["credit_card", "paypal", "cash_on_delivery","stripe"],
+      enum: ["credit_card", "paypal", "cash_on_delivery", "stripe"],
     },
 
     shippingAddress: {
@@ -191,6 +195,22 @@ const OrderSchema = new Schema<IOrder>(
     notes: {
       type: String,
       maxlength: [500, "Notes cannot exceed 500 characters"],
+    },
+
+    // ⬅️ חדש - Payment Verification Fields
+    paymentIntentId: {
+      type: String,
+      index: true,
+    },
+
+    paymentVerifiedAt: {
+      type: Date,
+      description: "When payment was confirmed by server/webhook",
+    },
+
+    paymentProvider: {
+      type: String,
+      enum: ["stripe", "paypal", "mock"],
     },
   },
   {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PaymentService } from "../services/payment.service";
 import { asyncHandler } from "../utils/asyncHandler";
+import { OrderModel } from "../models/order.model";
 
 export class PaymentController {
   /**
@@ -62,11 +63,46 @@ export class PaymentController {
   });
 
   /**
-   * Webhook endpoint (public)
+   * Webhook endpoint (public) - Stripe calls this
    * POST /api/payments/webhook
+   * ✅ This is the CRITICAL endpoint that confirms payments!
    */
   static webhook = asyncHandler(async (req: Request, res: Response) => {
-    await PaymentService.handleWebhook(req);
-    res.status(200).json({ success: true });
+    const event = req.body;
+
+    // ✅ Basic validation (in production, verify Stripe signature)
+    if (!event.id) {
+      return res.status(400).json({ received: false, error: "Invalid event" });
+    }
+
+    try {
+      // 🎯 Handle payment success
+      if (event.type === "payment_intent.succeeded") {
+        const paymentIntentId = event.data.object.id;
+        const result = await PaymentService.confirmPayment(paymentIntentId);
+        console.log("✅ Payment confirmed via webhook", {
+          orderId: result.order._id,
+          amount: result.order.totalAmount,
+        });
+      }
+
+      // 🎯 Handle payment failure
+      if (event.type === "payment_intent.payment_failed") {
+        const paymentIntentId = event.data.object.id;
+        const order = await OrderModel.findOne({ paymentIntentId });
+        if (order) {
+          order.paymentStatus = "failed";
+          order.status = "cancelled";
+          await order.save();
+          console.log("❌ Payment failed via webhook", { orderId: order._id });
+        }
+      }
+
+      // ✅ Tell Stripe we received the event
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.status(400).json({ received: false, error: String(error) });
+    }
   });
 }

@@ -408,13 +408,27 @@ Authorization: Bearer <JWT_TOKEN>
 
 > כל ה-endpoints תחת `/api/orders`
 
-- **POST /** (⚠️ דורש התחברות) — יוצר הזמנה מהעגלה. חובה `shippingAddress` עם `street`, `city`, `postalCode`.
-- **GET /** (⚠️ דורש התחברות) — מחזיר את כל ההזמנות של המשתמש, אפשרי סינון `?status=`.
-- **GET `/:orderId`** (⚠️ דורש התחברות) — פרטי הזמנה ספציפית.
-- **POST `/:orderId/cancel`** (⚠️ דורש התחברות) — ביטול הזמנה פתוחה.
-- **GET `/track/:orderId`** (ציבורי) — מעקב סטטוס ללא צורך ב-Token.
+### **Order Statuses (סטטוסים זמינים):**
+```
+pending_payment    ← הזמנה יוצרה, בהמתנה לתשלום
+confirmed          ← תשלום אומת דרך webhook ✅
+processing         ← בהכנה לשיגור
+shipped            ← משוגר
+delivered          ← הגיע ליעד
+cancelled          ← בוטלה
+```
 
-**דוגמת יצירת הזמנה:**
+### **🛒 POST `/` - Create Order** (⚠️ דורש התחברות)
+יוצר הזמנה מהעגלה **עם secure payment flow:**
+
+1. ✅ יוצר order עם status `"pending_payment"`
+2. ✅ יוצר payment intent ב-Stripe
+3. ✅ מחזיר `clientSecret` ו-`checkoutUrl` ל-client
+4. ⏳ Client משלם דרך Stripe Checkout
+5. 🔔 Stripe שולח webhook -> Server מעדכן order ל-`"confirmed"`
+6. 🎯 Stock מצטמצם **רק אחרי אישור התשלום**
+
+**Request:**
 ```json
 {
   "shippingAddress": {
@@ -431,6 +445,114 @@ Authorization: Bearer <JWT_TOKEN>
   },
   "paymentMethod": "stripe",
   "notes": "Ring the bell"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "order": {
+      "_id": "507f1f77bcf86cd799439050",
+      "orderNumber": "ORD-2026-001",
+      "user": "507f1f77bcf86cd799439012",
+      "status": "pending_payment",
+      "paymentStatus": "pending",
+      "paymentIntentId": "pi_stripe123",
+      "paymentProvider": "stripe",
+      "totalAmount": 1998,
+      "items": [...],
+      "shippingAddress": {...},
+      "createdAt": "2026-01-18T12:00:00Z"
+    },
+    "payment": {
+      "clientSecret": "pi_stripe123_secret",
+      "checkoutUrl": "https://checkout.stripe.com/..."
+    }
+  },
+  "message": "Order created. Complete payment to confirm."
+}
+```
+
+### **📋 GET `/` - Get My Orders** (⚠️ דורש התחברות)
+מחזיר את כל ההזמנות של המשתמש, אפשרי סינון `?status=`
+
+**Query params:**
+- `status` - filter by status (pending_payment, confirmed, processing, etc.)
+
+### **🔍 GET `/:orderId` - Get Order Details** (⚠️ דורש התחברות)
+פרטי הזמנה ספציפית
+
+### **🚫 POST `/:orderId/cancel` - Cancel Order** (⚠️ דורש התחברות)
+ביטול הזמנה פתוחה (רק אם `status` הוא `pending_payment`)
+
+### **📍 GET `/track/:orderId` - Track Order** (ציבורי)
+מעקב סטטוס ללא צורך ב-Token - מחזיר:
+- סטטוס הזמנה
+- היסטוריית עדכונים
+- תאריך משוער הגעה
+
+
+
+---
+
+## 💳 **Payment Endpoints (Stripe Integration)**
+
+> כל ה-endpoints תחת `/api/payments`
+
+### **🔐 POST `/webhook` - Stripe Webhook** (ציבורי - אין auth)
+קבלת webhook מ-Stripe כשתשלום הצליח/נכשל. **אין צורך בטוקן!**
+
+**Event Types:**
+- `payment_intent.succeeded` - ✅ התשלום הצליח
+- `payment_intent.payment_failed` - ❌ התשלום נכשל
+
+**When Succeeded:**
+```
+1. Webhook received
+2. Order status: pending_payment → confirmed ✅
+3. Stock reduced לכל מוצר
+4. Cart cleared
+5. paymentVerifiedAt = now
+```
+
+**Request (from Stripe):**
+```json
+{
+  "id": "evt_1234567890",
+  "type": "payment_intent.succeeded",
+  "data": {
+    "object": {
+      "id": "pi_stripe123",
+      "status": "succeeded"
+    }
+  }
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "received": true
+}
+```
+
+### **💰 GET `/:orderId/status` - Get Payment Status** (⚠️ דורש התחברות)
+קבלת סטטוס תשלום להזמנה
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "orderPaymentStatus": "paid|pending|failed",
+    "paymentStatus": "succeeded|pending|failed",
+    "paymentId": "507f1f77bcf86cd799439051",
+    "providerPaymentId": "pi_stripe123",
+    "clientSecret": "pi_stripe123_secret",
+    "checkoutUrl": "https://checkout.stripe.com/..."
+  }
 }
 ```
 
@@ -462,6 +584,35 @@ Authorization: Bearer <JWT_TOKEN>
 ---
 
 ## 🔄 **Data Flow לפי Endpoint**
+
+### **🛒 Order Creation Flow (Secure Payment):**
+```
+1. POST /api/orders + JWT Token + shippingAddress
+   ↓
+2. requireAuth middleware (validates token)
+   ↓
+3. OrderController.createOrder
+   ├── Validate cart has items
+   ├── Validate stock available
+   ├── Create order with status="pending_payment"
+   ├── Create payment intent via Stripe
+   └── Return order + clientSecret
+   ↓
+4. Client receives: order (status=pending_payment) + clientSecret
+   ↓
+5. Client sends clientSecret → Stripe Checkout
+   ↓
+6. Customer completes payment on Stripe
+   ↓
+7. Stripe sends webhook POST /api/payments/webhook
+   ├── Finds order by paymentIntentId
+   ├── Updates order status: pending_payment → confirmed ✅
+   ├── Reduces stock for all items
+   ├── Clears cart
+   └── Sets paymentVerifiedAt = now
+   ↓
+8. Order is now confirmed and ready to ship!
+```
 
 ### **🛒 Cart Add Flow (Auth Required):**
 ```

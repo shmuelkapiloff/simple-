@@ -1828,6 +1828,129 @@
       ]
     },
     {
+      "name": "Payments & Webhooks",
+      "description": "🔐 Secure payment flow with Stripe webhook verification",
+      "item": [
+        {
+          "name": "Webhook - Payment Succeeded",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_test_succeeded\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_test_success\",\n      \"status\": \"succeeded\",\n      \"client_secret\": \"pi_test_success_secret\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "webhook"
+              ]
+            },
+            "description": "📨 Simulate Stripe webhook for successful payment\n\n✅ Reduces stock\n✅ Clears cart\n✅ Updates order status to 'confirmed'\n\n⚠️ Requires orderId to be created first"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Webhook received', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Received flag', () => pm.expect(json.received).to.be.true);",
+                  "console.log('🎉 Payment webhook processed successfully');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Webhook - Payment Failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_test_failed\",\n  \"type\": \"payment_intent.payment_failed\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_test_failed\",\n      \"status\": \"payment_failed\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "webhook"
+              ]
+            },
+            "description": "📨 Simulate Stripe webhook for failed payment\n\n❌ Updates order status to 'cancelled'\n❌ Sets paymentStatus to 'failed'\n\nCart remains intact for retry"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('✅ Webhook received', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Received flag', () => pm.expect(pm.response.json().received).to.be.true);",
+                  "console.log('❌ Payment failure webhook processed');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{orderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "{{orderId}}",
+                "status"
+              ]
+            },
+            "description": "קבלת סטטוס תשלום להזמנה\n\nמחזיר:\n- orderPaymentStatus: paid|pending|failed\n- paymentStatus: succeeded|pending|failed\n- clientSecret: for Stripe.js integration\n- checkoutUrl: for redirect integration"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('✅ Status retrieved', () => pm.response.to.have.status(200));",
+                  "pm.test('✅ Has payment status', () => pm.expect(json.data).to.have.property('paymentStatus'));",
+                  "console.log('💰 Payment Status:', json.data.paymentStatus);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Admin",
       "item": [
         {

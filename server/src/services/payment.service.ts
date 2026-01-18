@@ -1,6 +1,8 @@
 import { Request } from "express";
 import { PaymentModel, PaymentStatus } from "../models/payment.model";
 import { OrderModel } from "../models/order.model";
+import { CartModel } from "../models/cart.model";
+import { ProductModel } from "../models/product.model";
 import { PaymentProvider } from "./payments/payment.provider";
 import { MockProvider } from "./payments/mock.provider";
 import { StripeProvider } from "./payments/stripe.provider";
@@ -129,5 +131,47 @@ export class PaymentService {
     }
 
     return { ok: true };
+  }
+
+  /**
+   * Confirm payment - called by webhook when Stripe confirms payment
+   * ✅ This is the CRITICAL method that updates order status!
+   */
+  static async confirmPayment(paymentIntentId: string) {
+    // 1. Find order by payment intent ID
+    const order = await OrderModel.findOne({ paymentIntentId });
+    if (!order) {
+      throw new Error("Order not found for this payment");
+    }
+
+    // 2. ✅ Update order status to "confirmed"
+    order.paymentStatus = "paid";
+    order.status = "confirmed";
+    order.paymentVerifiedAt = new Date();
+    await order.save();
+
+    // 3. 🔴 NOW reduce stock (only after payment confirmed!)
+    for (const item of order.items) {
+      const product = await ProductModel.findById(item.product);
+      if (product) {
+        product.stock -= item.quantity;
+        await product.save();
+      }
+    }
+
+    // 4. 🧹 NOW clear the cart
+    await CartModel.findOneAndUpdate(
+      { userId: order.user },
+      { items: [], total: 0 }
+    );
+
+    // 5. Update payment record
+    const payment = await PaymentModel.findOneAndUpdate(
+      { order: order._id },
+      { status: "succeeded" },
+      { new: true }
+    );
+
+    return { order, payment };
   }
 }
