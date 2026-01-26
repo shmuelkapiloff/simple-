@@ -4,7 +4,7 @@
   "description": "E-commerce platform with React frontend and Express backend",
   "private": true,
   "scripts": {
-    "build": "npm run build --prefix server && npm run build --prefix client",
+    "build": "npm ci --prefix server --include=dev && npm ci --prefix client --include=dev && npm run build --prefix server && npm run build --prefix client",
     "start": "npm start --prefix server",
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "test": "npm run test --prefix server",
