@@ -1,0 +1,23 @@
+{
+  "name": "simple-shop",
+  "version": "1.0.0",
+  "description": "E-commerce platform with React frontend and Express backend",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "test": "npm run test --prefix server",
+    "seed": "npm run seed --prefix server",
+    "make-admin": "npm run make-admin --prefix server"
+  },
+  "dependencies": {
+    "concurrently": "^9.0.1"
+  },
+  "engines": {
+    "node": "^18.0.0",
+    "npm": "^9.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
