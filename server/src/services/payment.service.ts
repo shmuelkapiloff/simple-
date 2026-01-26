@@ -8,9 +8,7 @@ import { FailedWebhookModel } from "../models/failed-webhook.model";
 import { PaymentProvider } from "./payments/payment.provider";
 import { StripeProvider } from "./payments/stripe.provider";
 import { PaymentMetricsService } from "./payment-metrics.service";
-git add .
-git commit -m "Streamline checkout UX and payment flow docs"
-git push origin mainimport { CartService } from "./cart.service";
+import { CartService } from "./cart.service";
 import { log } from "../utils/logger";
 
 // Register payment providers here - easy to add PayPal, Square, etc.
@@ -340,7 +338,7 @@ export class PaymentService {
         log.info("✅ Fulfillment conditions met - processing order", {
           orderId: order._id,
           condition1: `result.status === "succeeded" → ${result.status === "succeeded"}`,
-          condition2: `oldPaymentStatus !== "paid" → ${oldPaymentStatus !== "paid"}`,
+          condition2: `oldPaymentStatus !== "paid" → ${String(oldPaymentStatus) !== "paid"}`,
           condition3: `!order.fulfilled → ${!order.fulfilled}`,
         });
 

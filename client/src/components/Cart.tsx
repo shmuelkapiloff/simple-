@@ -66,7 +66,7 @@ const Cart: React.FC = () => {
     data: serverCart,
     error,
     isLoading,
-  } = useGetCartQuery(sessionId || "", {
+  } = useGetCartQuery(undefined, {
     skip: !sessionId || !isAuthenticated,
   });
 
@@ -135,7 +135,6 @@ const Cart: React.FC = () => {
     try {
       // API call - wait for server response
       await updateQuantityMutation({
-        sessionId,
         productId,
         quantity: newQuantity,
       }).unwrap();
@@ -161,7 +160,6 @@ const Cart: React.FC = () => {
     try {
       // API call - wait for server response
       await removeFromCartMutation({
-        sessionId,
         productId,
       }).unwrap();
 
@@ -185,7 +183,7 @@ const Cart: React.FC = () => {
 
     try {
       // API call - wait for server response
-      await clearCartMutation({ sessionId }).unwrap();
+      await clearCartMutation({}).unwrap();
 
       // Clear local state after server confirms
       dispatch(clearCartAction());

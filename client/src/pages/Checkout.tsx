@@ -2,21 +2,54 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { selectIsAuthenticated } from "../app/authSlice";
-      </nav>
-    </div>
-  );
-};
+import {
+  selectCartItems,
+  selectCartTotal,
+  selectSessionId,
+  setCart,
+  updateQuantityOptimistic,
+  removeItemOptimistic,
+  clearCart,
+} from "../app/cartSlice";
+import {
+  useGetAddressesQuery,
+  useCreateAddressMutation,
+  useCreateOrderMutation,
+  useClearCartMutation,
+  useUpdateCartQuantityMutation,
+  useRemoveFromCartMutation,
+  useGetPaymentStatusQuery,
+  Address,
+} from "../app/api";
+import { useToast } from "../components/ToastProvider";
 
-  const handleSuccessNavigation = async () => {
-    if (!returnedOrderId) return;
-    try {
-      await clearCartMutation({ sessionId }).unwrap();
-    } catch {}
-    dispatch(clearCart());
-    navigate(`/orders/${returnedOrderId}`);
-  };
 const paymentLabels: Record<string, string> = {
   stripe: "כרטיס אשראי (Stripe)",
+};
+
+const Stepper: React.FC<{ step: number }> = ({ step }) => {
+  const steps = ["עגלה", "כתובת", "תשלום"];
+  return (
+    <div className="flex items-center gap-3 mb-6">
+      {steps.map((label, idx) => {
+        const active = idx === step;
+        const complete = idx < step;
+        return (
+          <div key={label} className="flex items-center gap-2 text-sm">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${complete ? "bg-green-500 border-green-500 text-white" : active ? "bg-blue-600 border-blue-600 text-white" : "bg-gray-100 border-gray-300 text-gray-600"}`}
+            >
+              {idx + 1}
+            </div>
+            <span className="font-medium text-gray-800">{label}</span>
+            {idx < steps.length - 1 && (
+              <div className="w-8 h-px bg-gray-300" aria-hidden="true"></div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 };
 
 const Checkout: React.FC = () => {
@@ -54,6 +87,15 @@ const Checkout: React.FC = () => {
   const [clearCartMutation] = useClearCartMutation();
   const [updateCartQuantityMutation] = useUpdateCartQuantityMutation();
   const [removeFromCartMutation] = useRemoveFromCartMutation();
+
+  const handleSuccessNavigation = async () => {
+    if (!returnedOrderId) return;
+    try {
+      await clearCartMutation({ sessionId }).unwrap();
+    } catch {}
+    dispatch(clearCart());
+    navigate(`/orders/${returnedOrderId}`);
+  };
 
   // ✅ Poll payment status on return from Stripe ONLY
   const { data: paymentStatus, refetch: refetchPaymentStatus } =
@@ -189,15 +231,6 @@ const Checkout: React.FC = () => {
     } finally {
       setIsCartUpdating(false);
     }
-  };
-
-  const handleSuccessNavigation = async () => {
-    if (!returnedOrderId) return;
-    try {
-      await clearCartMutation({ sessionId }).unwrap();
-    } catch {}
-    dispatch(clearCart());
-    navigate(`/orders/${returnedOrderId}`);
   };
 
   const placeOrder = async () => {

@@ -211,12 +211,12 @@ export const cartSlice = createSlice({
       state.itemCount = 0;
       state.error = null;
 
-      // 🧹 נקה גם sessionId מ-localStorage כשמנקים עגלה לגמרי
+      // 🧹 נקה גם sessionId מהזיכרון והחדש טוקן אורח חדש
       if (state.sessionId) {
         localStorage.removeItem("cart-session-id");
-        state.sessionId = null;
-        console.log("🧹 Cart cleared and session ID removed from storage");
       }
+      state.sessionId = getOrCreateSessionId();
+      console.log("🧹 Cart cleared and session ID refreshed");
 
       console.log("🧹 Cart cleared");
     },
