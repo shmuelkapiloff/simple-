@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { PaymentController } from "../controllers/payment.controller";
 import { requireAuth } from "../middlewares/auth.middleware";
-import { validateOrderId } from "../middlewares/validateObjectId.middleware";
+import { webhookRateLimiter } from "../middlewares/rate-limit.middleware";
+import { validateObjectId } from "../middlewares/validateObjectId.middleware";
 
 const router = Router();
 
-// Public webhook endpoint (no auth)
-router.post("/webhook", PaymentController.webhook);
+// Public webhook endpoint (no auth, with rate limiting)
+router.post("/webhook", webhookRateLimiter, PaymentController.webhook);
 
 // All routes below require authentication
 router.use(requireAuth);
@@ -17,6 +18,6 @@ router.post("/create-intent", PaymentController.createIntent);
 router.post("/checkout", PaymentController.createIntent);
 
 // GET /api/payments/:orderId/status - Get payment status for an order
-router.get("/:orderId/status", validateOrderId, PaymentController.getStatus);
+router.get("/:orderId/status", PaymentController.getStatus);
 
 export default router;

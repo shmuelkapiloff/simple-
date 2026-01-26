@@ -250,6 +250,46 @@ interface ChangePasswordCredentials {
   confirmPassword: string;
 }
 
+interface UpdateProfileData {
+  name?: string;
+  email?: string;
+}
+
+export const updateProfile = createAsyncThunk<
+  { user: User; message: string },
+  UpdateProfileData
+>("auth/updateProfile", async (profileData, { rejectWithValue }) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return rejectWithValue("Not authenticated");
+    }
+
+    const response = await fetch(
+      "http://localhost:4001/api/auth/profile",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return rejectWithValue(data.message || "Profile update failed");
+    }
+
+    return { user: data.data.user, message: data.message };
+  } catch (error: any) {
+    return rejectWithValue(error.message || "Profile update failed");
+  }
+});
+
 export const changePassword = createAsyncThunk<
   { message: string },
   ChangePasswordCredentials
@@ -502,6 +542,25 @@ const authSlice = createSlice({
       .addCase(changePassword.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) || "Failed to change password";
+
+          // Update Profile
+          builder
+            .addCase(updateProfile.pending, (state) => {
+              state.isLoading = true;
+              state.error = null;
+            })
+            .addCase(updateProfile.fulfilled, (state, action) => {
+              state.isLoading = false;
+              state.error = null;
+              // Update user in state with new data
+              if (state.user) {
+                state.user = { ...state.user, ...action.payload.user };
+              }
+            })
+            .addCase(updateProfile.rejected, (state, action) => {
+              state.isLoading = false;
+              state.error = (action.payload as string) || "Failed to update profile";
+            });
       });
 
     // Forgot Password

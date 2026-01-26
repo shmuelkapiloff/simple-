@@ -183,6 +183,12 @@ Content-Type: application/json
 > **הערה חשובה:** כל endpoints העגלה דורשים JWT token בכותרת Authorization.  
 > אין עוד מצב אורח - חובה להיות מחובר כדי להשתמש בעגלה.
 
+> **💾 Cache Architecture:** העגלה משתמשת ב-**dual-layer caching**:  
+> - **Redis** - קריאות מהירות (~5ms), cache חם לכל פעולות GET  
+> - **MongoDB** - persistence מלא, עדכונים עם debounce (5 שניות)  
+> - **CartService** - מנהל סנכרון אוטומטי בין שתי השכבות  
+> כל פעולת ניקוי/עדכון מוחקת מ-**Redis וגם MongoDB** יחד!
+
 ### **🔍 GET `/cart`**
 ```http
 GET /api/cart
@@ -505,16 +511,31 @@ cancelled          ← בוטלה
 קבלת webhook מ-Stripe כשתשלום הצליח/נכשל. **אין צורך בטוקן!**
 
 **Event Types:**
-- `payment_intent.succeeded` - ✅ התשלום הצליח
+- `checkout.session.completed` - ⏳ סשן תשלום הושלם (מגיע ראשון, מחזיר status "pending")
+- `payment_intent.succeeded` - ✅ התשלום הצליח (מפעיל fulfillment)
 - `payment_intent.payment_failed` - ❌ התשלום נכשל
 
-**When Succeeded:**
+**🔍 Payment Lookup Strategy (Multi-Fallback):**
 ```
-1. Webhook received
-2. Order status: pending_payment → confirmed ✅
-3. Stock reduced לכל מוצר
-4. Cart cleared
-5. paymentVerifiedAt = now
+1. חיפוש לפי paymentIntentId (pi_xxx)
+2. חיפוש לפי meta.payment_intent (backup)
+3. חיפוש לפי metadata.orderId (מ-Payment Intent)
+→ אם נמצא, ממשיך ל-fulfillment
+```
+
+**When Payment Succeeded (Fulfillment Flow):**
+```
+1. Webhook received (payment_intent.succeeded)
+2. Find payment by PI ID + metadata fallback
+3. ✅ Mark order.fulfilled = true
+4. 🔒 Status downgrade prevention:
+   - אם order.fulfilled = true → לא לעדכן status
+   - אם paymentStatus = "paid" → לא לעדכן status
+   - מונע checkout.session.completed מלשנות "paid" → "pending"
+5. 📦 Stock reduced לכל מוצר (MongoDB transaction + fallback)
+6. 🛒 Cart cleared (Redis + MongoDB via CartService)
+7. ⏰ paymentVerifiedAt = now
+8. Order status: pending_payment → confirmed ✅
 ```
 
 **Request (from Stripe):**
@@ -595,23 +616,46 @@ cancelled          ← בוטלה
    ├── Validate cart has items
    ├── Validate stock available
    ├── Create order with status="pending_payment"
-   ├── Create payment intent via Stripe
-   └── Return order + clientSecret
+   ├── Create payment intent via Stripe with metadata:
+   │   • orderId: MongoDB ObjectId
+   │   • userId: User ID
+   │   • orderNumber: ORD-2026-XXX
+   └── Return order + clientSecret + checkoutUrl
    ↓
-4. Client receives: order (status=pending_payment) + clientSecret
+4. Client receives: order (status=pending_payment) + payment data
    ↓
-5. Client sends clientSecret → Stripe Checkout
+5. Client redirects to Stripe Checkout (checkoutUrl)
    ↓
 6. Customer completes payment on Stripe
    ↓
-7. Stripe sends webhook POST /api/payments/webhook
-   ├── Finds order by paymentIntentId
+7. Stripe sends webhooks (in order):
+   
+   🔔 Webhook #1: checkout.session.completed
+   ├── Returns status="pending" (doesn't trigger fulfillment)
+   └── Waits for payment_intent webhook
+   
+   🔔 Webhook #2: payment_intent.succeeded
+   ├── 🔍 Finds order (3 fallback strategies):
+   │   1. paymentIntentId
+   │   2. meta.payment_intent
+   │   3. metadata.orderId from Payment Intent
+   ├── ✅ Marks order.fulfilled = true
+   ├── 🔒 Status downgrade protection:
+   │   • Checks if order.fulfilled = true
+   │   • Checks if paymentStatus = "paid"
+   │   → Prevents later webhooks from downgrading status
+   ├── 📦 Stock reduction (MongoDB transaction with fallback):
+   │   • Tries transaction (if replica set available)
+   │   • Falls back to sequential ops (standalone MongoDB)
+   ├── 🛒 Cart cleared via CartService:
+   │   • Deletes from Redis cache
+   │   • Deletes from MongoDB
+   │   • Ensures client sees empty cart immediately
    ├── Updates order status: pending_payment → confirmed ✅
-   ├── Reduces stock for all items
-   ├── Clears cart
    └── Sets paymentVerifiedAt = now
    ↓
-8. Order is now confirmed and ready to ship!
+8. Order is now confirmed, stock reduced, cart empty!
+9. Future webhooks (if any) won't downgrade status ✅
 ```
 
 ### **🛒 Cart Add Flow (Auth Required):**
@@ -778,6 +822,11 @@ const pollPaymentStatus = () => {
       if (orderPaymentStatus === 'paid') {
         console.log('🎉 Payment confirmed by server!');
         clearInterval(interval);
+        
+        // ✅ Cart is already cleared by server (Redis + MongoDB)
+        // ✅ No need to manually clear cart on client!
+        // ✅ Next GET /api/cart will return empty cart
+        
         navigate(`/orders/${order._id}`);
       } else if (attempts >= maxAttempts) {
         console.warn('⏱️ Payment confirmation timeout - check manually');
@@ -793,6 +842,23 @@ const pollPaymentStatus = () => {
 
 // Start polling after payment
 pollPaymentStatus();
+```
+
+**🛒 Important: Cart Auto-Clear Behavior**
+```typescript
+// ❌ DON'T manually clear cart after payment:
+// await api.clearCart(); // Not needed!
+
+// ✅ Server automatically clears cart when payment succeeds:
+// 1. payment_intent.succeeded webhook arrives
+// 2. Server calls CartService.clearCart(userId)
+// 3. Deletes from Redis cache (immediate)
+// 4. Deletes from MongoDB (persistent)
+// 5. Client's next GET /api/cart returns empty
+
+// ✅ Simply refetch cart to show empty state:
+const { data: cart } = await api.getCart();
+console.log(cart.items.length); // 0
 ```
 
 ### **Step 5️⃣: Handle Errors**

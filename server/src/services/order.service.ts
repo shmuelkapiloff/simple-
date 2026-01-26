@@ -5,6 +5,7 @@ import {
 } from "../models/order.model";
 import { CartModel } from "../models/cart.model";
 import { ProductModel } from "../models/product.model";
+import { getNextSequence } from "../models/sequence.model";
 
 export class OrderService {
   /**
@@ -12,7 +13,7 @@ export class OrderService {
    */
   static async createOrder(
     userId: string,
-    orderData: Partial<CreateOrderInput>
+    orderData: Partial<CreateOrderInput>,
   ) {
     // Get user's cart
     const cart = await CartModel.findOne({ userId }).populate("items.product");
@@ -141,7 +142,7 @@ export class OrderService {
   static async updateOrderStatus(
     orderId: string,
     newStatus: string,
-    message?: string
+    message?: string,
   ) {
     const order = await OrderModel.findById(orderId);
 
@@ -203,14 +204,14 @@ export class OrderService {
     await this.updateOrderStatus(
       orderId,
       "cancelled",
-      "Order cancelled by user"
+      "Order cancelled by user",
     );
 
     return order;
   }
 
   /**
-   * Generate unique order number
+   * Generate unique order number (atomic operation)
    */
   private static async generateOrderNumber(): Promise<string> {
     const date = new Date();
@@ -218,18 +219,13 @@ export class OrderService {
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
 
-    // Count orders today
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+    // Use atomic counter to ensure no duplicates even with concurrent requests
+    const sequenceKey = `order_${year}${month}${day}`;
+    const sequenceNumber = await getNextSequence(sequenceKey);
 
-    const count = await OrderModel.countDocuments({
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
-    });
-
-    const orderNumber = `ORD-${year}${month}${day}-${String(count + 1).padStart(
-      3,
-      "0"
-    )}`;
+    const orderNumber = `ORD-${year}${month}${day}-${String(
+      sequenceNumber,
+    ).padStart(3, "0")}`;
 
     return orderNumber;
   }

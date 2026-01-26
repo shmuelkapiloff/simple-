@@ -333,15 +333,22 @@ export const api = createApi({
     // === ORDER ENDPOINTS === //
 
     // POST /api/orders - יצירת הזמנה מהעגלה
-    createOrder: builder.mutation<Order, CreateOrderRequest>({
+    createOrder: builder.mutation<
+      { order: Order; payment?: { clientSecret?: string; checkoutUrl?: string; status?: string } },
+      CreateOrderRequest
+    >({
       query: (body) => ({
         url: "orders",
         method: "POST",
         body,
       }),
-      // השרת מחזיר data: { order }
-      transformResponse: (response: ApiResponse<{ order: Order }>) =>
-        (response.data as any)?.order,
+      // השרת מחזיר data: { order, payment }
+      transformResponse: (
+        response: ApiResponse<{
+          order: Order;
+          payment?: { clientSecret?: string; checkoutUrl?: string; status?: string };
+        }>
+      ) => (response.data as any) || {},
       invalidatesTags: ["Cart", "Order"],
     }),
 

@@ -55,6 +55,7 @@ export class OrderController {
         payment: {
           clientSecret: paymentIntentResult.clientSecret,
           checkoutUrl: paymentIntentResult.checkoutUrl,
+          status: paymentIntentResult.status,
         },
       },
       message: "Order created. Complete payment to confirm.",

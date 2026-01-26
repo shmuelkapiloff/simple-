@@ -260,7 +260,12 @@ const Cart: React.FC = () => {
         <>
           {/* Cart Items */}
           <div className="space-y-4 mb-6">
-            {items.map((item, index) => (
+            {items.map((item, index) => {
+              // Skip items with null product data
+              if (!item || !item.product) {
+                return null;
+              }
+              return (
               <div
                 key={`cart-item-${item.product._id}-${index}`} // ← key יחיד!
                 className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
@@ -328,7 +333,8 @@ const Cart: React.FC = () => {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Cart Summary */}

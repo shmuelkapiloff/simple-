@@ -4,6 +4,7 @@ import { Schema, model, Document } from "mongoose";
 export interface ITrackingHistory {
   status:
     | "pending"
+    | "pending_payment"
     | "confirmed"
     | "processing"
     | "shipped"
@@ -28,6 +29,7 @@ export interface IOrder extends Document {
   totalAmount: number;
   status:
     | "pending"
+    | "pending_payment"
     | "confirmed"
     | "processing"
     | "shipped"
@@ -52,8 +54,11 @@ export interface IOrder extends Document {
   notes?: string;
   // ⬅️ חדש - Payment Verification
   paymentIntentId?: string;
+  paymentIntentStripeId?: string; // Real Stripe payment_intent ID (pi_...)
   paymentVerifiedAt?: Date;
-  paymentProvider?: "stripe" | "paypal" | "mock";
+  paymentProvider?: "stripe" | "paypal";
+  fulfilled?: boolean;
+  fulfilledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,6 +115,7 @@ const OrderSchema = new Schema<IOrder>(
       type: String,
       enum: [
         "pending",
+        "pending_payment",
         "confirmed",
         "processing",
         "shipped",
@@ -168,6 +174,7 @@ const OrderSchema = new Schema<IOrder>(
           type: String,
           enum: [
             "pending",
+            "pending_payment",
             "confirmed",
             "processing",
             "shipped",
@@ -201,6 +208,14 @@ const OrderSchema = new Schema<IOrder>(
     paymentIntentId: {
       type: String,
       index: true,
+      description: "Stripe checkout session ID (cs_test_...)",
+    },
+
+    // ⬅️ חדש - Real Stripe Payment Intent ID
+    paymentIntentStripeId: {
+      type: String,
+      index: true,
+      description: "Real Stripe payment_intent ID (pi_...), set after webhook",
     },
 
     paymentVerifiedAt: {
@@ -212,6 +227,19 @@ const OrderSchema = new Schema<IOrder>(
       type: String,
       enum: ["stripe", "paypal", "mock"],
     },
+
+    // ⬅️ חדש - Fulfillment Flag (prevents double stock reduction)
+    fulfilled: {
+      type: Boolean,
+      default: false,
+      index: true,
+      description: "Whether stock was already reduced and order fulfilled",
+    },
+
+    fulfilledAt: {
+      type: Date,
+      description: "When stock was reduced and cart cleared",
+    },
   },
   {
     timestamps: true,
@@ -222,7 +250,7 @@ const OrderSchema = new Schema<IOrder>(
         return ret;
       },
     },
-  }
+  },
 );
 
 // Indexes for better query performance
@@ -271,6 +299,12 @@ export type CreateOrderInput = {
   totalAmount: number;
   paymentMethod: string;
   shippingAddress: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country?: string;
+  };
+  billingAddress?: {
     street: string;
     city: string;
     postalCode: string;

@@ -27,7 +27,7 @@ export class StripeProvider implements PaymentProvider {
   }
 
   async createPaymentIntent(
-    params: CreateIntentParams
+    params: CreateIntentParams,
   ): Promise<CreateIntentResult> {
     // Create Stripe Checkout Session
     const session = await this.stripe.checkout.sessions.create({
@@ -46,13 +46,21 @@ export class StripeProvider implements PaymentProvider {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/orders/${params.orderId}?payment=success`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout?payment=cancelled`,
+      success_url: `${process.env.CLIENT_URL}/checkout?payment=success&orderId=${params.orderId}`,
+      cancel_url: `${process.env.CLIENT_URL}/checkout?payment=cancelled&orderId=${params.orderId}`,
       client_reference_id: params.orderId,
       metadata: {
         orderId: params.orderId,
         userId: params.userId,
         orderNumber: params.orderNumber,
+      },
+      // Ensure Payment Intent also carries the order metadata for PI webhooks
+      payment_intent_data: {
+        metadata: {
+          orderId: params.orderId,
+          userId: params.userId,
+          orderNumber: params.orderNumber,
+        },
       },
     });
 
@@ -70,16 +78,15 @@ export class StripeProvider implements PaymentProvider {
   }
 
   async getPaymentStatus(providerPaymentId: string): Promise<StatusResult> {
-    const session = await this.stripe.checkout.sessions.retrieve(
-      providerPaymentId
-    );
+    const session =
+      await this.stripe.checkout.sessions.retrieve(providerPaymentId);
 
     const status: PaymentStatus =
       session.payment_status === "paid"
         ? "succeeded"
         : session.payment_status === "unpaid"
-        ? "pending"
-        : "failed";
+          ? "pending"
+          : "failed";
 
     return {
       providerPaymentId,
@@ -103,7 +110,7 @@ export class StripeProvider implements PaymentProvider {
       event = this.stripe.webhooks.constructEvent(
         req.body,
         sig as string,
-        webhookSecret
+        webhookSecret,
       );
     } catch (err: any) {
       throw new Error(`Webhook signature verification failed: ${err.message}`);
@@ -113,11 +120,18 @@ export class StripeProvider implements PaymentProvider {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      const status: PaymentStatus =
-        session.payment_status === "paid" ? "succeeded" : "pending";
+      // ℹ️ checkout.session.completed just means checkout was submitted
+      // The actual payment won't be confirmed until payment_intent.succeeded arrives
+      // So we return "pending" here - fulfillment will happen on payment_intent.succeeded
+      const status: PaymentStatus = "pending";
 
       return {
+        eventType: event.type,
         providerPaymentId: session.id,
+        providerPaymentIntentId: session.payment_intent as string | undefined,
+        orderId:
+          (session.metadata?.orderId as string | undefined) ||
+          (session.client_reference_id as string | undefined),
         status,
         raw: session,
       };
@@ -128,7 +142,10 @@ export class StripeProvider implements PaymentProvider {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
       return {
+        eventType: event.type,
         providerPaymentId: paymentIntent.id,
+        providerPaymentIntentId: paymentIntent.id,
+        orderId: paymentIntent.metadata?.orderId as string | undefined,
         status: "succeeded",
         raw: paymentIntent,
       };
@@ -139,12 +156,29 @@ export class StripeProvider implements PaymentProvider {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
       return {
+        eventType: event.type,
         providerPaymentId: paymentIntent.id,
+        providerPaymentIntentId: paymentIntent.id,
+        orderId: paymentIntent.metadata?.orderId as string | undefined,
         status: "failed",
         raw: paymentIntent,
       };
     }
 
-    throw new Error(`Unhandled webhook event type: ${event.type}`);
+    // ⚠️ Don't fail on unhandled events - just log and skip them
+    // These are informational events we don't need to process:
+    // - charge.succeeded, charge.failed, charge.updated
+    // - payment_intent.created, payment_intent.amount_capturable_updated
+    // etc.
+    // We only care about: checkout.session.completed, payment_intent.succeeded/failed
+    console.log(`⏭️ Skipping unhandled webhook event type: ${event.type}`);
+
+    // Return a neutral response so webhook isn't marked as failed
+    return {
+      eventType: event.type,
+      providerPaymentId: "skipped",
+      status: "pending" as PaymentStatus,
+      raw: event,
+    };
   }
 }

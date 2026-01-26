@@ -57,7 +57,9 @@ export default function ProductList() {
   // ✅ חישוב מיפוי מוצרים בעגלה
   const cartMap = useMemo(() => {
     return cartItems.reduce((map, item) => {
-      map[item.product._id] = item.quantity;
+      if (item && item.product && item.product._id) {
+        map[item.product._id] = item.quantity;
+      }
       return map;
     }, {} as Record<string, number>);
   }, [cartItems]);

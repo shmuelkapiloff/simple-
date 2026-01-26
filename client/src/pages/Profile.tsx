@@ -1,15 +1,19 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import {
   selectUser,
   selectAuthLoading,
   selectAuthError,
+  updateProfile,
 } from "../app/authSlice";
 import AddressManager from "../components/AddressManager";
 import ChangePasswordModal from "../components/ChangePasswordModal";
+import { useToast } from "../components/ToastProvider";
 import type { RootState } from "../app/store";
 
 const Profile: React.FC = () => {
+    const dispatch = useDispatch();
+    const toast = useToast();
   const user = useSelector((state: RootState) => selectUser(state));
   const isLoading = useSelector((state: RootState) => selectAuthLoading(state));
   const error = useSelector((state: RootState) => selectAuthError(state));
@@ -19,6 +23,8 @@ const Profile: React.FC = () => {
     "profile"
   );
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+    const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -37,19 +43,80 @@ const Profile: React.FC = () => {
     );
   }
 
-  const handleEditToggle = () => {
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      errors.name = "שם מלא הוא שדה חובה";
+    } else if (formData.name.trim().length < 2) {
+      errors.name = "שם חייב להכיל לפחות 2 תווים";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "אימייל הוא שדה חובה";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "כתובת אימייל לא תקינה";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleEditToggle = async () => {
     if (isEditing) {
-      // TODO: In the future, add API call to update the profile
-      // For now, just toggle editing mode
+      // Save mode - validate and submit
+      if (!validateForm()) {
+        toast.addToast("אנא תקן את השגיאות בטופס", "error");
+        return;
+      }
+
+      setIsSaving(true);
+      
+      try {
+        const result = await dispatch(
+          updateProfile({
+            name: formData.name,
+            email: formData.email,
+          }) as any
+        );
+
+        if (result.type === "auth/updateProfile/fulfilled") {
+          toast.addToast("✅ הפרופיל עודכן בהצלחה!", "success");
+          setIsEditing(false);
+          setValidationErrors({});
+        } else {
+          const errorMessage = result.payload || "עדכון נכשל";
+          toast.addToast(`❌ ${errorMessage}`, "error");
+        }
+      } catch (error) {
+        toast.addToast("❌ שגיאה בעדכון הפרופיל", "error");
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      // Enter edit mode
+      setFormData({
+        name: user?.name || "",
+        email: user?.email || "",
+      });
+      setValidationErrors({});
     }
     setIsEditing(!isEditing);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors({
+        ...validationErrors,
+        [name]: "",
+      });
+    }
   };
 
   const handlePasswordChange = () => {
@@ -90,14 +157,26 @@ const Profile: React.FC = () => {
             </div>
             <button
               onClick={handleEditToggle}
-              disabled={isLoading}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              disabled={isSaving || isLoading}
+              className={`px-6 py-3 rounded-md font-medium transition-all flex items-center gap-2 ${
                 isEditing
                   ? "bg-green-600 hover:bg-green-700 text-white"
                   : "bg-blue-600 hover:bg-blue-700 text-white"
-              } disabled:opacity-50`}
+              } disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg`}
             >
-              {isEditing ? "💾 שמור שינויים" : "✏️ ערוך פרטים"}
+              {isSaving ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  שומר...
+                </>
+              ) : isEditing ? (
+                "💾 שמור שינויים"
+              ) : (
+                "✏️ ערוך פרטים"
+              )}
             </button>
           </div>
         </header>
@@ -160,14 +239,25 @@ const Profile: React.FC = () => {
                       שם מלא
                     </label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="הזן את שמך המלא"
-                      />
+                      <>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                            validationErrors.name
+                              ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                              : "border-gray-300 focus:ring-blue-500 focus:border-transparent"
+                          }`}
+                          placeholder="הזן את שמך המלא"
+                        />
+                        {validationErrors.name && (
+                          <p className="mt-1 text-sm text-red-600">
+                            ⚠️ {validationErrors.name}
+                          </p>
+                        )}
+                      </>
                     ) : (
                       <p className="text-gray-900 font-medium py-2">
                         {user.name}
@@ -181,14 +271,25 @@ const Profile: React.FC = () => {
                       כתובת אימייל
                     </label>
                     {isEditing ? (
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="הזן את כתובת האימייל שלך"
-                      />
+                      <>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                            validationErrors.email
+                              ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                              : "border-gray-300 focus:ring-blue-500 focus:border-transparent"
+                          }`}
+                          placeholder="הזן את כתובת האימייל שלך"
+                        />
+                        {validationErrors.email && (
+                          <p className="mt-1 text-sm text-red-600">
+                            ⚠️ {validationErrors.email}
+                          </p>
+                        )}
+                      </>
                     ) : (
                       <p className="text-gray-900 font-medium py-2">
                         {user.email}

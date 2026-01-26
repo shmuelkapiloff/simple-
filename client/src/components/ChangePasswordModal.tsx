@@ -32,6 +32,38 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState<{
+    score: number;
+    label: string;
+    color: string;
+  }>({ score: 0, label: "", color: "" });
+
+  const calculatePasswordStrength = (password: string) => {
+    if (!password) {
+      return { score: 0, label: "", color: "" };
+    }
+
+    let score = 0;
+    
+    // Length check
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+    
+    // Character variety checks
+    if (/[a-z]/.test(password)) score += 1; // lowercase
+    if (/[A-Z]/.test(password)) score += 1; // uppercase
+    if (/[0-9]/.test(password)) score += 1; // numbers
+    if (/[^A-Za-z0-9]/.test(password)) score += 1; // special chars
+
+    // Define strength levels
+    if (score <= 2) {
+      return { score, label: "חלשה", color: "bg-red-500" };
+    } else if (score <= 4) {
+      return { score, label: "בינונית", color: "bg-yellow-500" };
+    } else {
+      return { score, label: "חזקה", color: "bg-green-500" };
+    }
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -99,6 +131,10 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       ...formData,
       [name]: value,
     });
+    // Calculate password strength for new password field
+    if (name === "newPassword") {
+      setPasswordStrength(calculatePasswordStrength(value));
+    }
     // Clear error for this field when user starts typing
     if (localErrors[name]) {
       setLocalErrors({
@@ -278,6 +314,44 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             {localErrors.newPassword && (
               <p className="text-red-600 text-sm mt-1">
                 {localErrors.newPassword}
+            
+                          {/* Password Strength Indicator */}
+                          {formData.newPassword && (
+                            <div className="mt-2">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm text-gray-600">חוזק סיסמה:</span>
+                                <span className={`text-sm font-semibold ${
+                                  passwordStrength.score <= 2 
+                                    ? "text-red-600" 
+                                    : passwordStrength.score <= 4 
+                                      ? "text-yellow-600" 
+                                      : "text-green-600"
+                                }`}>
+                                  {passwordStrength.label}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                                  style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
+                                ></div>
+                              </div>
+                              <div className="mt-2 text-xs text-gray-500 space-y-1">
+                                <p className={formData.newPassword.length >= 8 ? "text-green-600" : ""}>
+                                  {formData.newPassword.length >= 8 ? "✓" : "○"} לפחות 8 תווים
+                                </p>
+                                <p className={/[A-Z]/.test(formData.newPassword) && /[a-z]/.test(formData.newPassword) ? "text-green-600" : ""}>
+                                  {/[A-Z]/.test(formData.newPassword) && /[a-z]/.test(formData.newPassword) ? "✓" : "○"} אותיות גדולות וקטנות
+                                </p>
+                                <p className={/[0-9]/.test(formData.newPassword) ? "text-green-600" : ""}>
+                                  {/[0-9]/.test(formData.newPassword) ? "✓" : "○"} לפחות מספר אחד
+                                </p>
+                                <p className={/[^A-Za-z0-9]/.test(formData.newPassword) ? "text-green-600" : ""}>
+                                  {/[^A-Za-z0-9]/.test(formData.newPassword) ? "✓" : "○"} תו מיוחד (@, #, $, וכו')
+                                </p>
+                              </div>
+                            </div>
+                          )}
               </p>
             )}
           </div>

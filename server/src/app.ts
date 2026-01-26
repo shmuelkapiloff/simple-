@@ -17,6 +17,7 @@ import orderRoutes from "./routes/order.routes";
 import addressRoutes from "./routes/addresses.routes";
 import adminRoutes from "./routes/admin.routes";
 import paymentRoutes from "./routes/payment.routes";
+import metricsRoutes from "./routes/metrics.routes";
 
 const app: Application = express();
 
@@ -25,6 +26,10 @@ const app: Application = express();
  */
 app.use(helmet()); // Security headers
 app.use(corsConfig); // CORS configuration for all clients
+
+// ✅ Webhook route needs RAW body for Stripe signature verification
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
+
 app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true, limit: "10mb" })); // Parse URL-encoded bodies
 app.use(requestIdMiddleware); // Assign X-Request-ID
@@ -52,6 +57,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/metrics", metricsRoutes);
 
 /**
  * Root endpoint - API documentation
@@ -95,3 +101,6 @@ app.use((req: Request, res: Response) => {
 app.use(errorHandler);
 
 export default app;
+
+// Expose factory for tests to create a configured app instance
+export const createApp = () => app;

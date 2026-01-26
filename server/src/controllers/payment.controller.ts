@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { PaymentService } from "../services/payment.service";
+import { FailedWebhookModel } from "../models/failed-webhook.model";
 import { asyncHandler } from "../utils/asyncHandler";
-import { OrderModel } from "../models/order.model";
+import { log } from "../utils/logger";
 
 export class PaymentController {
   /**
@@ -68,41 +69,68 @@ export class PaymentController {
    * ✅ This is the CRITICAL endpoint that confirms payments!
    */
   static webhook = asyncHandler(async (req: Request, res: Response) => {
-    const event = req.body;
-
-    // ✅ Basic validation (in production, verify Stripe signature)
-    if (!event.id) {
-      return res.status(400).json({ received: false, error: "Invalid event" });
-    }
+    const startTime = Date.now();
+    const rawBody = req.body;
 
     try {
-      // 🎯 Handle payment success
-      if (event.type === "payment_intent.succeeded") {
-        const paymentIntentId = event.data.object.id;
-        const result = await PaymentService.confirmPayment(paymentIntentId);
-        console.log("✅ Payment confirmed via webhook", {
-          orderId: result.order._id,
-          amount: result.order.totalAmount,
+      // ✅ Use the payment service to handle webhook with signature verification
+      const result = await PaymentService.handleWebhook(req);
+
+      const duration = Date.now() - startTime;
+      log.info("✅ Webhook processed successfully", {
+        service: "PaymentController",
+        duration,
+        eventType: result.eventType,
+      });
+
+      res.status(200).json({ received: true });
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      log.error("❌ Webhook processing failed", {
+        service: "PaymentController",
+        duration,
+        error: error.message,
+      });
+
+      // Return 200 for duplicate events (already processed)
+      if (error.message?.includes("already processed")) {
+        return res
+          .status(200)
+          .json({ received: true, message: "Duplicate event ignored" });
+      }
+
+      // 🔄 Save failed webhook for retry
+      try {
+        const provider = process.env.PAYMENT_PROVIDER || "stripe";
+        const eventId = rawBody?.id || `unknown-${Date.now()}`;
+        const eventType = rawBody?.type || "unknown";
+
+        // Calculate exponential backoff for retry
+        const nextRetryAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+        await FailedWebhookModel.create({
+          eventId,
+          eventType,
+          provider,
+          payload: rawBody,
+          error: error.message,
+          retryCount: 0,
+          maxRetries: 5,
+          nextRetryAt,
+          status: "pending",
+        });
+
+        log.info("📝 Failed webhook saved for retry", {
+          eventId,
+          nextRetryAt,
+        });
+      } catch (saveError: any) {
+        log.error("Failed to save webhook for retry", {
+          error: saveError.message,
         });
       }
 
-      // 🎯 Handle payment failure
-      if (event.type === "payment_intent.payment_failed") {
-        const paymentIntentId = event.data.object.id;
-        const order = await OrderModel.findOne({ paymentIntentId });
-        if (order) {
-          order.paymentStatus = "failed";
-          order.status = "cancelled";
-          await order.save();
-          console.log("❌ Payment failed via webhook", { orderId: order._id });
-        }
-      }
-
-      // ✅ Tell Stripe we received the event
-      res.status(200).json({ received: true });
-    } catch (error) {
-      console.error("Webhook error:", error);
-      res.status(400).json({ received: false, error: String(error) });
+      res.status(400).json({ received: false, error: error.message });
     }
   });
 }

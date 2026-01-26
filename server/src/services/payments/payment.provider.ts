@@ -19,8 +19,11 @@ export type CreateIntentResult = {
 };
 
 export type StatusResult = {
+  eventType?: string; // The webhook event type (e.g., "checkout.session.completed")
   providerPaymentId: string;
   status: PaymentStatus;
+  providerPaymentIntentId?: string; // For Stripe: payment_intent.id
+  orderId?: string; // For Stripe: metadata.orderId or client_reference_id
   raw?: any;
 };
 

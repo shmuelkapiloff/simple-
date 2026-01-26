@@ -17,6 +17,7 @@ export interface IPayment extends Document {
   status: PaymentStatus;
   provider: string;
   providerPaymentId?: string;
+  paymentIntentId?: string; // Real Stripe payment_intent ID (pi_...)
   clientSecret?: string;
   checkoutUrl?: string;
   meta?: Record<string, any>;
@@ -71,6 +72,12 @@ const PaymentSchema = new Schema<IPayment>(
       type: String,
       index: true,
     },
+    paymentIntentId: {
+      type: String,
+      index: true,
+      description:
+        "Real Stripe payment_intent ID (pi_...), extracted from meta.payment_intent",
+    },
     clientSecret: String,
     checkoutUrl: String,
     meta: {
@@ -86,7 +93,7 @@ const PaymentSchema = new Schema<IPayment>(
         return ret;
       },
     },
-  }
+  },
 );
 
 PaymentSchema.index({ order: 1, provider: 1 });

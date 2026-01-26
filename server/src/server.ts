@@ -2,12 +2,17 @@ import app from "./app";
 import { env } from "./config/env";
 import { connectMongo } from "./config/db";
 import { connectRedis } from "./config/redisClient";
+import { WebhookRetryService } from "./services/webhook-retry.service";
 import { logger } from "./utils/logger";
 
 async function main() {
   try {
     await connectMongo();
     logger.info("MongoDB connected successfully");
+    
+    // 🔄 Start webhook retry service
+    WebhookRetryService.start(60000); // Check every 1 minute
+    logger.info("Webhook retry service started");
   } catch (err) {
     logger.warn(
       { err },
@@ -44,6 +49,10 @@ async function main() {
   // Graceful shutdown
   const shutdown = (signal: string) => {
     logger.info({ signal }, "Shutting down");
+    
+    // Stop webhook retry service
+    WebhookRetryService.stop();
+    
     server.close(() => {
       logger.info("HTTP server closed");
       process.exit(0);

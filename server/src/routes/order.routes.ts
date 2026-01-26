@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { OrderController } from "../controllers/order.controller";
 import { requireAuth } from "../middlewares/auth.middleware";
+import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
 import { asyncHandler } from "../utils/asyncHandler";
 import { validateOrderId } from "../middlewares/validateObjectId.middleware";
 
@@ -20,8 +21,12 @@ router.get(
  */
 router.use(requireAuth);
 
-// POST /api/orders - Create new order from cart
-router.post("/", asyncHandler(OrderController.createOrder));
+// POST /api/orders - Create new order from cart (with idempotency protection)
+router.post(
+  "/",
+  idempotencyMiddleware("order"),
+  asyncHandler(OrderController.createOrder)
+);
 
 // GET /api/orders - Get user's orders (with optional status filter)
 router.get("/", asyncHandler(OrderController.getUserOrders));
