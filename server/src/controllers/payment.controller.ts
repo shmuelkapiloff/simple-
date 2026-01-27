@@ -72,6 +72,15 @@ export class PaymentController {
     const startTime = Date.now();
     const rawBody = req.body;
 
+    // 🔔 Log webhook arrival immediately
+    log.info("🔔 Webhook received from Stripe", {
+      service: "PaymentController",
+      eventType: rawBody?.type || "unknown",
+      eventId: rawBody?.id || "unknown",
+      hasSignature: !!req.headers["stripe-signature"],
+      timestamp: new Date().toISOString(),
+    });
+
     try {
       // ✅ Use the payment service to handle webhook with signature verification
       const result = await PaymentService.handleWebhook(req);

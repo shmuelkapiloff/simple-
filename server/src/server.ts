@@ -32,6 +32,26 @@ async function main() {
 
   const server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, "Server listening");
+    
+    // 🔔 Log webhook configuration status
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const clientUrl = process.env.CLIENT_URL;
+    
+    if (!webhookSecret) {
+      logger.warn("⚠️ STRIPE_WEBHOOK_SECRET not configured - webhook signature verification disabled!");
+      logger.warn("   Set STRIPE_WEBHOOK_SECRET in your environment variables");
+    } else {
+      logger.info("✅ Stripe webhook secret configured");
+    }
+    
+    if (!clientUrl) {
+      logger.warn("⚠️ CLIENT_URL not configured - using fallback: http://localhost:3000");
+      logger.warn("   Set CLIENT_URL in your environment variables for production");
+    } else {
+      logger.info({ clientUrl }, "✅ Client URL configured");
+    }
+    
+    logger.info("🎯 Webhook endpoint ready at: /api/payments/webhook");
   });
 
   // Handle listen errors (e.g., EADDRINUSE)
