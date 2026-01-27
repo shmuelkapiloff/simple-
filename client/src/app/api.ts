@@ -26,7 +26,13 @@ export interface ProductFilters {
   maxPrice?: number;
   search?: string;
   featured?: boolean;
-  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'rating_desc' | 'newest';
+  sort?:
+    | "price_asc"
+    | "price_desc"
+    | "name_asc"
+    | "name_desc"
+    | "rating_desc"
+    | "newest";
 }
 
 // API Response type מהשרת
@@ -167,7 +173,7 @@ interface SetDefaultAddressRequest {
   addressId: string;
 }
 
-// Base URL נלקח מ-env כדי לאפשר מעבר בין סביבות
+// Base URL נלקח מ-env כדי לאפשר מעבר בין סביבות (כולל /api/)
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api/";
 
@@ -191,7 +197,7 @@ const baseQueryWithLogging = fetchBaseQuery({
 const baseQueryWithInterceptor = async (
   args: any,
   api: any,
-  extraOptions: any
+  extraOptions: any,
 ) => {
   const endpoint =
     typeof args === "string" ? args : `${args.method || "GET"} ${args.url}`;
@@ -210,7 +216,7 @@ const baseQueryWithInterceptor = async (
           requireAuth({
             view: "login",
             message: "התחבר כדי להמשיך",
-          })
+          }),
         );
       }
     } else {
@@ -243,15 +249,18 @@ export const api = createApi({
       query: (filters) => {
         const params = new URLSearchParams();
         if (filters) {
-          if (filters.category) params.append('category', filters.category);
-          if (filters.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
-          if (filters.maxPrice !== undefined) params.append('maxPrice', filters.maxPrice.toString());
-          if (filters.search) params.append('search', filters.search);
-          if (filters.featured !== undefined) params.append('featured', filters.featured.toString());
-          if (filters.sort) params.append('sort', filters.sort);
+          if (filters.category) params.append("category", filters.category);
+          if (filters.minPrice !== undefined)
+            params.append("minPrice", filters.minPrice.toString());
+          if (filters.maxPrice !== undefined)
+            params.append("maxPrice", filters.maxPrice.toString());
+          if (filters.search) params.append("search", filters.search);
+          if (filters.featured !== undefined)
+            params.append("featured", filters.featured.toString());
+          if (filters.sort) params.append("sort", filters.sort);
         }
         const queryString = params.toString();
-        return queryString ? `products?${queryString}` : 'products';
+        return queryString ? `products?${queryString}` : "products";
       },
       // RTK Query מצפה למערך, אבל השרת מחזיר { data: [...] }
       transformResponse: (response: ApiResponse<Product[]>) =>
@@ -338,7 +347,14 @@ export const api = createApi({
 
     // POST /api/orders - יצירת הזמנה מהעגלה
     createOrder: builder.mutation<
-      { order: Order; payment?: { clientSecret?: string; checkoutUrl?: string; status?: string } },
+      {
+        order: Order;
+        payment?: {
+          clientSecret?: string;
+          checkoutUrl?: string;
+          status?: string;
+        };
+      },
       CreateOrderRequest
     >({
       query: (body) => ({
@@ -350,8 +366,12 @@ export const api = createApi({
       transformResponse: (
         response: ApiResponse<{
           order: Order;
-          payment?: { clientSecret?: string; checkoutUrl?: string; status?: string };
-        }>
+          payment?: {
+            clientSecret?: string;
+            checkoutUrl?: string;
+            status?: string;
+          };
+        }>,
       ) => (response.data as any) || {},
       invalidatesTags: ["Cart", "Order"],
     }),
@@ -415,7 +435,7 @@ export const api = createApi({
           status: string;
           clientSecret?: string;
           checkoutUrl?: string;
-        }>
+        }>,
       ) => response.data!,
       invalidatesTags: ["Order"],
     }),

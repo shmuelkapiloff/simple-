@@ -19,7 +19,7 @@ export class CartService {
   private static async safeCacheSet(
     key: string,
     ttlSeconds: number,
-    payload: any
+    payload: any,
   ): Promise<void> {
     if (!this.isRedisReady()) {
       logger.warn({ key }, "Redis not ready, skipping cache set");
@@ -81,12 +81,12 @@ export class CartService {
 
               if (!isFullyPopulated) {
                 logger.warn(
-                  `⚠️ Redis cache not fully populated, refreshing from MongoDB: ${cartId}`
+                  `⚠️ Redis cache not fully populated, refreshing from MongoDB: ${cartId}`,
                 );
 
                 // ⚡ עדכן מMongoDB עם populate מלא
                 const dbCart = await CartModel.findOne({ userId }).populate(
-                  "items.product"
+                  "items.product",
                 );
 
                 if (dbCart) {
@@ -94,10 +94,10 @@ export class CartService {
                   await this.safeCacheSet(
                     `cart:${cartId}`,
                     this.CACHE_TTL,
-                    cartObj
+                    cartObj,
                   );
                   logger.info(
-                    `✅ Redis refreshed with populated data: ${cartId}`
+                    `✅ Redis refreshed with populated data: ${cartId}`,
                   );
                   t.success(cartObj);
                   return cartObj;
@@ -121,7 +121,7 @@ export class CartService {
 
       // 💾 Fallback למונגו (אם Redis ריק או נפל)
       const dbCart = await CartModel.findOne({ userId }).populate(
-        "items.product"
+        "items.product",
       );
 
       if (dbCart) {
@@ -144,7 +144,7 @@ export class CartService {
   // 🧠 פונקציה חכמה לשמירה מתוזמנת במונגו
   private static async scheduleMongoSave(
     cartId: string,
-    cart: ICart | any // יכול להיות Mongoose doc או plain object מRedis
+    cart: ICart | any, // יכול להיות Mongoose doc או plain object מRedis
   ): Promise<void> {
     // בטל timer קודם אם יש
     const existingTimer = this.pendingSaves.get(cartId);
@@ -192,7 +192,7 @@ export class CartService {
   // ⚡ עדכון מהיר בRedis + תזמון לmongo
   private static async updateCartInCache(
     cartId: string,
-    cart: ICart
+    cart: ICart,
   ): Promise<void> {
     try {
       const userId = cart.userId;
@@ -201,7 +201,7 @@ export class CartService {
       let populatedCart = cart;
       if (cart.items.length > 0 && typeof cart.items[0].product === "string") {
         const freshCart = await CartModel.findOne({ userId }).populate(
-          "items.product"
+          "items.product",
         );
 
         if (freshCart) {
@@ -214,14 +214,10 @@ export class CartService {
       const cartForRedis = (populatedCart as any).toObject
         ? (populatedCart as any).toObject()
         : populatedCart;
-      await this.safeCacheSet(
-        `cart:${cartId}`,
-        this.CACHE_TTL,
-        cartForRedis
-      );
+      await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartForRedis);
       log.debug(
         "CartService",
-        `Cart updated in Redis with populated products: ${cartId}`
+        `Cart updated in Redis with populated products: ${cartId}`,
       );
 
       // 2. ⏰ תזמון שמירה למונגו (לא חוסם!)
@@ -236,7 +232,7 @@ export class CartService {
   static async addToCart(
     productId: string,
     quantity: number,
-    userId: string
+    userId: string,
   ): Promise<ICart> {
     const t = track("CartService", "addToCart");
 
@@ -286,7 +282,7 @@ export class CartService {
         // בדוק מלאי כולל
         if (product.stock < newQuantity) {
           throw new Error(
-            `Insufficient stock. Available: ${product.stock}, Requested: ${newQuantity}`
+            `Insufficient stock. Available: ${product.stock}, Requested: ${newQuantity}`,
           );
         }
 
@@ -325,7 +321,7 @@ export class CartService {
                 updatedAt: cart.updatedAt,
               },
             },
-            { new: true, upsert: true }
+            { new: true, upsert: true },
           );
 
       if (isNewCart) {
@@ -337,24 +333,20 @@ export class CartService {
 
       // ✅ Populate המוצרים לפני עדכון cache והחזרה
       const populatedCart = await CartModel.findOne({ userId }).populate(
-        "items.product"
+        "items.product",
       );
 
       if (!populatedCart) {
         // 🚨 אם עדיין לא מצאנו, populate ידנית
         logger.warn(
-          `⚠️ Cart not found after save, using direct populate: ${cartId}`
+          `⚠️ Cart not found after save, using direct populate: ${cartId}`,
         );
 
         // אם cart הוא mongoose document, populate ישירות
         if (cart instanceof CartModel) {
           await cart.populate("items.product");
           const cartObj = (cart as any).toObject();
-          await this.safeCacheSet(
-            `cart:${cartId}`,
-            this.CACHE_TTL,
-            cartObj
-          );
+          await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartObj);
           t.success(cartObj);
           return cartObj;
         }
@@ -367,13 +359,9 @@ export class CartService {
 
       // ✅ עדכן Redis ותזמון MongoDB עם ה-populated version
       const cartObj = populatedCart.toObject();
-      await this.safeCacheSet(
-        `cart:${cartId}`,
-        this.CACHE_TTL,
-        cartObj
-      );
+      await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartObj);
       logger.info(
-        `✅ Cart updated in Redis with ${cartObj.items.length} items: ${cartId}`
+        `✅ Cart updated in Redis with ${cartObj.items.length} items: ${cartId}`,
       );
 
       // תזמון שמירה למונגו
@@ -390,7 +378,7 @@ export class CartService {
   // Remove item from cart - ⚡ גרסה מהירה
   static async removeFromCart(
     productId: string,
-    userId: string
+    userId: string,
   ): Promise<ICart | null> {
     const t = track("CartService", "removeFromCart");
 
@@ -449,22 +437,18 @@ export class CartService {
             updatedAt: cart.updatedAt,
           },
         },
-        { new: true, upsert: true }
+        { new: true, upsert: true },
       );
       logger.info(`💾 Updated removal in MongoDB: ${cartId}`);
 
       // ✅ Populate and cache עם דרך נכונה
       const populatedCart = await CartModel.findOne({ userId }).populate(
-        "items.product"
+        "items.product",
       );
 
       if (populatedCart) {
         const cartObj = populatedCart.toObject();
-        await this.safeCacheSet(
-          `cart:${cartId}`,
-          this.CACHE_TTL,
-          cartObj
-        );
+        await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartObj);
         logger.info(`✅ Item removed from cart: ${productId}`);
 
         // תזמון שמירה למונגו
@@ -477,11 +461,7 @@ export class CartService {
       if (cart instanceof CartModel) {
         await cart.populate("items.product");
         const cartObj = (cart as any).toObject();
-        await this.safeCacheSet(
-          `cart:${cartId}`,
-          this.CACHE_TTL,
-          cartObj
-        );
+        await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartObj);
         t.success(cartObj);
         return cartObj;
       }
@@ -498,7 +478,7 @@ export class CartService {
   static async updateQuantity(
     productId: string,
     quantity: number,
-    userId: string
+    userId: string,
   ): Promise<ICart | null> {
     const t = track("CartService", "updateQuantity");
     logger.info(`6📝 Updating quantity: ${productId} to ${quantity}`);
@@ -512,7 +492,7 @@ export class CartService {
 
     try {
       logger.info(
-        `📝 Updating quantity: ${productId} to ${quantity} for ${cartId}`
+        `📝 Updating quantity: ${productId} to ${quantity} for ${cartId}`,
       );
 
       // ⚡ קבל עגלה נוכחית (מהיר מRedis)
@@ -546,7 +526,7 @@ export class CartService {
 
       if (product.stock < quantity) {
         throw new Error(
-          `Insufficient stock. Available: ${product.stock}, Requested: ${quantity}`
+          `Insufficient stock. Available: ${product.stock}, Requested: ${quantity}`,
         );
       }
 
@@ -572,22 +552,18 @@ export class CartService {
             updatedAt: cart.updatedAt,
           },
         },
-        { new: true, upsert: true }
+        { new: true, upsert: true },
       );
       logger.info(`💾 Updated quantity in MongoDB: ${cartId}`);
 
       // ✅ Populate and cache בצורה נכונה
       const populatedCart = await CartModel.findOne({ userId }).populate(
-        "items.product"
+        "items.product",
       );
 
       if (populatedCart) {
         const cartObj = populatedCart.toObject();
-        await this.safeCacheSet(
-          `cart:${cartId}`,
-          this.CACHE_TTL,
-          cartObj
-        );
+        await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartObj);
         logger.info(`✅ Quantity updated: ${product?.name} x${quantity}`);
 
         // תזמון שמירה למונגו
@@ -600,11 +576,7 @@ export class CartService {
       if (cart instanceof CartModel) {
         await cart.populate("items.product");
         const cartObj = (cart as any).toObject();
-        await this.safeCacheSet(
-          `cart:${cartId}`,
-          this.CACHE_TTL,
-          cartObj
-        );
+        await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartObj);
         t.success(cartObj);
         return cartObj;
       }
@@ -615,7 +587,7 @@ export class CartService {
       t.error(error);
       logger.error(
         { error, cartId },
-        `❌ Error updating quantity for ${cartId}`
+        `❌ Error updating quantity for ${cartId}`,
       );
       throw error;
     }
@@ -649,7 +621,7 @@ export class CartService {
         .catch((error: any) => {
           logger.error(
             { error, cartId },
-            `❌ MongoDB delete failed for ${cartId}`
+            `❌ MongoDB delete failed for ${cartId}`,
           );
         });
 

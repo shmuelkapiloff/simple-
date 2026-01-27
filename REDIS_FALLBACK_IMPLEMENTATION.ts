@@ -1,6 +1,6 @@
 /**
  * Redis Fallback Implementation Summary
- * 
+ *
  * This file demonstrates the changes made to handle Redis failures gracefully
  * in cart operations without interrupting the main application flow.
  */
@@ -74,8 +74,10 @@ private static async safeCacheSet(key: string, ttl: number, payload: any) {
 
 const UPDATED_OPERATIONS = {
   getCart: {
-    change: "Wrapped Redis read in try/catch, treats any error as 'skip cache', uses safeCacheSet for refresh",
-    impact: "Always returns cart data via MongoDB fallback if Redis unavailable",
+    change:
+      "Wrapped Redis read in try/catch, treats any error as 'skip cache', uses safeCacheSet for refresh",
+    impact:
+      "Always returns cart data via MongoDB fallback if Redis unavailable",
   },
   addToCart: {
     change: "Replaced all await redisClient.setex with await this.safeCacheSet",
@@ -94,7 +96,8 @@ const UPDATED_OPERATIONS = {
     impact: "Cart cleared from MongoDB 100%, Redis delete best-effort only",
   },
   getHealth: {
-    change: "Added warning: degraded flag for monitoring, HTTP 200 always returned",
+    change:
+      "Added warning: degraded flag for monitoring, HTTP 200 always returned",
     impact: "Clients can detect degraded status without losing availability",
   },
 };
@@ -227,4 +230,10 @@ ROLLBACK:
 - No data loss or corruption risk
 `;
 
-export { UPDATED_OPERATIONS, BEHAVIOR_MATRIX, SAMPLE_LOGS, VERIFICATION_CHECKLIST, DEPLOYMENT_NOTES };
+export {
+  UPDATED_OPERATIONS,
+  BEHAVIOR_MATRIX,
+  SAMPLE_LOGS,
+  VERIFICATION_CHECKLIST,
+  DEPLOYMENT_NOTES,
+};

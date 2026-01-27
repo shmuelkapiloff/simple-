@@ -1,5 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
+// API Base URL from env
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api/";
+
 // Types
 export interface User {
   id: string;
@@ -58,7 +62,7 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await fetch("http://localhost:4001/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +97,7 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
     } catch (error: any) {
       if (error.name === "TypeError" && error.message.includes("fetch")) {
         return rejectWithValue(
-          "לא ניתן להתחבר לשרת. אנא וודא שהשרת רץ על http://localhost:4001"
+          "לא ניתן להתחבר לשרת. בדוק שהשרת פעיל."
         );
       }
       return rejectWithValue(error.message || "שגיאת רשת");
@@ -105,7 +109,7 @@ export const register = createAsyncThunk<AuthResponse, RegisterData>(
   "auth/register",
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await fetch("http://localhost:4001/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,7 +144,7 @@ export const register = createAsyncThunk<AuthResponse, RegisterData>(
     } catch (error: any) {
       if (error.name === "TypeError" && error.message.includes("fetch")) {
         return rejectWithValue(
-          "לא ניתן להתחבר לשרת. אנא וודא שהשרת רץ על http://localhost:4001"
+          "לא ניתן להתחבר לשרת. בדוק שהשרת פעיל."
         );
       }
       return rejectWithValue(error.message || "שגיאת רשת");
@@ -172,7 +176,7 @@ export const verifyToken = createAsyncThunk<User>(
       }
 
       console.log("🚀 verifyToken: Making API call...");
-      const response = await fetch("http://localhost:4001/api/auth/verify", {
+      const response = await fetch(`${API_BASE_URL}auth/verify`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -226,7 +230,7 @@ export const logout = createAsyncThunk<void>(
 
       if (token) {
         // Optional: Call logout endpoint to invalidate token on server
-        await fetch("http://localhost:4001/api/auth/logout", {
+        await fetch(`${API_BASE_URL}auth/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -267,7 +271,7 @@ export const updateProfile = createAsyncThunk<
     }
 
     const response = await fetch(
-      "http://localhost:4001/api/auth/profile",
+      `${API_BASE_URL}auth/profile`,
       {
         method: "PUT",
         headers: {
@@ -302,7 +306,7 @@ export const changePassword = createAsyncThunk<
     }
 
     const response = await fetch(
-      "http://localhost:4001/api/auth/change-password",
+      `${API_BASE_URL}auth/change-password`,
       {
         method: "POST",
         headers: {
@@ -335,7 +339,7 @@ export const forgotPassword = createAsyncThunk<
 >("auth/forgotPassword", async (email, { rejectWithValue }) => {
   try {
     const response = await fetch(
-      "http://localhost:4001/api/auth/forgot-password",
+      `${API_BASE_URL}auth/forgot-password`,
       {
         method: "POST",
         headers: {
@@ -369,7 +373,7 @@ export const resetPassword = createAsyncThunk<
 >("auth/resetPassword", async (credentials, { rejectWithValue }) => {
   try {
     const response = await fetch(
-      `http://localhost:4001/api/auth/reset-password/${credentials.token}`,
+      `${API_BASE_URL}auth/reset-password/${credentials.token}`,
       {
         method: "POST",
         headers: {
