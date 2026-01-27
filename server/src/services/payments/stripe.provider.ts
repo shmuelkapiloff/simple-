@@ -30,6 +30,7 @@ export class StripeProvider implements PaymentProvider {
     params: CreateIntentParams,
   ): Promise<CreateIntentResult> {
     // Create Stripe Checkout Session
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -46,8 +47,8 @@ export class StripeProvider implements PaymentProvider {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/checkout?payment=success&orderId=${params.orderId}`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout?payment=cancelled&orderId=${params.orderId}`,
+      success_url: `${clientUrl}/checkout?payment=success&orderId=${params.orderId}`,
+      cancel_url: `${clientUrl}/checkout?payment=cancelled&orderId=${params.orderId}`,
       client_reference_id: params.orderId,
       metadata: {
         orderId: params.orderId,
