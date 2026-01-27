@@ -167,9 +167,13 @@ interface SetDefaultAddressRequest {
   addressId: string;
 }
 
+// Base URL נלקח מ-env כדי לאפשר מעבר בין סביבות
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api/";
+
 // הגדרת RTK Query API עם ApiLogger מתקדם
 const baseQueryWithLogging = fetchBaseQuery({
-  baseUrl: "http://localhost:4001/api/",
+  baseUrl: API_BASE_URL,
   prepareHeaders: (headers) => {
     headers.set("Content-Type", "application/json");
 

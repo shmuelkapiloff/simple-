@@ -84,7 +84,7 @@ export const cartSlice = createSlice({
         items: CartItem[];
         total: number;
         sessionId?: string;
-      }>
+      }>,
     ) => {
       const { items, total } = action.payload;
       state.items = items;
@@ -115,13 +115,13 @@ export const cartSlice = createSlice({
         productId: string;
         quantity: number;
         product: any;
-      }>
+      }>,
     ) => {
       const { productId, quantity, product } = action.payload;
 
       // Check if item already exists
       const existingItem = state.items.find(
-        (item) => item.product._id === productId
+        (item) => item.product._id === productId,
       );
 
       if (existingItem) {
@@ -156,17 +156,17 @@ export const cartSlice = createSlice({
     // Update quantity optimistically
     updateQuantityOptimistic: (
       state,
-      action: PayloadAction<{ productId: string; quantity: number }>
+      action: PayloadAction<{ productId: string; quantity: number }>,
     ) => {
       const { productId, quantity } = action.payload;
 
       if (quantity <= 0) {
         state.items = state.items.filter(
-          (item) => item.product._id !== productId
+          (item) => item.product._id !== productId,
         );
       } else {
         const existingItem = state.items.find(
-          (item) => item.product._id === productId
+          (item) => item.product._id === productId,
         );
         if (existingItem) {
           existingItem.quantity = quantity;
@@ -188,12 +188,12 @@ export const cartSlice = createSlice({
     // Remove item optimistically
     removeItemOptimistic: (
       state,
-      action: PayloadAction<{ productId: string }>
+      action: PayloadAction<{ productId: string }>,
     ) => {
       const { productId } = action.payload;
 
       state.items = state.items.filter(
-        (item) => item.product._id !== productId
+        (item) => item.product._id !== productId,
       );
 
       // Recalculate totals
@@ -235,7 +235,7 @@ export const cartSlice = createSlice({
     // Revert optimistic update (if API call fails)
     revertOptimisticUpdate: (
       state,
-      action: PayloadAction<{ items: CartItem[]; total: number }>
+      action: PayloadAction<{ items: CartItem[]; total: number }>,
     ) => {
       const { items, total } = action.payload;
       state.items = items;
@@ -283,7 +283,7 @@ export const selectSessionId = (state: { cart: CartState }) =>
 // Helper selector to get quantity of a product in cart
 export const selectProductQuantity = (
   state: { cart: CartState },
-  productId: string
+  productId: string,
 ) =>
   state.cart.items.find((item) => item.product._id === productId)?.quantity ||
   0;

@@ -11,6 +11,41 @@ export class CartService {
   private static readonly CACHE_TTL = 3600; // 1 hour
   private static readonly SAVE_DELAY = 5000; // 5 seconds debounce
 
+  // ✅ Redis helpers: best-effort cache that never throws
+  private static isRedisReady(): boolean {
+    return redisClient.status === "ready";
+  }
+
+  private static async safeCacheSet(
+    key: string,
+    ttlSeconds: number,
+    payload: any
+  ): Promise<void> {
+    if (!this.isRedisReady()) {
+      logger.warn({ key }, "Redis not ready, skipping cache set");
+      return;
+    }
+
+    try {
+      await redisClient.setex(key, ttlSeconds, JSON.stringify(payload));
+    } catch (error) {
+      logger.warn({ error, key }, "Redis set failed (swallowed)");
+    }
+  }
+
+  private static async safeCacheDel(key: string): Promise<void> {
+    if (!this.isRedisReady()) {
+      logger.warn({ key }, "Redis not ready, skipping cache delete");
+      return;
+    }
+
+    try {
+      await redisClient.del(key);
+    } catch (error) {
+      logger.warn({ error, key }, "Redis delete failed (swallowed)");
+    }
+  }
+
   // Helper: חשב סכום כולל של עגלה עם מחירים עדכניים
   private static calculateCartTotal(items: ICartItem[]): number {
     return items.reduce((sum: number, item: ICartItem) => {
@@ -27,67 +62,71 @@ export class CartService {
     try {
       const cartId = `user:${userId}`;
 
-      // ⚡ תמיד נסה Redis קודם (מהיר!)
-      const redisCart = await redisClient.get(`cart:${cartId}`);
-      if (redisCart) {
-        const parsedCart = JSON.parse(redisCart);
+      // ⚡ נסה Redis קודם (אם זמין)
+      try {
+        if (this.isRedisReady()) {
+          const redisCart = await redisClient.get(`cart:${cartId}`);
+          if (redisCart) {
+            const parsedCart = JSON.parse(redisCart);
 
-        // ✅ בדוק אם יש פריטים ואם המוצרים כולם populated
-        if (parsedCart.items && parsedCart.items.length > 0) {
-          const firstItem = parsedCart.items[0];
+            // ✅ בדוק אם יש פריטים ואם המוצרים כולם populated
+            if (parsedCart.items && parsedCart.items.length > 0) {
+              const firstItem = parsedCart.items[0];
 
-          // בדוק אם זה בא מRedis בצורה נכונה (עם product details)
-          const isFullyPopulated =
-            typeof firstItem.product === "object" &&
-            firstItem.product?.name &&
-            firstItem.product?.price;
+              // בדוק אם זה בא מRedis בצורה נכונה (עם product details)
+              const isFullyPopulated =
+                typeof firstItem.product === "object" &&
+                firstItem.product?.name &&
+                firstItem.product?.price;
 
-          if (!isFullyPopulated) {
-            logger.warn(
-              `⚠️ Redis cache not fully populated, refreshing from MongoDB: ${cartId}`
-            );
+              if (!isFullyPopulated) {
+                logger.warn(
+                  `⚠️ Redis cache not fully populated, refreshing from MongoDB: ${cartId}`
+                );
 
-            // ⚡ עדכן מMongoDB עם populate מלא
-            const dbCart = await CartModel.findOne({ userId }).populate(
-              "items.product"
-            );
+                // ⚡ עדכן מMongoDB עם populate מלא
+                const dbCart = await CartModel.findOne({ userId }).populate(
+                  "items.product"
+                );
 
-            if (dbCart) {
-              const cartObj = dbCart.toObject();
-              // ✅ אם Redis לא עדכני, רענן אותו
-              await redisClient.setex(
-                `cart:${cartId}`,
-                this.CACHE_TTL,
-                JSON.stringify(cartObj)
-              );
-              logger.info(`✅ Redis refreshed with populated data: ${cartId}`);
-              t.success(cartObj);
-              return cartObj;
+                if (dbCart) {
+                  const cartObj = dbCart.toObject();
+                  await this.safeCacheSet(
+                    `cart:${cartId}`,
+                    this.CACHE_TTL,
+                    cartObj
+                  );
+                  logger.info(
+                    `✅ Redis refreshed with populated data: ${cartId}`
+                  );
+                  t.success(cartObj);
+                  return cartObj;
+                }
+              }
             }
-          }
-        }
 
-        // ✅ Redis data בסדר ותקין
-        logger.debug(`✅ Returning cart from Redis cache: ${cartId}`);
-        t.success(parsedCart);
-        return parsedCart;
+            // ✅ Redis data בסדר ותקין
+            logger.debug(`✅ Returning cart from Redis cache: ${cartId}`);
+            t.success(parsedCart);
+            return parsedCart;
+          }
+        } else {
+          logger.warn(`⚠️ Redis not ready, skipping cache read: ${cartId}`);
+        }
+      } catch (redisError) {
+        logger.warn({ redisError, cartId }, "Redis read failed (swallowed)");
       }
 
       logger.info(`🔍 Cart not in Redis, checking MongoDB: ${cartId}`);
 
-      // 💾 Fallback למונגו (אם Redis ריק)
+      // 💾 Fallback למונגו (אם Redis ריק או נפל)
       const dbCart = await CartModel.findOne({ userId }).populate(
         "items.product"
       );
 
       if (dbCart) {
         const cartObj = dbCart.toObject();
-        // ✅ שמור בRedis כדי שבפעם הבאה יהיה שם
-        await redisClient.setex(
-          `cart:${cartId}`,
-          this.CACHE_TTL,
-          JSON.stringify(cartObj)
-        );
+        await this.safeCacheSet(`cart:${cartId}`, this.CACHE_TTL, cartObj);
         logger.info(`✅ Cart loaded from MongoDB and cached: ${cartId}`);
         t.success(cartObj);
         return cartObj;
@@ -98,23 +137,6 @@ export class CartService {
       return null;
     } catch (error) {
       t.error(error);
-
-      // 🔄 אם Redis נפל, נסה רק מונגו
-      if ((error as Error).message?.includes("Redis")) {
-        try {
-          const dbCart = await CartModel.findOne({ userId }).populate(
-            "items.product"
-          );
-          logger.warn("🚨 Redis failed, served from MongoDB only");
-          return dbCart;
-        } catch (mongoError) {
-          logger.error(
-            { error: mongoError },
-            "💥 Both Redis and MongoDB failed"
-          );
-        }
-      }
-
       return null;
     }
   }
@@ -192,10 +214,10 @@ export class CartService {
       const cartForRedis = (populatedCart as any).toObject
         ? (populatedCart as any).toObject()
         : populatedCart;
-      await redisClient.setex(
+      await this.safeCacheSet(
         `cart:${cartId}`,
         this.CACHE_TTL,
-        JSON.stringify(cartForRedis)
+        cartForRedis
       );
       log.debug(
         "CartService",
@@ -328,10 +350,10 @@ export class CartService {
         if (cart instanceof CartModel) {
           await cart.populate("items.product");
           const cartObj = (cart as any).toObject();
-          await redisClient.setex(
+          await this.safeCacheSet(
             `cart:${cartId}`,
             this.CACHE_TTL,
-            JSON.stringify(cartObj)
+            cartObj
           );
           t.success(cartObj);
           return cartObj;
@@ -345,10 +367,10 @@ export class CartService {
 
       // ✅ עדכן Redis ותזמון MongoDB עם ה-populated version
       const cartObj = populatedCart.toObject();
-      await redisClient.setex(
+      await this.safeCacheSet(
         `cart:${cartId}`,
         this.CACHE_TTL,
-        JSON.stringify(cartObj)
+        cartObj
       );
       logger.info(
         `✅ Cart updated in Redis with ${cartObj.items.length} items: ${cartId}`
@@ -438,10 +460,10 @@ export class CartService {
 
       if (populatedCart) {
         const cartObj = populatedCart.toObject();
-        await redisClient.setex(
+        await this.safeCacheSet(
           `cart:${cartId}`,
           this.CACHE_TTL,
-          JSON.stringify(cartObj)
+          cartObj
         );
         logger.info(`✅ Item removed from cart: ${productId}`);
 
@@ -455,10 +477,10 @@ export class CartService {
       if (cart instanceof CartModel) {
         await cart.populate("items.product");
         const cartObj = (cart as any).toObject();
-        await redisClient.setex(
+        await this.safeCacheSet(
           `cart:${cartId}`,
           this.CACHE_TTL,
-          JSON.stringify(cartObj)
+          cartObj
         );
         t.success(cartObj);
         return cartObj;
@@ -561,10 +583,10 @@ export class CartService {
 
       if (populatedCart) {
         const cartObj = populatedCart.toObject();
-        await redisClient.setex(
+        await this.safeCacheSet(
           `cart:${cartId}`,
           this.CACHE_TTL,
-          JSON.stringify(cartObj)
+          cartObj
         );
         logger.info(`✅ Quantity updated: ${product?.name} x${quantity}`);
 
@@ -578,10 +600,10 @@ export class CartService {
       if (cart instanceof CartModel) {
         await cart.populate("items.product");
         const cartObj = (cart as any).toObject();
-        await redisClient.setex(
+        await this.safeCacheSet(
           `cart:${cartId}`,
           this.CACHE_TTL,
-          JSON.stringify(cartObj)
+          cartObj
         );
         t.success(cartObj);
         return cartObj;
@@ -615,7 +637,7 @@ export class CartService {
       }
 
       // מחק מRedis (מהיר)
-      await redisClient.del(`cart:${cartId}`);
+      await this.safeCacheDel(`cart:${cartId}`);
       logger.info(`⚡ Cleared from Redis: ${cartId}`);
 
       // מחק ממונגו (יכול להיות איטי, אבל לא חוסם)

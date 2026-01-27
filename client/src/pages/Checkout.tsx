@@ -68,13 +68,13 @@ const Checkout: React.FC = () => {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [paymentMethod] = useState<string>("stripe"); // Always use Stripe Redirect
   const [shouldPollPayment, setShouldPollPayment] = useState(
-    Boolean(returnedOrderId)
+    Boolean(returnedOrderId),
   );
   const [isCartUpdating, setIsCartUpdating] = useState(false);
 
   // 🧪 Detect test mode
-  const isTestMode = import.meta.env.VITE_API_URL?.includes("localhost") ||
-    import.meta.env.DEV;
+  const isTestMode =
+    import.meta.env.VITE_API_URL?.includes("localhost") || import.meta.env.DEV;
 
   const { data: addresses = [], isLoading: isAddressesLoading } =
     useGetAddressesQuery(undefined, {
@@ -143,7 +143,7 @@ const Checkout: React.FC = () => {
         ? addresses.find((a) => a._id === savedId)
         : undefined;
       setSelectedAddress(
-        found || addresses.find((a) => a.isDefault) || addresses[0]
+        found || addresses.find((a) => a.isDefault) || addresses[0],
       );
     }
   }, [addresses, selectedAddress]);
@@ -179,9 +179,10 @@ const Checkout: React.FC = () => {
         dispatch(
           setCart({
             items: updated.items,
-            total: updated.total ?? calculateTotalFromItems(updated.items || []),
+            total:
+              updated.total ?? calculateTotalFromItems(updated.items || []),
             sessionId: updated.sessionId,
-          })
+          }),
         );
       }
     } catch (error: any) {
@@ -189,12 +190,9 @@ const Checkout: React.FC = () => {
         setCart({
           items: snapshot,
           total: calculateTotalFromItems(snapshot),
-        })
+        }),
       );
-      addToast(
-        error?.data?.message || "עדכון כמות נכשל - נסה שוב",
-        "error"
-      );
+      addToast(error?.data?.message || "עדכון כמות נכשל - נסה שוב", "error");
     } finally {
       setIsCartUpdating(false);
     }
@@ -215,9 +213,10 @@ const Checkout: React.FC = () => {
         dispatch(
           setCart({
             items: updated.items,
-            total: updated.total ?? calculateTotalFromItems(updated.items || []),
+            total:
+              updated.total ?? calculateTotalFromItems(updated.items || []),
             sessionId: updated.sessionId,
-          })
+          }),
         );
       }
     } catch (error: any) {
@@ -225,7 +224,7 @@ const Checkout: React.FC = () => {
         setCart({
           items: snapshot,
           total: calculateTotalFromItems(snapshot),
-        })
+        }),
       );
       addToast(error?.data?.message || "מחיקה נכשלה - נסה שוב", "error");
     } finally {
@@ -256,7 +255,7 @@ const Checkout: React.FC = () => {
 
       addToast(
         `הזמנה נוצרה בהצלחה! מס' הזמנה: ${createdOrder.orderNumber}`,
-        "success"
+        "success",
       );
 
       if (payment?.status === "succeeded") {
@@ -401,7 +400,7 @@ const Checkout: React.FC = () => {
                 </div>
                 <div className="mt-6 p-3 bg-blue-50 rounded-lg space-y-2">
                   <p className="text-xs text-blue-800">
-                    💡 הזמנה {" "}
+                    💡 הזמנה{" "}
                     <span className="font-mono font-semibold">
                       {returnedOrderId.slice(-8)}
                     </span>
@@ -465,7 +464,9 @@ const Checkout: React.FC = () => {
                       המערכת פועלת במצב פיתוח. תשלומים לא אמיתיים.
                     </p>
                     <div className="bg-amber-50 border border-amber-300 rounded p-2 text-xs font-mono text-amber-900">
-                      <p className="font-semibold mb-1">כרטיס בדיקה לתשלום מוצלח:</p>
+                      <p className="font-semibold mb-1">
+                        כרטיס בדיקה לתשלום מוצלח:
+                      </p>
                       <p>💳 4242 4242 4242 4242</p>
                       <p>📅 תאריך: כל תאריך עתידי | CVC: כל 3 ספרות</p>
                     </div>
@@ -535,8 +536,7 @@ const Checkout: React.FC = () => {
                       const productId = item.product?._id;
                       if (!productId) return null;
 
-                      const unitPrice =
-                        item.price ?? item.product?.price ?? 0;
+                      const unitPrice = item.price ?? item.product?.price ?? 0;
 
                       return (
                         <div
@@ -557,7 +557,10 @@ const Checkout: React.FC = () => {
                               <button
                                 className="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
                                 onClick={() =>
-                                  handleUpdateQuantity(productId, item.quantity - 1)
+                                  handleUpdateQuantity(
+                                    productId,
+                                    item.quantity - 1,
+                                  )
                                 }
                                 disabled={isCartUpdating}
                                 aria-label="הפחת כמות"
@@ -570,7 +573,10 @@ const Checkout: React.FC = () => {
                               <button
                                 className="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
                                 onClick={() =>
-                                  handleUpdateQuantity(productId, item.quantity + 1)
+                                  handleUpdateQuantity(
+                                    productId,
+                                    item.quantity + 1,
+                                  )
                                 }
                                 disabled={isCartUpdating}
                                 aria-label="הוסף כמות"
@@ -587,8 +593,7 @@ const Checkout: React.FC = () => {
                             </div>
                           </div>
                           <div className="text-right font-semibold text-gray-900">
-                            ₪
-                            {(item.quantity * unitPrice).toLocaleString()}
+                            ₪{(item.quantity * unitPrice).toLocaleString()}
                           </div>
                         </div>
                       );
@@ -649,14 +654,13 @@ const Checkout: React.FC = () => {
                       </p>
                       <QuickAddressForm
                         onCreate={async (payload) => {
-                          const created = await createAddressMutation(
-                            payload
-                          ).unwrap();
+                          const created =
+                            await createAddressMutation(payload).unwrap();
                           setSelectedAddress(created);
                           try {
                             localStorage.setItem(
                               "selectedAddressId",
-                              created._id
+                              created._id,
                             );
                           } catch {}
                           addToast("כתובת נוספה", "success");
@@ -679,7 +683,7 @@ const Checkout: React.FC = () => {
                             try {
                               localStorage.setItem(
                                 "selectedAddressId",
-                                addr._id
+                                addr._id,
                               );
                             } catch {}
                           }}
@@ -740,7 +744,8 @@ const Checkout: React.FC = () => {
                         💳 תשלום ואישור
                       </h2>
                       <p className="text-sm text-gray-600">
-                        סגור הכל כאן ואז עובר ל-Stripe. אפשר לשנות כמות וכתובת לפני התשלום.
+                        סגור הכל כאן ואז עובר ל-Stripe. אפשר לשנות כמות וכתובת
+                        לפני התשלום.
                       </p>
                     </div>
                     <div className="text-right text-xs text-gray-500">
@@ -764,7 +769,9 @@ const Checkout: React.FC = () => {
                             <ul className="text-xs text-gray-600 space-y-1">
                               <li>✓ כרטיס אשראי, Apple Pay, Google Pay</li>
                               <li>✓ אבטחה ברמה בנקאית (PCI DSS Level 1)</li>
-                              <li>✓ אין צורך לנקות עגלה – השרת עושה זאת אחרי אישור</li>
+                              <li>
+                                ✓ אין צורך לנקות עגלה – השרת עושה זאת אחרי אישור
+                              </li>
                             </ul>
                           </div>
                         </div>
@@ -826,7 +833,7 @@ const Checkout: React.FC = () => {
                                         onClick={() =>
                                           handleUpdateQuantity(
                                             productId,
-                                            item.quantity - 1
+                                            item.quantity - 1,
                                           )
                                         }
                                         disabled={isCartUpdating}
@@ -841,7 +848,7 @@ const Checkout: React.FC = () => {
                                         onClick={() =>
                                           handleUpdateQuantity(
                                             productId,
-                                            item.quantity + 1
+                                            item.quantity + 1,
                                           )
                                         }
                                         disabled={isCartUpdating}
@@ -850,7 +857,9 @@ const Checkout: React.FC = () => {
                                       </button>
                                       <button
                                         className="ml-3 text-red-600 hover:text-red-700 disabled:opacity-50"
-                                        onClick={() => handleRemoveItem(productId)}
+                                        onClick={() =>
+                                          handleRemoveItem(productId)
+                                        }
                                         disabled={isCartUpdating}
                                       >
                                         הסר
@@ -859,7 +868,9 @@ const Checkout: React.FC = () => {
                                   </div>
                                   <div className="text-right font-semibold text-gray-900">
                                     ₪
-                                    {(item.quantity * unitPrice).toLocaleString()}
+                                    {(
+                                      item.quantity * unitPrice
+                                    ).toLocaleString()}
                                   </div>
                                 </div>
                               );
@@ -913,7 +924,9 @@ const Checkout: React.FC = () => {
                               💳
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">Stripe Checkout</p>
+                              <p className="font-semibold text-gray-900">
+                                Stripe Checkout
+                              </p>
                               <p className="text-xs text-gray-600 flex items-center gap-1">
                                 <span>🔒</span> תשלום מאובטח
                               </p>
@@ -928,8 +941,12 @@ const Checkout: React.FC = () => {
                       <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-xl p-5 shadow-lg">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-blue-100 text-sm mb-1">סכום כולל</p>
-                            <p className="text-3xl font-bold">{currencyTotal}</p>
+                            <p className="text-blue-100 text-sm mb-1">
+                              סכום כולל
+                            </p>
+                            <p className="text-3xl font-bold">
+                              {currencyTotal}
+                            </p>
                             <p className="text-blue-100 text-xs mt-1">
                               {items.length} פריטים בהזמנה
                             </p>

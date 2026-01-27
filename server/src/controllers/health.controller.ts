@@ -6,10 +6,13 @@ import { time } from "console";
 export async function getHealth(_req: Request, res: Response) {
   const mongoOk = mongoose.connection.readyState === 1;
   const redisOk = redis.status === "ready";
+  const degraded = !(mongoOk && redisOk);
+
   res.json({
     success: true,
     data: {
-      status: mongoOk && redisOk ? "healthy" : "degraded",
+      status: degraded ? "degraded" : "healthy",
+      warning: degraded,
       mongodb: mongoOk ? "connected" : "disconnected",
       redis: redisOk ? "connected" : "disconnected",
       uptime: process.uptime(),

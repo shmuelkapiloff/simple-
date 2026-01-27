@@ -85,7 +85,7 @@ const Cart: React.FC = () => {
           items: serverCart.items,
           total: serverCart.total,
           sessionId: serverCart.sessionId,
-        })
+        }),
       );
     }
   }, [serverCart, dispatch, sessionId]);
@@ -121,11 +121,11 @@ const Cart: React.FC = () => {
   // Update quantity handler
   const handleUpdateQuantity = async (
     productId: string,
-    newQuantity: number
+    newQuantity: number,
   ) => {
     if (!isAuthenticated) {
       dispatch(
-        requireAuth({ view: "login", message: "התחבר כדי לעדכן את העגלה" })
+        requireAuth({ view: "login", message: "התחבר כדי לעדכן את העגלה" }),
       );
       return;
     }
@@ -150,7 +150,7 @@ const Cart: React.FC = () => {
   const handleRemoveItem = async (productId: string) => {
     if (!isAuthenticated) {
       dispatch(
-        requireAuth({ view: "login", message: "התחבר כדי לנהל את העגלה" })
+        requireAuth({ view: "login", message: "התחבר כדי לנהל את העגלה" }),
       );
       return;
     }
@@ -174,7 +174,7 @@ const Cart: React.FC = () => {
   const handleClearCart = async () => {
     if (!isAuthenticated) {
       dispatch(
-        requireAuth({ view: "login", message: "התחבר כדי לנהל את העגלה" })
+        requireAuth({ view: "login", message: "התחבר כדי לנהל את העגלה" }),
       );
       return;
     }
@@ -264,73 +264,79 @@ const Cart: React.FC = () => {
                 return null;
               }
               return (
-              <div
-                key={`cart-item-${item.product._id}-${index}`} // ← key יחיד!
-                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
-              >
-                {/* Product Image */}
-                <img
-                  src={item.product.image}
-                  alt={item.product.name}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
+                <div
+                  key={`cart-item-${item.product._id}-${index}`} // ← key יחיד!
+                  className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
+                >
+                  {/* Product Image */}
+                  <img
+                    src={item.product.image}
+                    alt={item.product.name}
+                    className="w-16 h-16 object-cover rounded-lg"
+                  />
 
-                {/* Product Info */}
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">
-                    {item.product.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    SKU: {item.product.sku}
-                  </p>
-                  <p className="text-lg font-semibold text-blue-600">
-                    ${item.product.price}
-                  </p>
+                  {/* Product Info */}
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">
+                      {item.product.name}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      SKU: {item.product.sku}
+                    </p>
+                    <p className="text-lg font-semibold text-blue-600">
+                      ${item.product.price}
+                    </p>
+                  </div>
+
+                  {/* Quantity Controls */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        handleUpdateQuantity(
+                          item.product._id,
+                          item.quantity - 1,
+                        )
+                      }
+                      className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                      disabled={item.quantity <= 1}
+                    >
+                      −
+                    </button>
+
+                    <span className="w-12 text-center font-medium">
+                      {item.quantity}
+                    </span>
+
+                    <button
+                      onClick={() =>
+                        handleUpdateQuantity(
+                          item.product._id,
+                          item.quantity + 1,
+                        )
+                      }
+                      className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Item Total */}
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">
+                      $
+                      {(
+                        (item.price ?? item.product.price) * item.quantity
+                      ).toFixed(2)}
+                    </p>
+
+                    <button
+                      onClick={() => handleRemoveItem(item.product._id)}
+                      className="text-red-600 hover:text-red-800 text-sm transition-colors mt-1"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
-
-                {/* Quantity Controls */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      handleUpdateQuantity(item.product._id, item.quantity - 1)
-                    }
-                    className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                    disabled={item.quantity <= 1}
-                  >
-                    −
-                  </button>
-
-                  <span className="w-12 text-center font-medium">
-                    {item.quantity}
-                  </span>
-
-                  <button
-                    onClick={() =>
-                      handleUpdateQuantity(item.product._id, item.quantity + 1)
-                    }
-                    className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-
-                {/* Item Total */}
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">
-                    $
-                    {(
-                      (item.price ?? item.product.price) * item.quantity
-                    ).toFixed(2)}
-                  </p>
-
-                  <button
-                    onClick={() => handleRemoveItem(item.product._id)}
-                    className="text-red-600 hover:text-red-800 text-sm transition-colors mt-1"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
               );
             })}
           </div>
@@ -439,9 +445,8 @@ const Cart: React.FC = () => {
                 <AddressQuickForm
                   onCreate={async (payload) => {
                     try {
-                      const created = await createAddressMutation(
-                        payload
-                      ).unwrap();
+                      const created =
+                        await createAddressMutation(payload).unwrap();
                       setSelectedAddress(created);
                       try {
                         localStorage.setItem("selectedAddressId", created._id);
@@ -494,14 +499,13 @@ const Cart: React.FC = () => {
                   <AddressQuickForm
                     onCreate={async (payload) => {
                       try {
-                        const created = await createAddressMutation(
-                          payload
-                        ).unwrap();
+                        const created =
+                          await createAddressMutation(payload).unwrap();
                         setSelectedAddress(created);
                         try {
                           localStorage.setItem(
                             "selectedAddressId",
-                            created._id
+                            created._id,
                           );
                         } catch {}
                         setShowAddressModal(false);

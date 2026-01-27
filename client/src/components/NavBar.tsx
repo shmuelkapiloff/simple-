@@ -22,21 +22,21 @@ export const NavBar: React.FC = () => {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => selectUser(state));
   const isAuthenticated = useSelector((state: RootState) =>
-    selectIsAuthenticated(state)
+    selectIsAuthenticated(state),
   );
   const isLoading = useSelector((state: RootState) => selectAuthLoading(state));
   const cartItemCount = useSelector((state: RootState) =>
-    selectCartItemCount(state)
+    selectCartItemCount(state),
   );
 
   const showAuthModal = useSelector((state: RootState) =>
-    selectShowAuthModal(state)
+    selectShowAuthModal(state),
   );
   const authModalView = useSelector((state: RootState) =>
-    selectAuthModalView(state)
+    selectAuthModalView(state),
   );
   const authPromptMessage = useSelector((state: RootState) =>
-    selectAuthPromptMessage(state)
+    selectAuthPromptMessage(state),
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
 
