@@ -30,6 +30,23 @@ export class StripeProvider implements PaymentProvider {
     params: CreateIntentParams,
   ): Promise<CreateIntentResult> {
     // Create Stripe Checkout Session
+    // Build CLIENT_URL with smart fallback
+    let clientUrl = process.env.CLIENT_URL;
+    
+    if (!clientUrl) {
+      // Try to build URL from Render environment
+      if (process.env.RENDER_EXTERNAL_URL) {
+        // Remove /api or other path components if present
+        clientUrl = process.env.RENDER_EXTERNAL_URL.split('/').slice(0, 3).join('/');
+      } else if (process.env.RENDER) {
+        // Fallback: construct from service name if running on Render
+        clientUrl = "https://simple-4-anp6.onrender.com";
+      } else {
+        // Local development fallback
+        clientUrl = "http://localhost:3000";
+      }
+    }
+
     const session = await this.stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -46,8 +63,8 @@ export class StripeProvider implements PaymentProvider {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/checkout?payment=success&orderId=${params.orderId}`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout?payment=cancelled&orderId=${params.orderId}`,
+      success_url: `${clientUrl}/checkout?payment=success&orderId=${params.orderId}`,
+      cancel_url: `${clientUrl}/checkout?payment=cancelled&orderId=${params.orderId}`,
       client_reference_id: params.orderId,
       metadata: {
         orderId: params.orderId,
