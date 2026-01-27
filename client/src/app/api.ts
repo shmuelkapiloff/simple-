@@ -123,7 +123,6 @@ export interface Order {
 
 // Order API request types
 interface CreateOrderRequest {
-  sessionId: string;
   shippingAddress: {
     street: string;
     city: string;

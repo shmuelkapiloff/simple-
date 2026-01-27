@@ -233,10 +233,9 @@ const Checkout: React.FC = () => {
   };
 
   const placeOrder = async () => {
-    if (!sessionId || !selectedAddress) return;
+    if (!selectedAddress) return;
     try {
       const orderResponse = await createOrderMutation({
-        sessionId,
         shippingAddress: {
           street: selectedAddress.street,
           city: selectedAddress.city,

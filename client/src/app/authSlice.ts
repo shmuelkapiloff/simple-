@@ -96,13 +96,11 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
       return data;
     } catch (error: any) {
       if (error.name === "TypeError" && error.message.includes("fetch")) {
-        return rejectWithValue(
-          "לא ניתן להתחבר לשרת. בדוק שהשרת פעיל."
-        );
+        return rejectWithValue("לא ניתן להתחבר לשרת. בדוק שהשרת פעיל.");
       }
       return rejectWithValue(error.message || "שגיאת רשת");
     }
-  }
+  },
 );
 
 export const register = createAsyncThunk<AuthResponse, RegisterData>(
@@ -143,13 +141,11 @@ export const register = createAsyncThunk<AuthResponse, RegisterData>(
       return data;
     } catch (error: any) {
       if (error.name === "TypeError" && error.message.includes("fetch")) {
-        return rejectWithValue(
-          "לא ניתן להתחבר לשרת. בדוק שהשרת פעיל."
-        );
+        return rejectWithValue("לא ניתן להתחבר לשרת. בדוק שהשרת פעיל.");
       }
       return rejectWithValue(error.message || "שגיאת רשת");
     }
-  }
+  },
 );
 
 export const verifyToken = createAsyncThunk<User>(
@@ -219,7 +215,7 @@ export const verifyToken = createAsyncThunk<User>(
       }
       return rejectWithValue(error.message || "שגיאת רשת");
     }
-  }
+  },
 );
 
 export const logout = createAsyncThunk<void>(
@@ -245,7 +241,7 @@ export const logout = createAsyncThunk<void>(
       localStorage.removeItem("token");
       return rejectWithValue(error.message || "Logout failed");
     }
-  }
+  },
 );
 
 interface ChangePasswordCredentials {
@@ -270,17 +266,14 @@ export const updateProfile = createAsyncThunk<
       return rejectWithValue("Not authenticated");
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}auth/profile`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(profileData),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}auth/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(profileData),
+    });
 
     const data = await response.json();
 
@@ -305,21 +298,18 @@ export const changePassword = createAsyncThunk<
       return rejectWithValue("Not authenticated");
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}auth/change-password`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword: credentials.currentPassword,
-          newPassword: credentials.newPassword,
-          confirmPassword: credentials.confirmPassword,
-        }),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        currentPassword: credentials.currentPassword,
+        newPassword: credentials.newPassword,
+        confirmPassword: credentials.confirmPassword,
+      }),
+    });
 
     const data = await response.json();
 
@@ -338,16 +328,13 @@ export const forgotPassword = createAsyncThunk<
   string
 >("auth/forgotPassword", async (email, { rejectWithValue }) => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}auth/forgot-password`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}auth/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
 
     const data = await response.json();
 
@@ -383,7 +370,7 @@ export const resetPassword = createAsyncThunk<
           password: credentials.newPassword,
           confirmPassword: credentials.confirmPassword,
         }),
-      }
+      },
     );
 
     const data = await response.json();
@@ -409,7 +396,7 @@ const authSlice = createSlice({
     },
     requireAuth: (
       state,
-      action: PayloadAction<{ view?: "login" | "register"; message?: string }>
+      action: PayloadAction<{ view?: "login" | "register"; message?: string }>,
     ) => {
       state.showAuthModal = true;
       state.authModalView = action.payload.view || "login";
@@ -417,7 +404,7 @@ const authSlice = createSlice({
     },
     openAuthModal: (
       state,
-      action: PayloadAction<"login" | "register" | undefined>
+      action: PayloadAction<"login" | "register" | undefined>,
     ) => {
       state.showAuthModal = true;
       state.authModalView = action.payload || "login";
@@ -547,24 +534,25 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = (action.payload as string) || "Failed to change password";
 
-          // Update Profile
-          builder
-            .addCase(updateProfile.pending, (state) => {
-              state.isLoading = true;
-              state.error = null;
-            })
-            .addCase(updateProfile.fulfilled, (state, action) => {
-              state.isLoading = false;
-              state.error = null;
-              // Update user in state with new data
-              if (state.user) {
-                state.user = { ...state.user, ...action.payload.user };
-              }
-            })
-            .addCase(updateProfile.rejected, (state, action) => {
-              state.isLoading = false;
-              state.error = (action.payload as string) || "Failed to update profile";
-            });
+        // Update Profile
+        builder
+          .addCase(updateProfile.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+          })
+          .addCase(updateProfile.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.error = null;
+            // Update user in state with new data
+            if (state.user) {
+              state.user = { ...state.user, ...action.payload.user };
+            }
+          })
+          .addCase(updateProfile.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error =
+              (action.payload as string) || "Failed to update profile";
+          });
       });
 
     // Forgot Password
