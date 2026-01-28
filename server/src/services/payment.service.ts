@@ -298,6 +298,38 @@ export class PaymentService {
     // 📝 Update order status
     const order = await OrderModel.findById(payment.order);
     if (order) {
+      // 🔒 CRITICAL SECURITY: Verify payment amount matches order total
+      // Prevents malicious webhooks from claiming lower payment amounts
+      const expectedAmountInCents = Math.round(order.totalAmount * 100);
+      const receivedAmountInCents = result.amount || 0;
+      
+      if (receivedAmountInCents !== expectedAmountInCents) {
+        log.error("❌ Payment amount mismatch - possible fraud attempt", {
+          service: "PaymentService",
+          orderId: order._id.toString(),
+          orderNumber: order.orderNumber,
+          expectedAmount: expectedAmountInCents,
+          receivedAmount: receivedAmountInCents,
+          difference: Math.abs(expectedAmountInCents - receivedAmountInCents),
+        });
+        
+        // Mark payment as failed due to amount mismatch
+        payment.status = "failed";
+        await payment.save();
+        
+        order.paymentStatus = "failed";
+        await order.save();
+        
+        throw new Error(
+          `Payment amount mismatch: expected ${expectedAmountInCents} cents, received ${receivedAmountInCents} cents`,
+        );
+      }
+      
+      log.info("✅ Payment amount verified", {
+        service: "PaymentService",
+        orderId: order._id.toString(),
+        amount: expectedAmountInCents,
+      });
       const oldPaymentStatus = order.paymentStatus;
       const newMappedStatus = mapToOrderPaymentStatus(result.status);
 

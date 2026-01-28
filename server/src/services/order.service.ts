@@ -82,8 +82,24 @@ export class OrderService {
   static async getUserOrders(userId: string, filters?: { status?: string }) {
     const query: any = { user: userId };
 
+    // 🔒 Security: Whitelist valid order statuses to prevent NoSQL injection
+    const VALID_ORDER_STATUSES = [
+      'pending',
+      'pending_payment',
+      'confirmed',
+      'processing',
+      'shipped',
+      'delivered',
+      'cancelled'
+    ] as const;
+
     if (filters?.status) {
-      query.status = filters.status;
+      const statusLower = filters.status.toLowerCase().trim();
+      // Only accept whitelisted statuses
+      if (VALID_ORDER_STATUSES.includes(statusLower as any)) {
+        query.status = statusLower;
+      }
+      // Silently ignore invalid statuses to prevent enumeration attacks
     }
 
     const orders = await OrderModel.find(query)

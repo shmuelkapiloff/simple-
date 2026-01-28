@@ -11,12 +11,32 @@ export interface ProductFilters {
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400/e2e8f0/64748b?text=Product+Image";
 
+// 🔒 Security: Whitelist valid product categories to prevent NoSQL injection
+const VALID_CATEGORIES = [
+  'electronics',
+  'clothing',
+  'books',
+  'home',
+  'sports',
+  'toys',
+  'beauty',
+  'food',
+  'other'
+] as const;
+
 export async function listProducts(filters: ProductFilters = {}) {
   const query: any = { isActive: true };
 
-  // Category filter
+  // Category filter with whitelist validation
+  // 🔒 Security: Only accept predefined categories to prevent injection
   if (filters.category) {
-    query.category = filters.category;
+    const categoryLower = filters.category.toLowerCase().trim();
+    if (VALID_CATEGORIES.includes(categoryLower as any)) {
+      query.category = categoryLower;
+    } else {
+      // Silently ignore invalid categories rather than throwing
+      // This prevents error-based enumeration attacks
+    }
   }
 
   // Price range filter
@@ -36,11 +56,21 @@ export async function listProducts(filters: ProductFilters = {}) {
   }
 
   // Search filter (name or description)
+  // 🔒 Security: Validate search string to prevent ReDoS and injection
   if (filters.search) {
-    query.$or = [
-      { name: { $regex: filters.search, $options: 'i' } },
-      { description: { $regex: filters.search, $options: 'i' } },
-    ];
+    // Limit search string length to prevent DoS
+    const sanitizedSearch = filters.search.trim().slice(0, 100);
+    
+    // Only proceed if search has meaningful content
+    if (sanitizedSearch.length >= 2) {
+      // Escape special regex characters to prevent ReDoS attacks
+      const escapedSearch = sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      query.$or = [
+        { name: { $regex: escapedSearch, $options: 'i' } },
+        { description: { $regex: escapedSearch, $options: 'i' } },
+      ];
+    }
   }
 
   // Build sort object

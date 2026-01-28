@@ -149,6 +149,7 @@ export class StripeProvider implements PaymentProvider {
         orderId:
           (session.metadata?.orderId as string | undefined) ||
           (session.client_reference_id as string | undefined),
+        amount: session.amount_total || 0, // Amount in cents
         status,
         raw: session,
       };
@@ -163,6 +164,7 @@ export class StripeProvider implements PaymentProvider {
         providerPaymentId: paymentIntent.id,
         providerPaymentIntentId: paymentIntent.id,
         orderId: paymentIntent.metadata?.orderId as string | undefined,
+        amount: paymentIntent.amount, // Amount in cents
         status: "succeeded",
         raw: paymentIntent,
       };
@@ -177,6 +179,7 @@ export class StripeProvider implements PaymentProvider {
         providerPaymentId: paymentIntent.id,
         providerPaymentIntentId: paymentIntent.id,
         orderId: paymentIntent.metadata?.orderId as string | undefined,
+        amount: paymentIntent.amount, // Amount in cents
         status: "failed",
         raw: paymentIntent,
       };
