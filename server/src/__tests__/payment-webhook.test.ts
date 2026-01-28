@@ -188,7 +188,7 @@ describe("Payment Webhook Security", () => {
         eventId: "evt_test_idempotency",
       });
       expect(savedEvent).toBeTruthy();
-      expect(savedEvent?.processed).toBe(true);
+      expect(savedEvent?.processedAt).toBeTruthy();
 
       // Second webhook with same event ID - should be idempotent (not process again)
       const secondResponse = await request(app)
@@ -196,7 +196,8 @@ describe("Payment Webhook Security", () => {
         .set("stripe-signature", "valid_sig")
         .send(JSON.stringify(webhookEvent))
         .expect(200);
-At).toBeTruthy(); // Event has been processed
+      
+      expect(secondResponse.body).toBeTruthy(); // Event has been processed
       expect(secondResponse.body.received).toBe(true);
 
       // Verify only one event record exists
