@@ -74,7 +74,7 @@ export class AuthMiddleware {
           return sendError(
             res,
             403,
-            "Access denied. Admin privileges required"
+            "Access denied. Admin privileges required",
           );
         }
 
@@ -128,7 +128,7 @@ export class AuthMiddleware {
         // Check if rate limit exceeded
         if (attemptData.count >= MAX_ATTEMPTS) {
           const remainingTime = Math.ceil(
-            (attemptData.resetTime - currentTime) / 60000
+            (attemptData.resetTime - currentTime) / 60000,
           );
 
           logger.info(`⚠️ Rate limit exceeded for IP: ${clientIp}`);
@@ -137,7 +137,7 @@ export class AuthMiddleware {
           return sendError(
             res,
             429,
-            `Too many attempts. Try again in ${remainingTime} minutes`
+            `Too many attempts. Try again in ${remainingTime} minutes`,
           );
         }
 
@@ -146,7 +146,7 @@ export class AuthMiddleware {
         attempts.set(clientIp, attemptData);
 
         logger.info(
-          `⚠️ Auth attempt ${attemptData.count}/${MAX_ATTEMPTS} for IP: ${clientIp}`
+          `⚠️ Auth attempt ${attemptData.count}/${MAX_ATTEMPTS} for IP: ${clientIp}`,
         );
         t.success({ ip: clientIp, attempt: attemptData.count });
 

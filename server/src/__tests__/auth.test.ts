@@ -7,19 +7,19 @@ import { connectMongo } from "../config/db";
 describe("Auth Routes - Authentication & Authorization", () => {
   /**
    * Auth Testing Strategy
-   * 
+   *
    * This test suite covers the complete authentication flow:
    * 1. User registration with validation
    * 2. Login with credential verification
    * 3. Token refresh mechanism
    * 4. Password reset flow
-   * 
+   *
    * Why this matters for production:
    * - Auth is the gatekeeper of all protected endpoints
    * - Every auth test failure means potential security breach
    * - Edge cases (duplicate email, weak password) must be handled
    * - Token expiration/refresh must work seamlessly
-   * 
+   *
    * Interview talking point: "Authentication is critical.
    * I test every path: happy path, error cases, edge cases."
    */
@@ -45,13 +45,11 @@ describe("Auth Routes - Authentication & Authorization", () => {
   // ============================================================
   describe("POST /api/auth/register", () => {
     it("should register user with valid credentials", async () => {
-      const response = await request(app)
-        .post("/api/auth/register")
-        .send({
-          email: "newuser@example.com",
-          password: "SecurePass123!",
-          confirmPassword: "SecurePass123!",
-        });
+      const response = await request(app).post("/api/auth/register").send({
+        email: "newuser@example.com",
+        password: "SecurePass123!",
+        confirmPassword: "SecurePass123!",
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -60,12 +58,10 @@ describe("Auth Routes - Authentication & Authorization", () => {
     });
 
     it("should reject registration with missing email", async () => {
-      const response = await request(app)
-        .post("/api/auth/register")
-        .send({
-          password: "SecurePass123!",
-          confirmPassword: "SecurePass123!",
-        });
+      const response = await request(app).post("/api/auth/register").send({
+        password: "SecurePass123!",
+        confirmPassword: "SecurePass123!",
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe("VALIDATION_ERROR");
@@ -73,22 +69,18 @@ describe("Auth Routes - Authentication & Authorization", () => {
 
     it("should reject duplicate email registration", async () => {
       // Register first user
-      await request(app)
-        .post("/api/auth/register")
-        .send({
-          email: "duplicate@example.com",
-          password: "SecurePass123!",
-          confirmPassword: "SecurePass123!",
-        });
+      await request(app).post("/api/auth/register").send({
+        email: "duplicate@example.com",
+        password: "SecurePass123!",
+        confirmPassword: "SecurePass123!",
+      });
 
       // Try to register with same email
-      const response = await request(app)
-        .post("/api/auth/register")
-        .send({
-          email: "duplicate@example.com",
-          password: "AnotherPass123!",
-          confirmPassword: "AnotherPass123!",
-        });
+      const response = await request(app).post("/api/auth/register").send({
+        email: "duplicate@example.com",
+        password: "AnotherPass123!",
+        confirmPassword: "AnotherPass123!",
+      });
 
       expect(response.status).toBe(409);
       expect(response.body.error.code).toBe("CONFLICT");
@@ -101,22 +93,18 @@ describe("Auth Routes - Authentication & Authorization", () => {
   describe("POST /api/auth/login", () => {
     beforeEach(async () => {
       // Create test user
-      await request(app)
-        .post("/api/auth/register")
-        .send({
-          email: "test@example.com",
-          password: "SecurePass123!",
-          confirmPassword: "SecurePass123!",
-        });
+      await request(app).post("/api/auth/register").send({
+        email: "test@example.com",
+        password: "SecurePass123!",
+        confirmPassword: "SecurePass123!",
+      });
     });
 
     it("should login user with correct credentials", async () => {
-      const response = await request(app)
-        .post("/api/auth/login")
-        .send({
-          email: "test@example.com",
-          password: "SecurePass123!",
-        });
+      const response = await request(app).post("/api/auth/login").send({
+        email: "test@example.com",
+        password: "SecurePass123!",
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -125,12 +113,10 @@ describe("Auth Routes - Authentication & Authorization", () => {
     });
 
     it("should reject login with incorrect password", async () => {
-      const response = await request(app)
-        .post("/api/auth/login")
-        .send({
-          email: "test@example.com",
-          password: "WrongPassword123!",
-        });
+      const response = await request(app).post("/api/auth/login").send({
+        email: "test@example.com",
+        password: "WrongPassword123!",
+      });
 
       expect(response.status).toBe(401);
       expect(response.body.error.code).toBe("UNAUTHORIZED");

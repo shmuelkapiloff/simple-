@@ -302,7 +302,7 @@ export class PaymentService {
       // Prevents malicious webhooks from claiming lower payment amounts
       const expectedAmountInCents = Math.round(order.totalAmount * 100);
       const receivedAmountInCents = result.amount || 0;
-      
+
       if (receivedAmountInCents !== expectedAmountInCents) {
         log.error("❌ Payment amount mismatch - possible fraud attempt", {
           service: "PaymentService",
@@ -312,19 +312,19 @@ export class PaymentService {
           receivedAmount: receivedAmountInCents,
           difference: Math.abs(expectedAmountInCents - receivedAmountInCents),
         });
-        
+
         // Mark payment as failed due to amount mismatch
         payment.status = "failed";
         await payment.save();
-        
+
         order.paymentStatus = "failed";
         await order.save();
-        
+
         throw new Error(
           `Payment amount mismatch: expected ${expectedAmountInCents} cents, received ${receivedAmountInCents} cents`,
         );
       }
-      
+
       log.info("✅ Payment amount verified", {
         service: "PaymentService",
         orderId: order._id.toString(),

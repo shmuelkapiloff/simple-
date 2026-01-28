@@ -9,20 +9,20 @@ import { connectMongo } from "../config/db";
 describe("Order Routes - Order Management & Permissions", () => {
   /**
    * Order Testing Strategy
-   * 
+   *
    * This test suite covers the complete order lifecycle:
    * 1. Creating orders with cart items
    * 2. Retrieving orders with pagination
    * 3. Canceling orders with status validation
    * 4. Permission checks (can't access others' orders)
    * 5. Stock validation on order creation
-   * 
+   *
    * Why this matters for production:
    * - Orders represent money/commitment - cannot lose or corrupt
    * - Permission checks prevent users from accessing others' data
    * - Status transitions must follow business rules
    * - Stock validation prevents overselling
-   * 
+   *
    * Interview talking point: "Order tests ensure data integrity
    * and permission boundaries are enforced."
    */

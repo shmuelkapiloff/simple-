@@ -32,12 +32,14 @@ export class StripeProvider implements PaymentProvider {
     // Create Stripe Checkout Session
     // Build CLIENT_URL with smart fallback
     let clientUrl = process.env.CLIENT_URL;
-    
+
     if (!clientUrl) {
       // Try to build URL from Render environment
       if (process.env.RENDER_EXTERNAL_URL) {
         // Remove /api or other path components if present
-        clientUrl = process.env.RENDER_EXTERNAL_URL.split('/').slice(0, 3).join('/');
+        clientUrl = process.env.RENDER_EXTERNAL_URL.split("/")
+          .slice(0, 3)
+          .join("/");
       } else if (process.env.RENDER) {
         // Fallback: construct from service name if running on Render
         clientUrl = "https://simple-4-anp6.onrender.com";

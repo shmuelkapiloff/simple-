@@ -6,6 +6,7 @@ import {
   requestIdMiddleware,
   requestLoggerMiddleware,
 } from "./middlewares/logging.middleware";
+import { metricsMiddleware, metricsEndpoint } from "./middlewares/metrics.middleware";
 import { logger } from "./utils/logger";
 
 // Import routes
@@ -34,8 +35,14 @@ app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true, limit: "10mb" })); // Parse URL-encoded bodies
 app.use(requestIdMiddleware); // Assign X-Request-ID
 app.use(requestLoggerMiddleware); // Structured request/response logging
+app.use(metricsMiddleware); // Prometheus metrics tracking
+
+/**Metrics endpoint for Prometheus scraping
+ */
+app.get("/metrics", metricsEndpoint);
 
 /**
+ * 
  * Health check for load balancers
  */
 app.get("/health", (req: Request, res: Response) => {

@@ -9,7 +9,7 @@ import { connectMongo } from "../config/db";
 describe("Integration Tests - Complete Payment Flow", () => {
   /**
    * Integration Testing Strategy
-   * 
+   *
    * This test suite covers end-to-end payment scenarios:
    * 1. User registration & authentication
    * 2. Product browsing and cart addition
@@ -19,13 +19,13 @@ describe("Integration Tests - Complete Payment Flow", () => {
    * 6. Stock reduction validation
    * 7. Cart clearing after successful payment
    * 8. Order status updates
-   * 
+   *
    * Why integration tests matter:
    * - Unit tests verify individual functions
    * - Integration tests verify SYSTEMS work together
    * - Payment flow is your most critical path (money involved)
    * - Catch issues that only appear when systems interact
-   * 
+   *
    * Interview talking point: "I test not just functions,
    * but how the entire system flows together. For payments,
    * that means testing from cart to confirmation to fulfillment."
@@ -177,7 +177,9 @@ describe("Integration Tests - Complete Payment Flow", () => {
         const orderId = checkoutResponse.body.data.payment.orderId;
         const order = await OrderModel.findById(orderId);
         const expectedTotal = productPrice * 3;
-        expect(Math.abs(order?.totalAmount! - expectedTotal)).toBeLessThan(0.01);
+        expect(Math.abs(order?.totalAmount! - expectedTotal)).toBeLessThan(
+          0.01,
+        );
       }
     });
   });

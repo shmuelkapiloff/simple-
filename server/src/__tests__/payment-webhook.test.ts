@@ -13,7 +13,7 @@ jest.mock("stripe");
 
 /**
  * Payment Webhook Test Suite
- * 
+ *
  * Tests webhook signature validation, idempotency, and replay attack prevention
  * Critical for production security - ensures only authentic Stripe events are processed
  */
@@ -196,7 +196,7 @@ describe("Payment Webhook Security", () => {
         .set("stripe-signature", "valid_sig")
         .send(JSON.stringify(webhookEvent))
         .expect(200);
-      
+
       expect(secondResponse.body).toBeTruthy(); // Event has been processed
       expect(secondResponse.body.received).toBe(true);
 
