@@ -43,20 +43,11 @@ export const NavBar: React.FC = () => {
   // Verify token on app startup
   useEffect(() => {
     const token = localStorage.getItem("token");
-    console.log("🔍 NavBar Debug:", {
-      token: token ? "exists" : "missing",
-      tokenValue: token ? token.substring(0, 20) + "..." : "none",
-      isAuthenticated,
-      isLoading,
-      user: user?.name || "no user",
-      userObject: user,
-    });
 
     if (token && !isAuthenticated && !isLoading) {
-      console.log("🚀 Dispatching verifyToken...");
       dispatch(verifyToken());
     }
-  }, [dispatch, isAuthenticated, isLoading, user]); // Added user to dependencies
+  }, [dispatch, isAuthenticated, isLoading, user]);
 
   const handleLogin = () => {
     dispatch(openAuthModal("login"));
@@ -70,7 +61,6 @@ export const NavBar: React.FC = () => {
     try {
       await dispatch(logout()).unwrap();
       setShowUserMenu(false);
-      console.log("✅ Logged out successfully");
     } catch (error) {
       console.error("❌ Logout error:", error);
     }

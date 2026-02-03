@@ -8,17 +8,21 @@ export interface IUser extends Document {
   password: string;
   name: string;
   phone?: string; // ⬅️ חדש
-  role: 'user' | 'admin'; // ⬅️ חדש
-  
+  role: "user" | "admin"; // ⬅️ חדש
+
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
   lastLogin?: Date;
   lastUpdated?: Date; // ⬅️ חדש
-  
+
   // Password reset fields ⬅️ חדש
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+
+  // Account lockout fields ⬅️ חדש - אבטחה
+  failedLoginAttempts: number;
+  lockedUntil?: Date | null;
 
   // Instance methods
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -59,14 +63,14 @@ const UserSchema = new Schema<IUser>(
     phone: {
       type: String,
       trim: true,
-      default: '',
+      default: "",
       match: [/^[0-9\-\+\(\)\s]*$/, "Please provide a valid phone number"],
     },
 
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: ["user", "admin"],
+      default: "user",
     },
 
     isActive: {
@@ -95,6 +99,19 @@ const UserSchema = new Schema<IUser>(
       default: null,
       select: false, // Don't include in queries
     },
+
+    // ⬅️ חדש - נעילת חשבון (Account Lockout)
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    lockedUntil: {
+      type: Date,
+      default: null,
+      index: true, // For efficient querying of locked accounts
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt
@@ -104,11 +121,13 @@ const UserSchema = new Schema<IUser>(
         delete (ret as any).password;
         delete (ret as any).resetPasswordToken;
         delete (ret as any).resetPasswordExpires;
+        delete (ret as any).failedLoginAttempts;
+        delete (ret as any).lockedUntil;
         delete (ret as any).__v;
         return ret;
       },
     },
-  }
+  },
 );
 
 // Index for better query performance
@@ -135,7 +154,7 @@ UserSchema.pre("save", async function (next) {
 
 // Instance method to compare passwords
 UserSchema.methods.comparePassword = async function (
-  candidatePassword: string
+  candidatePassword: string,
 ): Promise<boolean> {
   try {
     return await bcrypt.compare(candidatePassword, this.password);

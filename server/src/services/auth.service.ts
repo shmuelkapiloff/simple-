@@ -8,9 +8,11 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { logger } from "../utils/logger";
+import { JWT_EXPIRATION, PASSWORD_RESET_EXPIRATION } from "../config/constants";
+import { ApiError, UnauthorizedError } from "../utils/asyncHandler";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-const JWT_EXPIRE = process.env.JWT_EXPIRE || "7d";
+const JWT_EXPIRE = process.env.JWT_EXPIRE || JWT_EXPIRATION;
 
 export class AuthService {
   /**
@@ -29,7 +31,12 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new Error("User with this email already exists");
+      throw new ApiError(
+        409,
+        "User with this email already exists",
+        undefined,
+        "CONFLICT",
+      );
     }
 
     // Create new user
@@ -55,21 +62,86 @@ export class AuthService {
    * Login user
    */
   static async login(credentials: LoginInput) {
-    // Find user with password field
+    // Find user with password field (and failure tracking fields)
     const user = await UserModel.findOne({
       email: credentials.email.toLowerCase(),
       isActive: true,
-    }).select("+password");
+    }).select("+password +failedLoginAttempts +lockedUntil");
 
     if (!user) {
-      throw new Error("Invalid email or password");
+      throw new UnauthorizedError("Invalid email or password");
+    }
+
+    // 🔒 Check if account is locked
+    if (user.lockedUntil && new Date() < user.lockedUntil) {
+      const remainingMinutes = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 60000,
+      );
+      logger.warn(
+        {
+          email: user.email,
+          lockedUntil: user.lockedUntil,
+          remainingMinutes,
+        },
+        "🔒 Account locked - login attempt blocked",
+      );
+      throw new ApiError(
+        423,
+        `Account is locked due to too many failed login attempts. Please try again in ${remainingMinutes} minutes.`,
+        undefined,
+        "ACCOUNT_LOCKED",
+      );
     }
 
     // Verify password
     const isPasswordValid = await user.comparePassword(credentials.password);
     if (!isPasswordValid) {
-      throw new Error("Invalid email or password");
+      // ❌ Increment failed login attempts
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      // 🔓 Check if we should lock the account (5 failed attempts)
+      if (user.failedLoginAttempts >= 5) {
+        // Lock account for 15 minutes
+        user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+        await user.save();
+
+        logger.error(
+          {
+            email: user.email,
+            failedLoginAttempts: user.failedLoginAttempts,
+            lockedUntil: user.lockedUntil,
+          },
+          "🔒 Account locked - too many failed login attempts",
+        );
+
+        throw new ApiError(
+          423,
+          "Account has been locked due to too many failed login attempts. Please try again in 15 minutes.",
+          undefined,
+          "ACCOUNT_LOCKED",
+        );
+      }
+
+      await user.save();
+
+      const remainingAttempts = 5 - user.failedLoginAttempts;
+      logger.warn(
+        {
+          email: user.email,
+          failedLoginAttempts: user.failedLoginAttempts,
+          remainingAttempts,
+        },
+        "⚠️ Failed login attempt",
+      );
+
+      throw new UnauthorizedError(
+        `Invalid email or password. ${remainingAttempts} attempts remaining before account lockout.`,
+      );
     }
+
+    // ✅ Login successful - reset failed attempts
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
 
     // Generate token
     const token = this.generateToken(user._id);
@@ -77,6 +149,14 @@ export class AuthService {
     // Update last login
     user.lastLogin = new Date();
     await user.save();
+
+    logger.info(
+      {
+        email: user.email,
+        userId: user._id,
+      },
+      "✅ User login successful",
+    );
 
     return {
       user: this.sanitizeUser(user),
@@ -109,9 +189,11 @@ export class AuthService {
       .update(resetToken)
       .digest("hex");
 
-    // Save hashed token and expiry (1 hour)
+    // Save hashed token and expiry (from constants)
     user.resetPasswordToken = resetTokenHash;
-    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    user.resetPasswordExpires = new Date(
+      Date.now() + PASSWORD_RESET_EXPIRATION,
+    );
     await user.save();
 
     // Send email
@@ -130,7 +212,7 @@ export class AuthService {
       // This is especially helpful in local/dev when SMTP creds are not valid
       logger.warn(
         { error },
-        "Failed to send reset email, returning generic success"
+        "Failed to send reset email, returning generic success",
       );
       return {
         message: "If this email exists, a password reset link has been sent",
@@ -245,7 +327,7 @@ export class AuthService {
   static async changePassword(
     userId: string,
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ) {
     // Get user with password field
     const user = await UserModel.findById(userId).select("+password");
@@ -282,7 +364,7 @@ export class AuthService {
   private static async sendResetEmail(
     to: string,
     resetUrl: string,
-    name: string
+    name: string,
   ) {
     /**
      * Dev-friendly fallback: if SMTP credentials are not configured, skip sending the email.

@@ -2,11 +2,13 @@ import request from "supertest";
 import { createApp } from "../app";
 
 describe("Health endpoint", () => {
+  jest.setTimeout(30000);
+
   it("returns ok structure", async () => {
     const app = createApp();
-    const res = await request(app).get("/api/health");
+    const res = await request(app).get("/health");
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success", true);
-    expect(res.body.data).toHaveProperty("status");
+    expect(res.body).toHaveProperty("status", "ok");
   });
 });

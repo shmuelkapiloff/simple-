@@ -49,21 +49,24 @@ describe("Integration Tests - Complete Payment Flow", () => {
     const userResponse = await request(app)
       .post("/api/auth/register")
       .send({
+        name: "Integration Test User",
         email: `integration-test-${Date.now()}@example.com`,
         password: "SecurePass123!",
         confirmPassword: "SecurePass123!",
       });
 
-    accessToken = userResponse.body.token.access;
-    userId = userResponse.body.user._id;
+    accessToken = userResponse.body.data.token;
+    userId = userResponse.body.data.user._id;
 
     // Step 2: Create product with sufficient stock
     const productResponse = await ProductModel.create({
+      sku: `INT-SKU-${Date.now()}`,
       name: "Integration Test Product",
       price: productPrice,
       stock: 100,
       category: "electronics",
       description: "Product for integration testing",
+      image: "test.jpg",
     });
 
     productId = productResponse._id.toString();
@@ -96,10 +99,10 @@ describe("Integration Tests - Complete Payment Flow", () => {
 
       // STEP 1: Add to cart
       const cartResponse = await request(app)
-        .post("/api/cart/items")
+        .post("/api/cart/add")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
-          product: productId,
+          productId,
           quantity: 2,
         });
 
@@ -118,7 +121,7 @@ describe("Integration Tests - Complete Payment Flow", () => {
 
       // STEP 4: Create order via checkout
       const checkoutResponse = await request(app)
-        .post("/api/checkout")
+        .post("/api/orders")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           shippingAddress: {
@@ -133,11 +136,11 @@ describe("Integration Tests - Complete Payment Flow", () => {
       expect(checkoutResponse.body.data).toBeDefined();
 
       // STEP 5: Verify order was created
-      if (checkoutResponse.body.data.payment?.orderId) {
-        const orderId = checkoutResponse.body.data.payment.orderId;
+      if (checkoutResponse.body.data.order?._id) {
+        const orderId = checkoutResponse.body.data.order._id;
         const order = await OrderModel.findById(orderId);
         expect(order).toBeDefined();
-        expect(order?.status).toBe("pending");
+        expect(order?.status).toBe("pending_payment");
       }
     });
 
@@ -150,16 +153,16 @@ describe("Integration Tests - Complete Payment Flow", () => {
 
       // Add item to cart
       await request(app)
-        .post("/api/cart/items")
+        .post("/api/cart/add")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
-          product: productId,
+          productId,
           quantity: 3,
         });
 
       // Create order
       const checkoutResponse = await request(app)
-        .post("/api/checkout")
+        .post("/api/orders")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           shippingAddress: {
@@ -173,8 +176,8 @@ describe("Integration Tests - Complete Payment Flow", () => {
       expect(checkoutResponse.status).toBe(201);
 
       // Verify order total
-      if (checkoutResponse.body.data.payment?.orderId) {
-        const orderId = checkoutResponse.body.data.payment.orderId;
+      if (checkoutResponse.body.data.order?._id) {
+        const orderId = checkoutResponse.body.data.order._id;
         const order = await OrderModel.findById(orderId);
         const expectedTotal = productPrice * 3;
         expect(Math.abs(order?.totalAmount! - expectedTotal)).toBeLessThan(
@@ -191,10 +194,10 @@ describe("Integration Tests - Complete Payment Flow", () => {
     it("should reject checkout with invalid product", async () => {
       // Add invalid product to cart
       const response = await request(app)
-        .post("/api/cart/items")
+        .post("/api/cart/add")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
-          product: "invalid-product-id",
+          productId: "invalid-product-id",
           quantity: 1,
         });
 
@@ -203,10 +206,10 @@ describe("Integration Tests - Complete Payment Flow", () => {
 
     it("should reject checkout with negative quantity", async () => {
       const response = await request(app)
-        .post("/api/cart/items")
+        .post("/api/cart/add")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
-          product: productId,
+          productId,
           quantity: -1,
         });
 
@@ -221,40 +224,44 @@ describe("Integration Tests - Complete Payment Flow", () => {
     it("should correctly calculate order total with multiple items", async () => {
       // Create multiple products
       const product2 = await ProductModel.create({
+        sku: `INT-SKU-${Date.now()}-2`,
         name: "Product 2",
         price: 29.99,
         stock: 50,
         category: "test",
         description: "Test product 2",
+        image: "test.jpg",
       });
 
       const product3 = await ProductModel.create({
+        sku: `INT-SKU-${Date.now()}-3`,
         name: "Product 3",
         price: 19.99,
         stock: 50,
         category: "test",
         description: "Test product 3",
+        image: "test.jpg",
       });
 
       // Add multiple items to cart
       await request(app)
-        .post("/api/cart/items")
+        .post("/api/cart/add")
         .set("Authorization", `Bearer ${accessToken}`)
-        .send({ product: productId, quantity: 2 });
+        .send({ productId, quantity: 2 });
 
       await request(app)
-        .post("/api/cart/items")
+        .post("/api/cart/add")
         .set("Authorization", `Bearer ${accessToken}`)
-        .send({ product: product2._id.toString(), quantity: 1 });
+        .send({ productId: product2._id.toString(), quantity: 1 });
 
       await request(app)
-        .post("/api/cart/items")
+        .post("/api/cart/add")
         .set("Authorization", `Bearer ${accessToken}`)
-        .send({ product: product3._id.toString(), quantity: 3 });
+        .send({ productId: product3._id.toString(), quantity: 3 });
 
       // Create order
       const checkoutResponse = await request(app)
-        .post("/api/checkout")
+        .post("/api/orders")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           shippingAddress: {
@@ -267,8 +274,8 @@ describe("Integration Tests - Complete Payment Flow", () => {
 
       expect(checkoutResponse.status).toBe(201);
 
-      if (checkoutResponse.body.data.payment?.orderId) {
-        const orderId = checkoutResponse.body.data.payment.orderId;
+      if (checkoutResponse.body.data.order?._id) {
+        const orderId = checkoutResponse.body.data.order._id;
         const order = await OrderModel.findById(orderId);
         const expected = productPrice * 2 + 29.99 * 1 + 19.99 * 3;
         expect(Math.abs(order?.totalAmount! - expected)).toBeLessThan(0.01);

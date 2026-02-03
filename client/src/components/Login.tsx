@@ -42,7 +42,7 @@ export const Login: React.FC<LoginProps> = ({ onSwitch, onClose }) => {
     try {
       // Dispatch login action
       const result = await dispatch(login(formData)).unwrap();
-      console.log("✅ Login successful:", result);
+      // Login successful, redirect will be handled by auth state
 
       // Note: Guest cart merge is not implemented on server.
       // If needed, we can add a merge endpoint later.

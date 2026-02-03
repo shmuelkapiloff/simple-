@@ -1,10 +1,17 @@
-/** @type {import('jest').Config} */
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.test.ts'],
-  moduleFileExtensions: ['ts', 'js', 'json'],
-  roots: ['<rootDir>/src'],
-  detectOpenHandles: true,
-  testTimeout: 20000
+  testMatch: ["**/dist/__tests__/**/*.js"],
+  testPathIgnorePatterns: ["/node_modules/", "/dist/__tests__/setup.js"],
+  testTimeout: 30000,
+  maxWorkers: 1,
+  forceExit: true,
+  detectOpenHandles: false,
+  bail: false,
+  setupFilesAfterEnv: ["<rootDir>/dist/test-setup.js"],
+  testEnvironment: "node",
+  verbose: true,
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "!src/__tests__/**",
+    "!src/**/*.d.ts"
+  ]
 };

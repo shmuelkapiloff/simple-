@@ -1,15 +1,16 @@
 import { CartModel, ICart, ICartItem } from "../models/cart.model";
 import { ProductModel } from "../models/product.model";
 import { redis as redisClient } from "../config/redisClient";
-import { track, log } from "../utils/quickLog";
-import { logger } from "../utils/logger";
+import { log, logger, track } from "../utils/logger";
+import { CART_CACHE_TTL, CART_SAVE_DELAY } from "../config/constants";
 import mongoose from "mongoose";
+import { ApiError } from "../utils/asyncHandler";
 
 export class CartService {
   // מאפיין סטטי לDebounce של MongoDB saves
   private static pendingSaves = new Map<string, NodeJS.Timeout>();
-  private static readonly CACHE_TTL = 3600; // 1 hour
-  private static readonly SAVE_DELAY = 5000; // 5 seconds debounce
+  private static readonly CACHE_TTL = CART_CACHE_TTL; // From constants
+  private static readonly SAVE_DELAY = CART_SAVE_DELAY; // From constants
 
   // ✅ Redis helpers: best-effort cache that never throws
   private static isRedisReady(): boolean {
@@ -242,11 +243,11 @@ export class CartService {
       // ✅ בדוק מוצר ומלאי (חייב להיות מדויק)
       const product = await ProductModel.findById(productId);
       if (!product) {
-        throw new Error("Product not found");
+        throw new ApiError(404, "Product not found", undefined, "NOT_FOUND");
       }
 
       if (product.stock < quantity) {
-        throw new Error("Insufficient stock");
+        throw new ApiError(400, "Insufficient stock", undefined, "VALIDATION_ERROR");
       }
 
       // ⚡ קבל עגלה נוכחית (מהיר מRedis)
@@ -281,8 +282,11 @@ export class CartService {
 
         // בדוק מלאי כולל
         if (product.stock < newQuantity) {
-          throw new Error(
+          throw new ApiError(
+            400,
             `Insufficient stock. Available: ${product.stock}, Requested: ${newQuantity}`,
+            undefined,
+            "VALIDATION_ERROR",
           );
         }
 

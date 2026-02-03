@@ -6,6 +6,7 @@ import {
 import { CartModel } from "../models/cart.model";
 import { ProductModel } from "../models/product.model";
 import { getNextSequence } from "../models/sequence.model";
+import { NotFoundError } from "../utils/asyncHandler";
 
 export class OrderService {
   /**
@@ -122,7 +123,7 @@ export class OrderService {
     const order = await OrderModel.findOne(query).populate("items.product");
 
     if (!order) {
-      throw new Error("Order not found");
+      throw new NotFoundError("Order");
     }
 
     return order;
@@ -138,7 +139,7 @@ export class OrderService {
       .lean();
 
     if (!order) {
-      throw new Error("Order not found");
+      throw new NotFoundError("Order");
     }
 
     return {
@@ -201,7 +202,7 @@ export class OrderService {
     const order = await OrderModel.findOne({ _id: orderId, user: userId });
 
     if (!order) {
-      throw new Error("Order not found");
+      throw new NotFoundError("Order");
     }
 
     // Can only cancel pending/confirmed orders
@@ -217,13 +218,13 @@ export class OrderService {
     }
 
     // Update status
-    await this.updateOrderStatus(
+    const updatedOrder = await this.updateOrderStatus(
       orderId,
       "cancelled",
       "Order cancelled by user",
     );
 
-    return order;
+    return updatedOrder;
   }
 
   /**

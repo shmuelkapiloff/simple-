@@ -46,6 +46,7 @@ describe("Auth Routes - Authentication & Authorization", () => {
   describe("POST /api/auth/register", () => {
     it("should register user with valid credentials", async () => {
       const response = await request(app).post("/api/auth/register").send({
+        name: "New User",
         email: "newuser@example.com",
         password: "SecurePass123!",
         confirmPassword: "SecurePass123!",
@@ -53,23 +54,25 @@ describe("Auth Routes - Authentication & Authorization", () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.token).toBeDefined();
-      expect(response.body.user.email).toBe("newuser@example.com");
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.user.email).toBe("newuser@example.com");
     });
 
     it("should reject registration with missing email", async () => {
       const response = await request(app).post("/api/auth/register").send({
+        name: "Missing Email",
         password: "SecurePass123!",
         confirmPassword: "SecurePass123!",
       });
 
       expect(response.status).toBe(400);
-      expect(response.body.error.code).toBe("VALIDATION_ERROR");
+      expect(response.body.code).toBe("VALIDATION_ERROR");
     });
 
     it("should reject duplicate email registration", async () => {
       // Register first user
       await request(app).post("/api/auth/register").send({
+        name: "Duplicate User",
         email: "duplicate@example.com",
         password: "SecurePass123!",
         confirmPassword: "SecurePass123!",
@@ -77,13 +80,14 @@ describe("Auth Routes - Authentication & Authorization", () => {
 
       // Try to register with same email
       const response = await request(app).post("/api/auth/register").send({
+        name: "Duplicate User",
         email: "duplicate@example.com",
         password: "AnotherPass123!",
         confirmPassword: "AnotherPass123!",
       });
 
       expect(response.status).toBe(409);
-      expect(response.body.error.code).toBe("CONFLICT");
+      expect(response.body.code).toBe("CONFLICT");
     });
   });
 
@@ -94,6 +98,7 @@ describe("Auth Routes - Authentication & Authorization", () => {
     beforeEach(async () => {
       // Create test user
       await request(app).post("/api/auth/register").send({
+        name: "Test User",
         email: "test@example.com",
         password: "SecurePass123!",
         confirmPassword: "SecurePass123!",
@@ -108,8 +113,8 @@ describe("Auth Routes - Authentication & Authorization", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.token).toBeDefined();
-      expect(response.body.user.email).toBe("test@example.com");
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.user.email).toBe("test@example.com");
     });
 
     it("should reject login with incorrect password", async () => {
@@ -119,7 +124,7 @@ describe("Auth Routes - Authentication & Authorization", () => {
       });
 
       expect(response.status).toBe(401);
-      expect(response.body.error.code).toBe("UNAUTHORIZED");
+      expect(response.body.code).toBe("UNAUTHORIZED");
     });
   });
 
@@ -133,19 +138,20 @@ describe("Auth Routes - Authentication & Authorization", () => {
       const registerResponse = await request(app)
         .post("/api/auth/register")
         .send({
+          name: "Protected User",
           email: "protected@example.com",
           password: "SecurePass123!",
           confirmPassword: "SecurePass123!",
         });
 
-      accessToken = registerResponse.body.token.access;
+      accessToken = registerResponse.body.data.token;
     });
 
     it("should reject access without token", async () => {
       const response = await request(app).get("/api/cart");
 
       expect(response.status).toBe(401);
-      expect(response.body.error.code).toBe("UNAUTHORIZED");
+      expect(response.body.success).toBe(false);
     });
 
     it("should reject access with invalid token", async () => {

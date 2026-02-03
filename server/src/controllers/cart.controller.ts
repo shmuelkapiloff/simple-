@@ -3,10 +3,11 @@ import { CartService } from "../services/cart.service";
 import { sendSuccess, sendError } from "../utils/response";
 import { logger } from "../utils/logger";
 import { asyncHandler } from "../utils/asyncHandler";
+import mongoose from "mongoose";
 
 export class CartController {
   static getCart = asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).userId; // From auth middleware
+    const userId = req.userId; // From auth middleware
 
     if (!userId) {
       sendError(res, 401, "Authentication required");
@@ -31,7 +32,7 @@ export class CartController {
 
   static addToCart = asyncHandler(async (req: Request, res: Response) => {
     const { productId, quantity } = req.body;
-    const userId = (req as any).userId; // From auth middleware
+    const userId = req.userId; // From auth middleware
 
     if (!userId) {
       sendError(res, 401, "Authentication required");
@@ -40,6 +41,16 @@ export class CartController {
 
     if (!productId || !quantity) {
       sendError(res, 400, "Missing required fields: productId and quantity");
+      return;
+    }
+
+    if (!mongoose.isValidObjectId(productId)) {
+      sendError(res, 400, "Invalid productId format");
+      return;
+    }
+
+    if (quantity <= 0) {
+      sendError(res, 400, "Quantity must be greater than 0");
       return;
     }
 
@@ -69,7 +80,7 @@ export class CartController {
 
   static updateQuantity = asyncHandler(async (req: Request, res: Response) => {
     const { productId, quantity } = req.body;
-    const userId = (req as any).userId; // From auth middleware
+    const userId = req.userId; // From auth middleware
 
     if (!userId) {
       sendError(res, 401, "Authentication required");
@@ -97,7 +108,7 @@ export class CartController {
 
   static removeFromCart = asyncHandler(async (req: Request, res: Response) => {
     const { productId } = req.body;
-    const userId = (req as any).userId; // From auth middleware
+    const userId = req.userId; // From auth middleware
 
     if (!userId) {
       sendError(res, 401, "Authentication required");
@@ -122,7 +133,7 @@ export class CartController {
   });
 
   static clearCart = asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).userId; // From auth middleware
+    const userId = req.userId; // From auth middleware
 
     if (!userId) {
       sendError(res, 401, "Authentication required");
@@ -142,7 +153,7 @@ export class CartController {
   });
 
   static getCartCount = asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).userId; // From auth middleware
+    const userId = req.userId; // From auth middleware
 
     if (!userId) {
       sendSuccess(res, { count: 0 });
@@ -157,3 +168,4 @@ export class CartController {
     sendSuccess(res, { count });
   });
 }
+

@@ -73,13 +73,7 @@ const Cart: React.FC = () => {
   // Sync server cart to local state
   useEffect(() => {
     if (serverCart && sessionId) {
-      if (import.meta.env.DEV) {
-        console.log("📦 Syncing cart from server:", {
-          itemsLength: serverCart.items?.length,
-          items: serverCart.items,
-          total: serverCart.total,
-        });
-      }
+      // Development logging handled by Redux middleware if needed
       dispatch(
         setCart({
           items: serverCart.items,

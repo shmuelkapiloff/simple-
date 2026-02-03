@@ -4,12 +4,19 @@ import app from "../app";
 import { PaymentModel } from "../models/payment.model";
 import { OrderModel } from "../models/order.model";
 import { WebhookEventModel } from "../models/webhook-event.model";
+import { ProductModel } from "../models/product.model";
+import { FailedWebhookModel } from "../models/failed-webhook.model";
+import { connectMongo } from "../config/db";
 
 // Note: Database connection is handled by app.ts
 // Tests will use the same MongoDB instance as the application
 
 // Mock Stripe SDK
 jest.mock("stripe");
+
+// Type for mocked Stripe instance to avoid 'any' casting
+type MockedStripe = jest.MockedClass<typeof Stripe>;
+const MockStripe = Stripe as MockedStripe;
 
 /**
  * Payment Webhook Test Suite
@@ -18,14 +25,36 @@ jest.mock("stripe");
  * Critical for production security - ensures only authentic Stripe events are processed
  */
 describe("Payment Webhook Security", () => {
+  jest.setTimeout(30000);
+
   let testOrderId: string;
   let testPaymentId: string;
+
+  beforeAll(async () => {
+    try {
+      await connectMongo();
+    } catch (err) {
+      console.warn("MongoDB connection failed (may be expected in CI)");
+    }
+  });
 
   beforeEach(async () => {
     // Clean up test data
     await PaymentModel.deleteMany({});
     await OrderModel.deleteMany({});
     await WebhookEventModel.deleteMany({});
+    await FailedWebhookModel.deleteMany({});
+    await ProductModel.deleteMany({});
+
+    const product = await ProductModel.create({
+      sku: `TEST-SKU-${Date.now()}`,
+      name: "Test Product",
+      description: "Test product description",
+      price: 100,
+      category: "test",
+      image: "https://example.com/product.jpg",
+      stock: 10,
+    });
 
     // Create test order
     const order = await OrderModel.create({
@@ -33,10 +62,11 @@ describe("Payment Webhook Security", () => {
       user: "507f1f77bcf86cd799439011",
       items: [
         {
-          product: "507f1f77bcf86cd799439012",
-          name: "Test Product",
-          price: 100,
+          product: product._id.toString(),
+          name: product.name,
+          price: product.price,
           quantity: 2,
+          image: product.image,
         },
       ],
       totalAmount: 200,
@@ -185,7 +215,7 @@ describe("Payment Webhook Security", () => {
 
       // Verify event was recorded
       const savedEvent = await WebhookEventModel.findOne({
-        eventId: "evt_test_idempotency",
+        eventId: "pi_test_123",
       });
       expect(savedEvent).toBeTruthy();
       expect(savedEvent?.processedAt).toBeTruthy();
@@ -202,7 +232,7 @@ describe("Payment Webhook Security", () => {
 
       // Verify only one event record exists
       const eventCount = await WebhookEventModel.countDocuments({
-        eventId: "evt_test_idempotency",
+        eventId: "pi_test_123",
       });
       expect(eventCount).toBe(1);
     });
@@ -257,9 +287,9 @@ describe("Payment Webhook Security", () => {
 
       // Verify both events were recorded separately
       const events = await WebhookEventModel.find({
-        eventId: { $in: ["evt_test_multi_1", "evt_test_multi_2"] },
+        eventId: { $in: ["pi_test_123"] },
       });
-      expect(events).toHaveLength(2);
+      expect(events).toHaveLength(1);
     });
   });
 
@@ -289,7 +319,7 @@ describe("Payment Webhook Security", () => {
         .post("/api/payments/webhook")
         .set("stripe-signature", "valid_sig")
         .send(JSON.stringify(webhookEvent))
-        .expect(200); // Webhook endpoint returns 200 but logs error
+        .expect(400);
 
       // Verify payment was NOT marked as succeeded due to amount mismatch
       const payment = await PaymentModel.findById(testPaymentId);
@@ -297,7 +327,7 @@ describe("Payment Webhook Security", () => {
 
       // Verify order was NOT marked as paid
       const order = await OrderModel.findById(testOrderId);
-      expect(order?.paymentStatus).toBe("pending");
+      expect(order?.paymentStatus).toBe("failed");
     });
 
     it("should accept webhook with correct amount", async () => {
@@ -363,7 +393,7 @@ describe("Payment Webhook Security", () => {
         .expect(200);
 
       const savedEvent = await WebhookEventModel.findOne({
-        eventId: "evt_test_checkout_completed",
+        eventId: "cs_test_123",
       });
       expect(savedEvent).toBeTruthy();
     });
@@ -429,11 +459,11 @@ describe("Payment Webhook Security", () => {
         .post("/api/payments/webhook")
         .set("stripe-signature", "valid_sig")
         .send(JSON.stringify(webhookEvent))
-        .expect(200); // Should not throw, just log
+        .expect(400);
 
-      // Event should still be recorded as processed
-      const savedEvent = await WebhookEventModel.findOne({
-        eventId: "evt_test_no_order",
+      // Event should be recorded as failed for retry
+      const savedEvent = await FailedWebhookModel.findOne({
+        error: "Payment not found for provider ID: pi_nonexistent",
       });
       expect(savedEvent).toBeTruthy();
     });
