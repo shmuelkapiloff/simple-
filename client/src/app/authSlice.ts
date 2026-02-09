@@ -9,6 +9,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -253,6 +254,7 @@ interface ChangePasswordCredentials {
 interface UpdateProfileData {
   name?: string;
   email?: string;
+  phone?: string;
 }
 
 export const updateProfile = createAsyncThunk<

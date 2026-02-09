@@ -28,6 +28,7 @@ const Profile: React.FC = () => {
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
+    phone: user?.phone || "",
   });
 
   if (!user) {
@@ -58,6 +59,13 @@ const Profile: React.FC = () => {
       errors.email = "כתובת אימייל לא תקינה";
     }
 
+    // Validate phone if provided
+    if (formData.phone && formData.phone.trim()) {
+      if (!/^[0-9\-\+\(\)\s]*$/.test(formData.phone)) {
+        errors.phone = "מספר טלפון יכול להכיל רק ספרות, מקפים, פלוסים, סוגריים ורווחים";
+      }
+    }
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -77,6 +85,7 @@ const Profile: React.FC = () => {
           updateProfile({
             name: formData.name,
             email: formData.email,
+            phone: formData.phone,
           }) as any
         );
 
@@ -98,6 +107,7 @@ const Profile: React.FC = () => {
       setFormData({
         name: user?.name || "",
         email: user?.email || "",
+        phone: user?.phone || "",
       });
       setValidationErrors({});
     }
@@ -293,6 +303,38 @@ const Profile: React.FC = () => {
                     ) : (
                       <p className="text-gray-900 font-medium py-2">
                         {user.email}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Phone Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📱 מספר טלפון
+                    </label>
+                    {isEditing ? (
+                      <>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                            validationErrors.phone
+                              ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                              : "border-gray-300 focus:ring-blue-500 focus:border-transparent"
+                          }`}
+                          placeholder="הזן את מספר הטלפון שלך (אופציונלי)"
+                        />
+                        {validationErrors.phone && (
+                          <p className="mt-1 text-sm text-red-600">
+                            ⚠️ {validationErrors.phone}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-900 font-medium py-2">
+                        {user.phone || "לא הוזן"}
                       </p>
                     )}
                   </div>

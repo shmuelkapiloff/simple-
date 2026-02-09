@@ -42,6 +42,13 @@ export const updateProfileSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters").optional(),
     email: z.string().email("Invalid email format").optional(),
+    phone: z
+      .string()
+      .regex(
+        /^[0-9\-\+\(\)\s]*$/,
+        "Phone number can only contain digits, hyphens, plus signs, parentheses, and spaces"
+      )
+      .optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
