@@ -41,7 +41,7 @@ describe("Products API", () => {
 
   it("GET /api/products/:id with invalid ID returns 404", async () => {
     const res = await request(app).get(
-      "/api/products/507f1f77bcf86cd799439011"
+      "/api/products/507f1f77bcf86cd799439011",
     ); // ObjectId לא קיים
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);

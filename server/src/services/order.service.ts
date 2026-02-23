@@ -85,13 +85,13 @@ export class OrderService {
 
     // 🔒 Security: Whitelist valid order statuses to prevent NoSQL injection
     const VALID_ORDER_STATUSES = [
-      'pending',
-      'pending_payment',
-      'confirmed',
-      'processing',
-      'shipped',
-      'delivered',
-      'cancelled'
+      "pending",
+      "pending_payment",
+      "confirmed",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
     ] as const;
 
     if (filters?.status) {

@@ -247,7 +247,12 @@ export class CartService {
       }
 
       if (product.stock < quantity) {
-        throw new ApiError(400, "Insufficient stock", undefined, "VALIDATION_ERROR");
+        throw new ApiError(
+          400,
+          "Insufficient stock",
+          undefined,
+          "VALIDATION_ERROR",
+        );
       }
 
       // ⚡ קבל עגלה נוכחית (מהיר מRedis)

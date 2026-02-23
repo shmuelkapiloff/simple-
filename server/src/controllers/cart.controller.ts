@@ -55,14 +55,14 @@ export class CartController {
     }
 
     logger.info(
-      `Adding to cart: product ${productId} x${quantity} for user ${userId}`
+      `Adding to cart: product ${productId} x${quantity} for user ${userId}`,
     );
 
     const cart = await CartService.addToCart(productId, quantity, userId);
 
     // 🔍 Debug: log the response
     logger.debug(
-      `Cart response: ${cart.items.length} items, total: ${cart.total}`
+      `Cart response: ${cart.items.length} items, total: ${cart.total}`,
     );
     if (cart.items.length > 0) {
       const firstItem = cart.items[0];
@@ -71,7 +71,7 @@ export class CartController {
           productId: firstItem.product,
           hasName: !!(firstItem.product as any)?.name,
           hasPrice: !!(firstItem.product as any)?.price,
-        })}`
+        })}`,
       );
     }
 
@@ -93,7 +93,7 @@ export class CartController {
     }
 
     logger.info(
-      `Updating quantity: product ${productId} to ${quantity} for user ${userId}`
+      `Updating quantity: product ${productId} to ${quantity} for user ${userId}`,
     );
 
     const cart = await CartService.updateQuantity(productId, quantity, userId);
@@ -168,4 +168,3 @@ export class CartController {
     sendSuccess(res, { count });
   });
 }
-

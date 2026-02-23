@@ -3,8 +3,7 @@ import { logger } from "./utils/logger";
 
 // Test environment defaults (do not override user-provided values)
 process.env.NODE_ENV = process.env.NODE_ENV || "test";
-process.env.JWT_SECRET =
-  process.env.JWT_SECRET || "test-jwt-secret-change-me";
+process.env.JWT_SECRET = process.env.JWT_SECRET || "test-jwt-secret-change-me";
 process.env.PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || "stripe";
 process.env.STRIPE_SECRET_KEY =
   process.env.STRIPE_SECRET_KEY || "sk_test_dummy_key";
@@ -20,7 +19,7 @@ jest.setTimeout(30000);
 beforeAll(async () => {
   logger.info("🚀 Jest setup starting...");
   // Give MongoDB time to initialize
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 });
 
 /**
@@ -28,11 +27,14 @@ beforeAll(async () => {
  */
 afterAll(async () => {
   logger.info("🧹 Jest cleanup starting...");
-  
+
   try {
     // Properly close MongoDB connection
     if (mongoose.connection.readyState !== 0) {
-      if (process.env.TEST_MODE === "integration" && process.env.NODE_ENV === "test") {
+      if (
+        process.env.TEST_MODE === "integration" &&
+        process.env.NODE_ENV === "test"
+      ) {
         await mongoose.connection.dropDatabase();
         logger.info("✅ Test database dropped (integration mode)");
       }
@@ -48,7 +50,7 @@ afterAll(async () => {
   logger.info("✅ All timers cleared");
 
   // Give async operations time to complete
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 });
 
 // Handle uncaught exceptions

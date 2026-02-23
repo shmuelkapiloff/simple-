@@ -1,5 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
+import { specs } from "./swagger";
 import corsConfig from "./config/cors";
 import { errorHandler } from "./middlewares/error.middleware";
 import {
@@ -65,6 +67,24 @@ app.get("/health", (req: Request, res: Response) => {
 });
 
 /**
+ * Swagger / OpenAPI Documentation
+ * UI:   http://localhost:5000/api/docs
+ * JSON: http://localhost:5000/api/docs.json
+ */
+app.use(
+  "/api/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    customSiteTitle: "Simple Shop API Docs",
+    customCss: ".swagger-ui .topbar { display: none }",
+  }),
+);
+app.get("/api/docs.json", (_req: Request, res: Response) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(specs);
+});
+
+/**
  * API Routes - Versioned for future compatibility
  */
 app.use("/api/health", healthRoutes);
@@ -96,7 +116,8 @@ app.get("/", (req: Request, res: Response) => {
         addresses: "/api/addresses",
         admin: "/api/admin",
       },
-      documentation: "/docs (coming soon)",
+      documentation: "/api/docs",
+      documentationJSON: "/api/docs.json",
     },
     message: "Welcome to Simple Shop API",
   });

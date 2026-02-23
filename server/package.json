@@ -15,10 +15,13 @@
     "test:perf": "jest --testNamePattern=Performance --passWithNoTests",
     "test:watch": "jest --watchAll",
     "seed": "ts-node src/seed/products.seed.ts",
+    "export-api": "ts-node scripts/export-openapi.ts",
+    "validate-swagger": "ts-node scripts/validate-swagger.ts",
     "make-admin": "ts-node scripts/make-admin.ts"
   },
   "dependencies": {
     "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "bcryptjs": "^3.0.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
@@ -37,9 +40,11 @@
     "prom-client": "^15.1.3",
     "stripe": "^20.1.2",
     "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.10",
