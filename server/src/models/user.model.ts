@@ -24,6 +24,9 @@ export interface IUser extends Document {
   failedLoginAttempts: number;
   lockedUntil?: Date | null;
 
+  // Token version for instant logout ⬅️ חדש - ביטול tokens
+  tokenVersion: number;
+
   // Instance methods
   comparePassword(candidatePassword: string): Promise<boolean>;
   toJSON(): any;
@@ -111,6 +114,12 @@ const UserSchema = new Schema<IUser>(
       type: Date,
       default: null,
       index: true, // For efficient querying of locked accounts
+    },
+
+    // ⬅️ חדש - Token Version: כשעולה ב-1, כל הtokens הישנים מתבטלים
+    tokenVersion: {
+      type: Number,
+      default: 0,
     },
   },
   {

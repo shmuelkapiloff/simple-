@@ -3,7 +3,7 @@ import { z } from "zod";
 // ═══════════════════════════════════════════════════════════════════════════
 // PAYMENT VALIDATORS
 // ═══════════════════════════════════════════════════════════════════════════
-// 
+//
 // These schemas validate payment operations to prevent:
 // - Invalid order IDs (malformed MongoDB ObjectIds)
 // - Missing required fields (orderId)
@@ -40,7 +40,9 @@ export const createPaymentIntentSchema = z.object({
   orderId: objectIdSchema.describe("MongoDB ObjectId of the order"),
 });
 
-export type CreatePaymentIntentInput = z.infer<typeof createPaymentIntentSchema>;
+export type CreatePaymentIntentInput = z.infer<
+  typeof createPaymentIntentSchema
+>;
 
 /**
  * GET PAYMENT STATUS
@@ -114,11 +116,11 @@ export type ConfirmPaymentInput = z.infer<typeof confirmPaymentSchema>;
  * WEBHOOK PAYLOAD SCHEMA (Informational, not actively used)
  * ─────────────────────────────────────────────────────────
  * WARNING: Do NOT use this to validate webhook payload!
- * 
+ *
  * Reason: Webhook signature verification must happen on RAW BODY (bytes),
  * not parsed JSON. If you parse the body first, HMAC verification fails.
  *
- * Flow: 
+ * Flow:
  * 1. Express middleware receives raw req.body (Buffer)
  * 2. StripeProvider.handleWebhook() verifies HMAC signature on raw body
  * 3. THEN parse the body and validate against provider schema
@@ -139,7 +141,12 @@ export const stripeWebhookPayloadSchema = z.object({
     object: z.object({
       id: z.string().describe("Stripe payment intent ID (pi_...)"),
       status: z
-        .enum(["succeeded", "processing", "requires_action", "requires_payment_method"])
+        .enum([
+          "succeeded",
+          "processing",
+          "requires_action",
+          "requires_payment_method",
+        ])
         .describe("Payment status"),
       amount: z.number().describe("Amount in cents"),
       metadata: z

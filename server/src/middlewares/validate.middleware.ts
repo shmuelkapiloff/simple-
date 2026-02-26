@@ -5,10 +5,10 @@ import { log } from "../utils/logger";
 
 /**
  * Express middleware factory for validating request data against Zod schemas
- * 
+ *
  * Validates: query params, body, params, headers
  * Attach validation errors: res.validationErrors
- * 
+ *
  * Usage:
  * ──────
  * router.post(
@@ -17,7 +17,7 @@ import { log } from "../utils/logger";
  *   validateRequest({ body: createPaymentIntentSchema }),
  *   PaymentController.createIntent
  * )
- * 
+ *
  * Inside controller:
  * const { orderId } = req.body; // Already validated and typed!
  */
@@ -121,7 +121,10 @@ export function validateRequest(options: ValidateOptions) {
  * Utility to validate single field in controller
  * Useful for complex validation logic
  */
-export function validateField(schema: ZodSchema, data: unknown): [boolean, string | null] {
+export function validateField(
+  schema: ZodSchema,
+  data: unknown,
+): [boolean, string | null] {
   try {
     schema.parse(data);
     return [true, null];

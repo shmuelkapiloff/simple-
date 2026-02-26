@@ -21,14 +21,14 @@ router.use(AuthMiddleware.requireAuth);
 router.post(
   "/create-intent",
   validateRequest({ body: createPaymentIntentSchema }),
-  PaymentController.createIntent
+  PaymentController.createIntent,
 );
 
 // Alias for better naming: POST /api/payments/checkout
 router.post(
   "/checkout",
   validateRequest({ body: createPaymentIntentSchema }),
-  PaymentController.createIntent
+  PaymentController.createIntent,
 );
 
 // GET /api/payments/:orderId/status - Get payment status for an order
@@ -36,7 +36,7 @@ router.post(
 router.get(
   "/:orderId/status",
   validateRequest({ params: paymentStatusParamsSchema }),
-  PaymentController.getStatus
+  PaymentController.getStatus,
 );
 
 export default router;

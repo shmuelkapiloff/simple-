@@ -8,13 +8,19 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { logger } from "../utils/logger";
-import { JWT_EXPIRATION, JWT_REFRESH_EXPIRATION, PASSWORD_RESET_EXPIRATION } from "../config/constants";
+import {
+  JWT_EXPIRATION,
+  JWT_REFRESH_EXPIRATION,
+  PASSWORD_RESET_EXPIRATION,
+} from "../config/constants";
 import { ApiError, UnauthorizedError } from "../utils/asyncHandler";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key";
+const JWT_REFRESH_SECRET =
+  process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key";
 const JWT_EXPIRE = process.env.JWT_EXPIRE || JWT_EXPIRATION;
-const JWT_REFRESH_EXPIRE = process.env.JWT_REFRESH_EXPIRE || JWT_REFRESH_EXPIRATION;
+const JWT_REFRESH_EXPIRE =
+  process.env.JWT_REFRESH_EXPIRE || JWT_REFRESH_EXPIRATION;
 
 export class AuthService {
   /**
@@ -48,9 +54,9 @@ export class AuthService {
     });
 
     // Generate short-lived access token (15 min)
-    const token = this.generateToken(user._id);
+    const token = this.generateToken(user._id, user.tokenVersion);
     // Generate long-lived refresh token (7 days) - stored in httpOnly cookie or secure storage
-    const refreshToken = this.generateRefreshToken(user._id);
+    const refreshToken = this.generateRefreshToken(user._id, user.tokenVersion);
 
     // Update last login
     user.lastLogin = new Date();
@@ -149,9 +155,9 @@ export class AuthService {
     user.lockedUntil = null;
 
     // Generate short-lived access token (15 min)
-    const token = this.generateToken(user._id);
+    const token = this.generateToken(user._id, user.tokenVersion);
     // Generate long-lived refresh token (7 days)
-    const refreshToken = this.generateRefreshToken(user._id);
+    const refreshToken = this.generateRefreshToken(user._id, user.tokenVersion);
 
     // Update last login
     user.lastLogin = new Date();
@@ -283,11 +289,16 @@ export class AuthService {
    */
   static async verifyToken(token: string) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; tokenVersion?: number };
       const user = await UserModel.findById(decoded.userId);
 
       if (!user || !user.isActive) {
         throw new Error("Invalid token");
+      }
+
+      // ✨ Token Version check: if user logged out, version incremented and old tokens are invalid
+      if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+        throw new Error("Token revoked");
       }
 
       return this.sanitizeUser(user);
@@ -353,11 +364,36 @@ export class AuthService {
     // Update password (will be hashed by pre-save middleware)
     user.password = newPassword;
     user.lastUpdated = new Date();
+    // ✨ Increment tokenVersion: all existing sessions are revoked on password change
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
 
     return {
       message: "Password changed successfully",
     };
+  }
+
+  /**
+   * Logout user - increment tokenVersion to invalidate ALL existing tokens instantly
+   * This works because every token contains the tokenVersion at time of creation.
+   * When version increments, all old tokens fail the version check in verifyToken().
+   */
+  static async logout(userId: string) {
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // ✨ Increment version = all existing tokens (access + refresh) are instantly invalid
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    await user.save();
+
+    logger.info(
+      { userId, tokenVersion: user.tokenVersion },
+      "🚪 User logged out - all tokens revoked",
+    );
+
+    return { message: "Logged out successfully - all sessions revoked" };
   }
 
   /**
@@ -446,10 +482,11 @@ export class AuthService {
   /**
    * Generate JWT access token (short-lived)
    * @param userId MongoDB user ID
+   * @param tokenVersion Current token version for instant revocation
    * @returns JWT token (valid for 15 minutes)
    */
-  private static generateToken(userId: string): string {
-    return jwt.sign({ userId }, JWT_SECRET, {
+  private static generateToken(userId: string, tokenVersion: number = 0): string {
+    return jwt.sign({ userId, tokenVersion }, JWT_SECRET, {
       expiresIn: JWT_EXPIRE,
     } as jwt.SignOptions);
   }
@@ -457,10 +494,11 @@ export class AuthService {
   /**
    * Generate JWT refresh token (long-lived)
    * @param userId MongoDB user ID
+   * @param tokenVersion Current token version for instant revocation
    * @returns Refresh token (valid for 7 days)
    */
-  private static generateRefreshToken(userId: string): string {
-    return jwt.sign({ userId }, JWT_REFRESH_SECRET, {
+  private static generateRefreshToken(userId: string, tokenVersion: number = 0): string {
+    return jwt.sign({ userId, tokenVersion }, JWT_REFRESH_SECRET, {
       expiresIn: JWT_REFRESH_EXPIRE,
     } as jwt.SignOptions);
   }
@@ -474,6 +512,7 @@ export class AuthService {
     try {
       const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as {
         userId: string;
+        tokenVersion?: number;
       };
 
       // Verify user still exists and is active
@@ -482,8 +521,13 @@ export class AuthService {
         throw new UnauthorizedError("User not found or inactive");
       }
 
-      // Generate new access token
-      return this.generateToken(decoded.userId);
+      // ✨ Token Version check: reject refresh if user logged out
+      if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+        throw new UnauthorizedError("Refresh token revoked");
+      }
+
+      // Generate new access token with current version
+      return this.generateToken(decoded.userId, user.tokenVersion);
     } catch (error: any) {
       throw new UnauthorizedError("Invalid or expired refresh token");
     }

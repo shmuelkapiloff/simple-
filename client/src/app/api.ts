@@ -193,7 +193,7 @@ const baseQueryWithLogging = fetchBaseQuery({
   },
 });
 
-// Wrapper עם ApiLogger
+// Wrapper עם ApiLogger + Auto Token Refresh
 const baseQueryWithInterceptor = async (
   args: any,
   api: any,
@@ -209,13 +209,57 @@ const baseQueryWithInterceptor = async (
     if (result.error) {
       ApiLogger.endCall(callId, null, result.error);
 
-      // Auth guard: if token expired/unauthorized, force login modal
+      // 🔄 Auto Token Refresh: If 401, try to refresh token once
       if (result.error.status === 401) {
+        console.log("🔄 Token expired - attempting refresh...");
+
+        const refreshToken = sessionStorage.getItem("refreshToken");
+
+        if (refreshToken) {
+          try {
+            // Try to refresh the access token
+            const refreshResponse = await fetch(
+              `${
+                import.meta.env.VITE_API_BASE_URL ||
+                "http://localhost:4001/api/"
+              }auth/refresh`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ refreshToken }),
+              },
+            );
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              const newAccessToken = refreshData?.data?.token;
+
+              if (newAccessToken) {
+                // Update access token in storage
+                localStorage.setItem("accessToken", newAccessToken);
+
+                console.log(
+                  "✅ Token refreshed successfully - retrying request",
+                );
+
+                // Retry the original request with new token
+                return baseQueryWithLogging(args, api, extraOptions);
+              }
+            }
+          } catch (refreshError) {
+            console.error("❌ Token refresh failed:", refreshError);
+          }
+        }
+
+        // If refresh failed or no refresh token, logout user
+        console.log("🚪 Token refresh failed - logging out");
         api.dispatch(logout());
         api.dispatch(
           requireAuth({
             view: "login",
-            message: "התחבר כדי להמשיך",
+            message: "תוקף ההתחברות פג - התחבר מחדש",
           }),
         );
       }

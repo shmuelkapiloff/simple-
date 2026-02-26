@@ -1,19 +1,19 @@
 /**
  * Centralized API Error Messages
- * 
+ *
  * This file consolidates all error messages used throughout the API.
  * Benefits:
  * - Easy to maintain and update messages globally
  * - Supports localization (i18n) in the future
  * - Prevents duplicate error message strings scattered across files
  * - Consistent error messaging across all endpoints
- * 
+ *
  * Usage:
  * ──────
  * import { ApiErrors } from "../errors/api-errors";
- * 
+ *
  * throw new Error(ApiErrors.Payment.OrderNotFound);
- * 
+ *
  * or in controllers:
  * return sendError(res, 404, ApiErrors.Payment.OrderNotFound);
  */
@@ -28,7 +28,8 @@ export const ApiErrors = {
     TokenExpired: "Token has expired. Please login again",
     NoTokenProvided: "Authentication required",
     InvalidCredentials: "Invalid email or password",
-    AccountLocked: "Account locked due to multiple failed login attempts. Please try again later",
+    AccountLocked:
+      "Account locked due to multiple failed login attempts. Please try again later",
     AccountLockedMinutes: (minutes: number) =>
       `Account locked for ${minutes} minutes due to failed login attempts`,
   },
@@ -202,7 +203,8 @@ export const ApiErrors = {
   RateLimit: {
     TooManyRequests: "Too many requests from this IP address",
     TooManyAttempts: "Too many login attempts. Please try again later",
-    TooManyPasswordResets: "Too many password reset requests. Please try again later",
+    TooManyPasswordResets:
+      "Too many password reset requests. Please try again later",
     WebhookRateLimited: "Webhook rate limit exceeded",
   },
 };
@@ -214,7 +216,7 @@ export const ApiErrors = {
 export function getErrorMessage(
   category: keyof typeof ApiErrors,
   key: string,
-  fallback = "An error occurred"
+  fallback = "An error occurred",
 ): string {
   const categoryErrors = ApiErrors[category];
   if (!categoryErrors) return fallback;

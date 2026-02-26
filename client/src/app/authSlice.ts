@@ -90,7 +90,7 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
       // Store tokens
       const accessToken = data?.data?.token;
       const refreshToken = data?.data?.refreshToken;
-      
+
       if (accessToken) {
         // ⚠️ Access token (15 min): Short-lived, safe in localStorage
         localStorage.setItem("accessToken", accessToken);
@@ -143,7 +143,7 @@ export const register = createAsyncThunk<AuthResponse, RegisterData>(
       // Store tokens
       const accessToken = data?.data?.token;
       const refreshToken = data?.data?.refreshToken;
-      
+
       if (accessToken) {
         // ⚠️ Access token (15 min): Short-lived, safe in localStorage
         localStorage.setItem("accessToken", accessToken);
@@ -260,6 +260,74 @@ export const logout = createAsyncThunk<void>(
     }
   },
 );
+
+/**
+ * 🔄 Refresh Access Token
+ * ────────────────────────
+ * Called automatically when access token expires (15 min)
+ * Uses long-lived refresh token (7 days) to get new short-lived access token
+ *
+ * Use case: User is active but access token expired
+ * Result: Seamless experience - no logout required
+ */
+export const refreshAccessToken = createAsyncThunk<
+  { token: string; refreshToken: string },
+  void,
+  { rejectValue: string }
+>("auth/refreshAccessToken", async (_, { rejectWithValue }) => {
+  try {
+    const refreshToken = sessionStorage.getItem("refreshToken");
+
+    if (!refreshToken) {
+      return rejectWithValue("No refresh token available");
+    }
+
+    const response = await fetch(`${API_BASE_URL}auth/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    const text = await response.text();
+    if (!text) {
+      return rejectWithValue("Server not available");
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (jsonError) {
+      return rejectWithValue("Invalid response from server");
+    }
+
+    if (!response.ok) {
+      return rejectWithValue(data.message || "Failed to refresh token");
+    }
+
+    const newAccessToken = data?.data?.token;
+    const newRefreshToken = data?.data?.refreshToken;
+
+    if (newAccessToken) {
+      localStorage.setItem("accessToken", newAccessToken);
+    }
+
+    // Refresh token can also be rotated (for extra security)
+    if (newRefreshToken) {
+      sessionStorage.setItem("refreshToken", newRefreshToken);
+    }
+
+    return {
+      token: newAccessToken,
+      refreshToken: newRefreshToken || refreshToken,
+    };
+  } catch (error: any) {
+    localStorage.removeItem("accessToken");
+    sessionStorage.removeItem("refreshToken");
+    return rejectWithValue(error.message || "Failed to refresh token");
+  }
+});
 
 interface ChangePasswordCredentials {
   currentPassword: string;
@@ -536,6 +604,25 @@ const authSlice = createSlice({
         state.showAuthModal = false;
         state.authPromptMessage = null;
         state.authModalView = "login";
+        localStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+      });
+
+    // Refresh Access Token
+    builder
+      .addCase(refreshAccessToken.pending, (state) => {
+        // Don't set loading - this happens in background
+      })
+      .addCase(refreshAccessToken.fulfilled, (state, action) => {
+        // Update token in state
+        state.token = action.payload.token;
+        state.error = null;
+      })
+      .addCase(refreshAccessToken.rejected, (state) => {
+        // Token refresh failed - logout user
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
         localStorage.removeItem("accessToken");
         sessionStorage.removeItem("refreshToken");
       });

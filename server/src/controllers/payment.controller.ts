@@ -9,7 +9,7 @@ export class PaymentController {
   /**
    * Create payment intent
    * POST /api/payments/create-intent
-   * 
+   *
    * Validated via validateRequest middleware with createPaymentIntentSchema
    * Body already validated: { orderId: string (valid MongoDB ObjectId) }
    */
@@ -23,18 +23,23 @@ export class PaymentController {
 
     const result = await PaymentService.createPaymentIntent(userId, orderId);
 
-    return sendSuccess(res, {
-      payment: result.payment,
-      status: result.status,
-      clientSecret: result.clientSecret,
-      checkoutUrl: result.checkoutUrl,
-    }, "Payment intent created successfully", 200);
+    return sendSuccess(
+      res,
+      {
+        payment: result.payment,
+        status: result.status,
+        clientSecret: result.clientSecret,
+        checkoutUrl: result.checkoutUrl,
+      },
+      "Payment intent created successfully",
+      200,
+    );
   });
 
   /**
    * Get payment status by order
    * GET /api/payments/:orderId/status
-   * 
+   *
    * Validated via validateRequest middleware with paymentStatusParamsSchema
    * Params already validated: { orderId: string (valid MongoDB ObjectId) }
    */
@@ -131,4 +136,3 @@ export class PaymentController {
     }
   });
 }
-

@@ -147,7 +147,7 @@ export class AuthController {
    * Refresh access token
    * POST /api/auth/refresh
    * Body: { refreshToken }
-   * 
+   *
    * Exchanges a long-lived refresh token for a new short-lived access token
    * Useful when access token (15 min) expires but refresh token (7 days) is still valid
    */
@@ -176,14 +176,21 @@ export class AuthController {
   /**
    * Logout user
    * POST /api/auth/logout
+   * Increments tokenVersion to instantly invalidate all existing tokens
    */
   static async logout(req: Request, res: Response) {
     const userId = req.userId;
-    log.info("User logout", { userId });
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const result = await AuthService.logout(userId);
+    log.info("User logout - all tokens revoked", { userId });
 
     res.status(200).json({
       success: true,
-      message: "Logged out successfully",
+      message: result.message,
     });
   }
 
