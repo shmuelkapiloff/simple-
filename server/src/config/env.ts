@@ -53,5 +53,5 @@ export const env = {
     "your-super-secret-jwt-key-change-in-production-2024!",
   ALLOWED_ORIGINS:
     process.env.ALLOWED_ORIGINS ||
-    "http://localhost:5173,http://localhost:3000",
+    "http://localhost:5173,http://localhost:3000,https://simple-4-anp6.onrender.com",
 };
