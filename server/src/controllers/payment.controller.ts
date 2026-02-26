@@ -3,64 +3,52 @@ import { PaymentService } from "../services/payment.service";
 import { FailedWebhookModel } from "../models/failed-webhook.model";
 import { asyncHandler } from "../utils/asyncHandler";
 import { log } from "../utils/logger";
+import { sendSuccess, sendError } from "../utils/response";
 
 export class PaymentController {
   /**
    * Create payment intent
    * POST /api/payments/create-intent
+   * 
+   * Validated via validateRequest middleware with createPaymentIntentSchema
+   * Body already validated: { orderId: string (valid MongoDB ObjectId) }
    */
   static createIntent = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId;
     const { orderId } = req.body;
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authenticated",
-      });
-    }
-
-    if (!orderId) {
-      return res.status(400).json({
-        success: false,
-        message: "orderId is required",
-      });
+      return sendError(res, 401, "Not authenticated");
     }
 
     const result = await PaymentService.createPaymentIntent(userId, orderId);
 
-    res.status(200).json({
-      success: true,
-      data: {
-        payment: result.payment,
-        status: result.status,
-        clientSecret: result.clientSecret,
-        checkoutUrl: result.checkoutUrl,
-      },
-    });
+    return sendSuccess(res, {
+      payment: result.payment,
+      status: result.status,
+      clientSecret: result.clientSecret,
+      checkoutUrl: result.checkoutUrl,
+    }, "Payment intent created successfully", 200);
   });
 
   /**
    * Get payment status by order
    * GET /api/payments/:orderId/status
+   * 
+   * Validated via validateRequest middleware with paymentStatusParamsSchema
+   * Params already validated: { orderId: string (valid MongoDB ObjectId) }
    */
   static getStatus = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.userId;
     const { orderId } = req.params;
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authenticated",
-      });
+      return sendError(res, 401, "Not authenticated");
     }
 
     const result = await PaymentService.getPaymentStatus(userId, orderId);
 
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
+    return sendSuccess(res, result, "Payment status retrieved", 200);
   });
 
   /**

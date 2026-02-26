@@ -1,8 +1,12 @@
 import { Router } from "express";
 import { PaymentController } from "../controllers/payment.controller";
-import { requireAuth } from "../middlewares/auth.middleware";
+import { AuthMiddleware } from "../middlewares/auth.middleware";
 import { webhookRateLimiter } from "../middlewares/rate-limiter.middleware";
-import { validateObjectId } from "../middlewares/validateObjectId.middleware";
+import { validateRequest } from "../middlewares/validate.middleware";
+import {
+  createPaymentIntentSchema,
+  paymentStatusParamsSchema,
+} from "../validators";
 
 const router = Router();
 
@@ -10,14 +14,29 @@ const router = Router();
 router.post("/webhook", webhookRateLimiter, PaymentController.webhook);
 
 // All routes below require authentication
-router.use(requireAuth);
+router.use(AuthMiddleware.requireAuth);
 
 // POST /api/payments/create-intent - Create payment intent for an order
-router.post("/create-intent", PaymentController.createIntent);
-// Alias for better naming
-router.post("/checkout", PaymentController.createIntent);
+// Validation: body.orderId must be valid MongoDB ObjectId
+router.post(
+  "/create-intent",
+  validateRequest({ body: createPaymentIntentSchema }),
+  PaymentController.createIntent
+);
+
+// Alias for better naming: POST /api/payments/checkout
+router.post(
+  "/checkout",
+  validateRequest({ body: createPaymentIntentSchema }),
+  PaymentController.createIntent
+);
 
 // GET /api/payments/:orderId/status - Get payment status for an order
-router.get("/:orderId/status", PaymentController.getStatus);
+// Validation: params.orderId must be valid MongoDB ObjectId
+router.get(
+  "/:orderId/status",
+  validateRequest({ params: paymentStatusParamsSchema }),
+  PaymentController.getStatus
+);
 
 export default router;

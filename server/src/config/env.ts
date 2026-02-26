@@ -13,17 +13,17 @@ function validateEnv() {
   if (paymentProvider === "stripe") {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error(
-        "❌ STRIPE_SECRET_KEY is required when PAYMENT_PROVIDER is stripe"
+        "❌ STRIPE_SECRET_KEY is required when PAYMENT_PROVIDER is stripe",
       );
     }
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
       if (isProd) {
         throw new Error(
-          "❌ STRIPE_WEBHOOK_SECRET is required in production for webhook verification"
+          "❌ STRIPE_WEBHOOK_SECRET is required in production for webhook verification",
         );
       }
       console.warn(
-        "⚠️  STRIPE_WEBHOOK_SECRET not set - webhook signature verification disabled"
+        "⚠️  STRIPE_WEBHOOK_SECRET not set - webhook signature verification disabled",
       );
     }
   }

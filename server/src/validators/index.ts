@@ -53,6 +53,21 @@ export {
 } from "./order.validator";
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PAYMENT VALIDATORS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export {
+  createPaymentIntentSchema,
+  type CreatePaymentIntentInput,
+  paymentStatusParamsSchema,
+  type PaymentStatusParams,
+  processRefundSchema,
+  type ProcessRefundInput,
+  confirmPaymentSchema,
+  type ConfirmPaymentInput,
+} from "./payment.validator";
+
+// ═══════════════════════════════════════════════════════════════════════════
 // VALIDATION UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════
 
