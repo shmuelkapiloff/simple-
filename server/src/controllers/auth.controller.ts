@@ -144,6 +144,36 @@ export class AuthController {
   }
 
   /**
+   * Refresh access token
+   * POST /api/auth/refresh
+   * Body: { refreshToken }
+   * 
+   * Exchanges a long-lived refresh token for a new short-lived access token
+   * Useful when access token (15 min) expires but refresh token (7 days) is still valid
+   */
+  static async refreshToken(req: Request, res: Response) {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Refresh token is required",
+      });
+    }
+
+    const newAccessToken = await AuthService.refreshAccessToken(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      message: "Access token refreshed successfully",
+      data: {
+        token: newAccessToken, // New short-lived access token
+        refreshToken, // Same refresh token (can be reused)
+      },
+    });
+  }
+
+  /**
    * Logout user
    * POST /api/auth/logout
    */

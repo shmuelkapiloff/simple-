@@ -34,6 +34,14 @@ router.post(
   asyncHandler(AuthController.resetPassword),
 );
 
+// POST /api/auth/refresh - Refresh access token
+// ⚠️ PUBLIC: doesn't require auth header, but needs valid refreshToken in body
+router.post(
+  "/refresh",
+  authRateLimiter,
+  asyncHandler(AuthController.refreshToken),
+);
+
 /**
  * Protected routes (authentication required)
  */

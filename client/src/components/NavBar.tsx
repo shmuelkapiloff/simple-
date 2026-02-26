@@ -42,9 +42,9 @@ export const NavBar: React.FC = () => {
 
   // Verify token on app startup
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("accessToken"); // ⚠️ Use accessToken
 
-    if (token && !isAuthenticated && !isLoading) {
+    if (accessToken && !isAuthenticated && !isLoading) {
       dispatch(verifyToken());
     }
   }, [dispatch, isAuthenticated, isLoading, user]);

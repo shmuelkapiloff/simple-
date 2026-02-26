@@ -183,9 +183,10 @@ const baseQueryWithLogging = fetchBaseQuery({
     headers.set("Content-Type", "application/json");
 
     // Add authorization token for protected routes
-    const token = localStorage.getItem("token");
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+    // ⚠️ Use accessToken (short-lived, 15 min)
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
     return headers;

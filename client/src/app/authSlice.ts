@@ -48,10 +48,10 @@ interface AuthResponse {
 // Initial state
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem("token"),
+  token: localStorage.getItem("accessToken"), // ⚠️ Access token only (15 min)
   isLoading: false,
   error: null,
-  isAuthenticated: !!localStorage.getItem("token"),
+  isAuthenticated: !!localStorage.getItem("accessToken"),
   showAuthModal: false,
   authModalView: "login",
   authPromptMessage: null,
@@ -87,10 +87,18 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
         return rejectWithValue(data.message || "Login failed");
       }
 
-      // Store token in localStorage
-      const token = data?.data?.token;
-      if (token) {
-        localStorage.setItem("token", token);
+      // Store tokens
+      const accessToken = data?.data?.token;
+      const refreshToken = data?.data?.refreshToken;
+      
+      if (accessToken) {
+        // ⚠️ Access token (15 min): Short-lived, safe in localStorage
+        localStorage.setItem("accessToken", accessToken);
+      }
+      if (refreshToken) {
+        // ⚠️ Refresh token (7 days): Store in sessionStorage for extra security
+        // sessionStorage is cleared when browser closes, good for refresh tokens
+        sessionStorage.setItem("refreshToken", refreshToken);
       }
 
       return data;
@@ -132,10 +140,17 @@ export const register = createAsyncThunk<AuthResponse, RegisterData>(
         return rejectWithValue(data.message || "Registration failed");
       }
 
-      // Store token in localStorage
-      const token = data?.data?.token;
-      if (token) {
-        localStorage.setItem("token", token);
+      // Store tokens
+      const accessToken = data?.data?.token;
+      const refreshToken = data?.data?.refreshToken;
+      
+      if (accessToken) {
+        // ⚠️ Access token (15 min): Short-lived, safe in localStorage
+        localStorage.setItem("accessToken", accessToken);
+      }
+      if (refreshToken) {
+        // ⚠️ Refresh token (7 days): Store in sessionStorage for extra security
+        sessionStorage.setItem("refreshToken", refreshToken);
       }
 
       return data;
@@ -156,7 +171,7 @@ export const verifyToken = createAsyncThunk<User>(
 
       const state = getState() as { auth: AuthState };
       const tokenFromState = state.auth.token;
-      const tokenFromStorage = localStorage.getItem("token");
+      const tokenFromStorage = localStorage.getItem("accessToken"); // ⚠️ Use accessToken
 
       console.log("🔍 verifyToken: Token sources:", {
         fromState: tokenFromState ? "exists" : "missing",
@@ -222,23 +237,25 @@ export const logout = createAsyncThunk<void>(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const accessToken = localStorage.getItem("accessToken");
 
-      if (token) {
+      if (accessToken) {
         // Optional: Call logout endpoint to invalidate token on server
         await fetch(`${API_BASE_URL}auth/logout`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
       }
 
-      // Remove token from localStorage
-      localStorage.removeItem("token");
+      // Remove tokens from storage
+      localStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
     } catch (error: any) {
       // Even if server logout fails, we still want to clear local state
-      localStorage.removeItem("token");
+      localStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
       return rejectWithValue(error.message || "Logout failed");
     }
   },
@@ -477,7 +494,7 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.error = null;
         // Make sure token is in state from localStorage
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("accessToken");
         if (token) {
           state.token = token;
         }
@@ -488,7 +505,8 @@ const authSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         state.error = null; // Don't show error for failed token verification
-        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
       });
 
     // Logout
@@ -505,7 +523,8 @@ const authSlice = createSlice({
         state.showAuthModal = false;
         state.authPromptMessage = null;
         state.authModalView = "login";
-        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
       })
       .addCase(logout.rejected, (state) => {
         state.isLoading = false;
@@ -517,7 +536,8 @@ const authSlice = createSlice({
         state.showAuthModal = false;
         state.authPromptMessage = null;
         state.authModalView = "login";
-        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
       });
 
     // Change Password

@@ -66,8 +66,11 @@ export const AUDIT_LOG_TTL = 90 * 24 * 60 * 60; // 90 days in seconds
 // JWT & AUTHENTICATION CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** JWT token expiration: 7 days */
-export const JWT_EXPIRATION = "7d";
+/** JWT access token expiration: 15 minutes (short-lived, safe in localStorage) */
+export const JWT_EXPIRATION = "15m";
+
+/** JWT refresh token expiration: 7 days (long-lived, used to get new access tokens) */
+export const JWT_REFRESH_EXPIRATION = "7d";
 
 /** Password reset token expiration: 1 hour */
 export const PASSWORD_RESET_EXPIRATION = 60 * 60 * 1000; // 1 hour in milliseconds
