@@ -165,10 +165,7 @@ export const cartApi = apiSlice.injectEndpoints({
       query: (body) => ({ url: "/cart/update", method: "PUT", body }),
       invalidatesTags: ["Cart"],
     }),
-    removeFromCart: build.mutation<
-      ApiResponse<Cart>,
-      { productId: string }
-    >({
+    removeFromCart: build.mutation<ApiResponse<Cart>, { productId: string }>({
       query: (body) => ({ url: "/cart/remove", method: "DELETE", body }),
       invalidatesTags: ["Cart"],
     }),

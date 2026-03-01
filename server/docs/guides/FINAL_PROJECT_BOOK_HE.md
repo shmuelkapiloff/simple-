@@ -321,7 +321,8 @@ src/
 
 | פונקציה | מיקום | תיאור קצר |
 |---------|-------|-----------|
-| `AuthService.login()` | services/auth.service.ts | אימות משתמש, בדיקת נעילה, עדכון ניסיונות, יצירת JWT |
+| `AuthService.login()` | services/auth.service.ts | אימות משתמש, בדיקת נעילה, עדכון ניסיונות, יצירת JWT עם tokenVersion |
+| `AuthService.logout()` | services/auth.service.ts | הגדלת tokenVersion לביטול מיידי של כל הטוקנים הקיימים |
 | `AuthService.register()` | services/auth.service.ts | יצירת משתמש חדש, הצפנת סיסמה, יצירת token ראשוני |
 | `OrderService.createOrder()` | services/order.service.ts | יצירת הזמנה מהעגלה, חישוב סכום ושמירת מצב pending |
 | `PaymentService.handleWebhook()` | services/payment.service.ts | אימות webhook, בדיקת idempotency, עדכון תשלום והזמנה |
@@ -398,8 +399,41 @@ Payments:
 POST   /api/payments/create-checkout
 POST   /api/payments/webhook (Stripe)
 
+Admin:
+GET    /api/admin/stats/summary   // סטטיסטיקות (מכירות, הזמנות, משתמשים, מלאי נמוך)
+GET    /api/admin/products        // רשימת כל המוצרים
+POST   /api/admin/products        // יצירת מוצר חדש
+PUT    /api/admin/products/:id    // עדכון מוצר
+DELETE /api/admin/products/:id    // מחיקת מוצר (soft delete)
+GET    /api/admin/users           // רשימת משתמשים
+PUT    /api/admin/users/:id/role  // שינוי role
+GET    /api/admin/orders          // כל ההזמנות
+PUT    /api/admin/orders/:id/status // עדכון סטטוס הזמנה
+
 Health:
 GET    /api/health
+```
+
+**Admin Stats Response Structure:**
+```javascript
+{
+  sales: {
+    total: Number,        // סה"כ מכירות (הזמנות delivered בלבד)
+    deliveredCount: Number
+  },
+  orders: {
+    open: Number,         // הזמנות פתוחות
+    today: Number         // הזמנות היום
+  },
+  inventory: {
+    lowStockCount: Number,
+    lowStockProducts: [{ _id, name, stock }],  // מוצרים עם מלאי < 5
+    activeProducts: Number
+  },
+  users: {
+    total: Number
+  }
+}
 ```
 
 #### 1.3.7.9 שימוש בחבילות תוכנה
@@ -453,6 +487,7 @@ GET    /api/health
   failedLoginAttempts: Number,
   lockedUntil: Date,
   lastLogin: Date,
+  tokenVersion: Number (default: 0),  // מוגדל ב-logout לביטול כל הטוקנים
   createdAt: Date,
   updatedAt: Date
 }
@@ -462,14 +497,19 @@ GET    /api/health
 ```javascript
 {
   _id: ObjectId,
+  sku: String (unique),
   name: String,
   description: String,
   price: Number,
   stock: Number,
-  category: String,
+  category: String,  // קטגוריות תקפות: accessories, audio, displays, laptops,
+                     // smart-home, smartphones, streaming, tablets, wearables
   image: String (URL),
+  featured: Boolean,
+  rating: Number,
   isActive: Boolean,
-  createdAt: Date
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
@@ -675,12 +715,31 @@ User → POST /login
      ▼
    Verify password
      │
-     ├─ Success → Reset failed attempts → Issue JWT
+     ├─ Success → Reset failed attempts → Issue JWT (with tokenVersion)
      │
      └─ Fail → failedLoginAttempts++
          │
          ├─ < 5 → Return error (remaining attempts)
          └─ >= 5 → lockedUntil = now + 15 min
+```
+
+#### 1.3.9.5.1 תרשים Logout עם tokenVersion (Instant Token Revocation)
+
+```
+User → POST /logout
+     │
+     ▼
+   Verify JWT token
+     │
+     ▼
+   user.tokenVersion++
+     │
+     ▼
+   Save to DB
+     │
+     ▼
+   All existing tokens invalid! ✓
+   (tokenVersion in JWT ≠ tokenVersion in DB)
 ```
 
 #### 1.3.9.6 תרשים Webhook Processing
@@ -790,6 +849,7 @@ Stripe Webhook → Verify Signature → Check Idempotency
 - ✅ **Account lockout** – אחרי 5 failed logins
 - ✅ **Rate limiting** – 5 attempts per 15 minutes per user
 - ✅ **Refresh tokens** – JWT עם expiry כדי להגביל חלון זמן
+- ✅ **tokenVersion** – ביטול מיידי של כל הטוקנים ב-logout (instant revocation)
 
 **2. Database (MongoDB)**
 - ✅ **Connection encryption** – HTTPS + TLS
@@ -985,5 +1045,5 @@ test: Add tests for payment webhook
 
 ---
 
-**תאריך עדכון אחרון:** [תאריך]  
-**מצב:** [Draft / Final]
+**תאריך עדכון אחרון:** 01/03/2026  
+**מצב:** Final

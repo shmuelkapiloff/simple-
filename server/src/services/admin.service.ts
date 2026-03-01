@@ -47,7 +47,7 @@ export class AdminService {
     const product = await ProductModel.findByIdAndUpdate(
       id,
       { isActive: false },
-      { new: true }
+      { new: true },
     );
 
     if (!product) {
@@ -76,7 +76,7 @@ export class AdminService {
   static async updateUserRole(
     targetUserId: string,
     role: "user" | "admin",
-    actingUserId?: string
+    actingUserId?: string,
   ) {
     if (!role || !["user", "admin"].includes(role)) {
       throw new Error("Invalid role");
@@ -112,7 +112,7 @@ export class AdminService {
   static async updateOrderStatus(
     orderId: string,
     newStatus: string,
-    message?: string
+    message?: string,
   ) {
     return OrderService.updateOrderStatus(orderId, newStatus, message);
   }

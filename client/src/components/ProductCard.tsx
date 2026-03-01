@@ -17,7 +17,9 @@ export default function ProductCard({ product }: Props) {
   const [addToCart, { isLoading }] = useAddToCartMutation();
 
   // Check if product is already in cart
-  const cartItem = items.find((item: CartItem) => item.product?._id === product._id);
+  const cartItem = items.find(
+    (item: CartItem) => item.product?._id === product._id,
+  );
   const quantityInCart = cartItem?.quantity ?? 0;
 
   const handleAdd = async () => {

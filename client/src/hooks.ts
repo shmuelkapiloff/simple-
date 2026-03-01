@@ -37,7 +37,10 @@ export function useCart() {
     return {
       items,
       total: cart?.total ?? 0,
-      itemCount: items.reduce((sum: number, i: { quantity: number }) => sum + i.quantity, 0),
+      itemCount: items.reduce(
+        (sum: number, i: { quantity: number }) => sum + i.quantity,
+        0,
+      ),
       isLoading,
       isEmpty: items.length === 0,
     };

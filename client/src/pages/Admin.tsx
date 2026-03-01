@@ -76,9 +76,17 @@ function StatsTab() {
             value: `₪${(stats?.sales?.total ?? 0).toLocaleString()}`,
             emoji: "💰",
           },
-          { label: "הזמנות פתוחות", value: stats?.orders?.open ?? 0, emoji: "📦" },
+          {
+            label: "הזמנות פתוחות",
+            value: stats?.orders?.open ?? 0,
+            emoji: "📦",
+          },
           { label: "משתמשים", value: stats?.users?.total ?? 0, emoji: "👥" },
-          { label: "מוצרים", value: stats?.inventory?.activeProducts ?? 0, emoji: "🏷️" },
+          {
+            label: "מוצרים",
+            value: stats?.inventory?.activeProducts ?? 0,
+            emoji: "🏷️",
+          },
         ].map((card) => (
           <div key={card.label} className="bg-white rounded-xl border p-6">
             <p className="text-3xl mb-1">{card.emoji}</p>
@@ -88,19 +96,24 @@ function StatsTab() {
         ))}
       </div>
 
-      {stats?.inventory?.lowStockProducts && stats.inventory.lowStockProducts.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-          <h3 className="font-bold text-yellow-800 mb-3">⚠️ מלאי נמוך</h3>
-          <div className="space-y-2">
-            {stats.inventory.lowStockProducts.map((p: { _id: string; name: string; stock: number }) => (
-              <div key={p._id} className="flex justify-between text-sm">
-                <span>{p.name}</span>
-                <span className="font-bold text-yellow-700">{p.stock} יח'</span>
-              </div>
-            ))}
+      {stats?.inventory?.lowStockProducts &&
+        stats.inventory.lowStockProducts.length > 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <h3 className="font-bold text-yellow-800 mb-3">⚠️ מלאי נמוך</h3>
+            <div className="space-y-2">
+              {stats.inventory.lowStockProducts.map(
+                (p: { _id: string; name: string; stock: number }) => (
+                  <div key={p._id} className="flex justify-between text-sm">
+                    <span>{p.name}</span>
+                    <span className="font-bold text-yellow-700">
+                      {p.stock} יח'
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
