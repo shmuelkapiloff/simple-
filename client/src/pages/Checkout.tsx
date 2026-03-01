@@ -27,14 +27,15 @@ export default function Checkout() {
   });
 
   useEffect(() => {
-    if (paymentData?.data?.payment?.status === "succeeded") {
+    // Server returns payment directly in data
+    if (paymentData?.data?.status === "succeeded") {
       localStorage.removeItem("checkout_order_id");
     }
   }, [paymentData]);
 
   // If returned from Stripe success
   if (sessionId && paymentOrderId) {
-    const status = paymentData?.data?.payment?.status;
+    const status = paymentData?.data?.status;
     const paid = status === "succeeded";
 
     return (
@@ -92,9 +93,10 @@ function CheckoutFlow({ navigate }: { navigate: ReturnType<typeof useNavigate> }
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [error, setError] = useState("");
 
-  const items = cartData?.data?.cart?.items ?? [];
-  const total = cartData?.data?.cart?.total ?? 0;
-  const addresses = addrData?.data?.addresses ?? [];
+  // Server returns data directly, not wrapped in { cart: ... } or { addresses: ... }
+  const items = cartData?.data?.items ?? [];
+  const total = cartData?.data?.total ?? 0;
+  const addresses = Array.isArray(addrData?.data) ? addrData.data : [];
 
   // Auto-select default address
   useEffect(() => {

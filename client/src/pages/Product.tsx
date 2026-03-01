@@ -12,7 +12,8 @@ export default function Product() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const product = data?.data?.product;
+  // Server returns product directly in data
+  const product = data?.data;
 
   if (isLoading) {
     return (

@@ -47,7 +47,8 @@ function ProfileTab() {
   const [updateProfile, { isLoading: updating }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: changingPw }] = useChangePasswordMutation();
 
-  const user = data?.data?.user;
+  // Server returns user directly in data
+  const user = data?.data;
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -174,7 +175,8 @@ function AddressesTab() {
   const [deleteAddress] = useDeleteAddressMutation();
   const [setDefault] = useSetDefaultAddressMutation();
 
-  const addresses = data?.data?.addresses ?? [];
+  // Server returns addresses array directly
+  const addresses = Array.isArray(data?.data) ? data.data : [];
   const [showForm, setShowForm] = useState(false);
   const [editingAddr, setEditingAddr] = useState<Address | null>(null);
 

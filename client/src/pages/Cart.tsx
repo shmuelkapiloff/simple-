@@ -8,7 +8,8 @@ export default function Cart() {
   const { data, isLoading } = useGetCartQuery(undefined, { skip: !isAuthenticated });
   const [clearCart, { isLoading: clearing }] = useClearCartMutation();
 
-  const cart = data?.data?.cart;
+  // Server returns cart directly in data, not wrapped in { cart: ... }
+  const cart = data?.data;
   const items = cart?.items ?? [];
   const total = cart?.total ?? 0;
 

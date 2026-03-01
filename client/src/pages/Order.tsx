@@ -16,7 +16,8 @@ export default function Order() {
   const { data, isLoading, error } = useGetOrderQuery(id!);
   const [cancelOrder, { isLoading: cancelling }] = useCancelOrderMutation();
 
-  const order = data?.data?.order;
+  // Server returns order directly in data
+  const order = data?.data;
 
   if (isLoading) {
     return (

@@ -20,7 +20,8 @@ const paymentStatusMap: Record<string, { label: string; color: string }> = {
 
 export default function Orders() {
   const { data, isLoading } = useGetOrdersQuery();
-  const orders = data?.data?.orders ?? [];
+  // Server returns orders array directly
+  const orders = Array.isArray(data?.data) ? data.data : [];
 
   if (isLoading) {
     return (

@@ -98,7 +98,8 @@ function ProductsTab() {
   const [updateProduct, { isLoading: updatingProd }] = useUpdateProductMutation();
   const [deleteProduct] = useDeleteProductMutation();
 
-  const products = data?.data?.products ?? [];
+  // Server returns products array directly
+  const products = Array.isArray(data?.data) ? data.data : [];
   const [editing, setEditing] = useState<Product | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -217,7 +218,8 @@ function ProductsTab() {
 function OrdersTab() {
   const { data, isLoading } = useGetAdminOrdersQuery();
   const [updateStatus, { isLoading: updatingStatus }] = useUpdateOrderStatusMutation();
-  const orders = data?.data?.orders ?? [];
+  // Server returns orders array directly
+  const orders = Array.isArray(data?.data) ? data.data : [];
   const [editingOrder, setEditingOrder] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState("");
 
@@ -287,7 +289,8 @@ function OrdersTab() {
 function UsersTab() {
   const { data, isLoading } = useGetAdminUsersQuery();
   const [updateRole, { isLoading: updatingRole }] = useUpdateUserRoleMutation();
-  const users = data?.data?.users ?? [];
+  // Server returns users array directly
+  const users = Array.isArray(data?.data) ? data.data : [];
 
   if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-gray-200 rounded-xl" />)}</div>;
 
