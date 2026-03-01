@@ -11,8 +11,8 @@ export const useAppSelector = useSelector.withTypes<RootState>();
 export function useAuth() {
   const token = localStorage.getItem("token");
   const { data, isLoading } = useVerifyQuery(undefined, { skip: !token });
-  // Server returns user directly in data
-  const user = data?.data ?? null;
+  // Server returns { data: { user: ... } } for verify endpoint
+  const user = data?.data?.user ?? null;
 
   return useMemo(
     () => ({
