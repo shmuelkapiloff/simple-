@@ -45,7 +45,8 @@ export default function AuthModal({
         result = await register({ name, email, password }).unwrap();
       }
       if (result.data) {
-        localStorage.setItem("token", result.data.accessToken);
+        // Server returns 'token' not 'accessToken'
+        localStorage.setItem("token", result.data.token);
         localStorage.setItem("refreshToken", result.data.refreshToken);
       }
       reset();
