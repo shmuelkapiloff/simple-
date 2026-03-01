@@ -1,1049 +1,1741 @@
-# ספר פרויקט גמר - Simple Shop Backend
+# ספר פרויקט גמר - Simple Shop
 
 ---
 
 ## עמוד שער
 
 **שם המכללה:** [שם המכללה]  
-**סמל לוגו:** [לוגו המכללה]  
+**סמליל (לוגו):** [לוגו המכללה] | [לוגו מה"ט]  
 **שם מגמה:** הנדסת תוכנה  
 **מסלול הכשרה:** הנדסאי  
 
-**נושא הפרויקט:** מערכת API לניהול חנות קנייה אונליין עם תשלומים וניהול מלאי  
+**נושא הפרויקט:**  
+# מערכת E-Commerce מלאה לניהול חנות אונליין  
+### עם תשלומים מאובטחים, ניהול מלאי בזמן אמת, ולוח ניהול מתקדם
 
 **שמות הסטודנטים:**
-- [שם סטודנט 1] – צד שרת (Server-side)
-- [שם סטודנט 2] – צד לקוח (Client-side)
+- **[שם סטודנט 1]** – צד שרת (Backend API)
+- **[שם סטודנט 2]** – צד לקוח (Frontend Application)
 
 **שם המנחה האישי:** [שם המנחה]  
-**תאריך מסירה:** [תאריך]  
+**תאריך מסירה:** 01/03/2026
 
 ---
 
 ## תוכן עניינים
 
-1. [תאור ורקע כללי](#13-תאור-ורקע-כללי)
+### חלק א' - מבוא והצגת הפרויקט
+1. [תיאור ורקע כללי](#131-תיאור-ורקע-כללי)
 2. [מטרות המערכת](#132-מטרות-המערכת)
 3. [סקירת מצב קיים בשוק](#133-סקירת-מצב-קיים-בשוק)
-4. [מה הפרויקט אמור לחדש](#134-מה-הפרויקט-אמור-לחדש-או-לשפר)
+4. [מה הפרויקט מחדש ומשפר](#134-מה-הפרויקט-מחדש-ומשפר)
+
+### חלק ב' - ליבה טכנית (Server)
 5. [דרישות מערכת ופונקציונאליות](#135-דרישות-מערכת-ופונקציונאליות)
 6. [בעיות צפויות ופתרונות](#136-בעיות-צפויות-ופתרונות)
 7. [פתרון טכנולוגי נבחר](#137-פתרון-טכנולוגי-נבחר)
-8. [שימוש במבני נתונים](#138-שימוש-במבני-נתונים-וארגון-קבצים)
-9. [תרשימי מערכת](#139-תרשימי-מערכת-מרכזיים)
-10. [מרכיב אלגוריתמי](#1310-תיאור-המרכיב-האלגוריתמי-חישובי)
-11. [אבטחת מידע](#1311-תיאור-התייחסות-לנושאי-אבטחת-מידע)
-12. [משאבים הנדרשים](#1312-משאבים-הנדרשים-לפרויקט)
-13. [תכנית עבודה ושלבים](#1313-תכנית-עבודה-ושלבים-למימוש)
-14. [תכנון הבדיקות](#1314-תכנון-הבדיקות)
-15. [בקרת גרסאות](#1315-בקרת-גרסאות)
+8. [מבני נתונים וארגון קבצים](#138-מבני-נתונים-וארגון-קבצים)
+9. [תרשימי מערכת](#139-תרשימי-מערכת)
+10. [מרכיב אלגוריתמי](#1310-מרכיב-אלגוריתמי)
+11. [אבטחת מידע](#1311-אבטחת-מידע)
+
+### חלק ג' - ליבה טכנית (Client)
+12. [צד לקוח - סקירה](#2-צד-לקוח-frontend)
+
+### חלק ד' - ניהול פרויקט
+13. [משאבים נדרשים](#1312-משאבים-נדרשים)
+14. [תכנית עבודה](#1313-תכנית-עבודה)
+15. [תכנון בדיקות](#1314-תכנון-בדיקות)
+16. [בקרת גרסאות](#1315-בקרת-גרסאות)
+
+### חלק ה' - סיכום
+17. [מה למדנו](#סיכום---מה-למדנו)
 
 ---
 
-## 1.3 תכולת הפרויקט
+# חלק א' - מבוא והצגת הפרויקט
 
-### 1.3.1 תאור ורקע כללי
+<!-- סגנון כתיבה: יזמי - להתלהב, לשכנע, למכור את הרעיון -->
 
-**Simple Shop** היא מערכת e-commerce מקומית שנועדה לניהול חנות קנייה אונליין. המערכת מאפשרת לחנות:
-- להציג קטלוג של מוצרים
-- לניהול המלאי בזמן אמת
-- לניהול עגלות קניות של הלקוחות
-- לעיבוד תשלומים בטוחים דרך Stripe
-- לניהול הזמנות מתחילה עד משלוח
+## 1.3.1 תיאור ורקע כללי
 
-הפרויקט בנוי כ-**Backend API** המשדר נתונים לממשק Frontend (צד לקוח) דרך REST API.
+### הסיפור שלנו
 
----
+בעולם שבו קניות אונליין הפכו לחלק בלתי נפרד מהחיים, עסקים קטנים ובינוניים מתקשים להתחרות בענקיות כמו Amazon ו-AliExpress. הם צריכים פתרון שיהיה **פשוט להפעלה**, **מאובטח ברמה הגבוהה ביותר**, ו**משתלם כלכלית**.
 
-### 1.3.2 מטרות המערכת
+**Simple Shop** נולד מתוך הצורך הזה.
 
-**מטרות עיקריות:**
+### מה זה Simple Shop?
 
-1. **חנות אונליין פונקציונאלית** – מערכת קמלה לניהול הזמנות, מוצרים, ותשלומים
-2. **אבטחה גבוהה** – הגנה מפני התקפות (brute force, SQL injection, CSRF וכו')
-3. **ביצועים טובים** – טיפול בעומסים גבוהים ותגובה מהירה
-4. **קל לתחזוקה** – קוד clean, מתועד, ובעל test coverage טוב
-5. **עמידות בעת כשל** – recovery מכשל ניהול זיכרון ותקשורת
+Simple Shop היא **מערכת e-commerce מלאה** שמאפשרת לכל עסק להקים חנות אונליין מקצועית תוך דקות. המערכת כוללת:
 
-**מטרות למידה:**
-- בנות API ניתן לקנה מידה בסביבה production
-- עבודה עם מסדי נתונים MongoDB ו-Redis
-- קישור עם שירות תשלומים חיצוני (Stripe)
-- ניהול סטטוסיות בעגלות והזמנות
-- logging ו-monitoring בסביבה production
+🛒 **חנות אונליין מלאה** – קטלוג מוצרים, עגלת קניות, וחיפוש מתקדם  
+💳 **תשלומים מאובטחים** – אינטגרציה מלאה עם Stripe  
+📦 **ניהול מלאי חכם** – מניעת מכירת יתר אוטומטית  
+👤 **ניהול משתמשים** – הרשמה, התחברות, ואיפוס סיסמה  
+📊 **לוח ניהול** – סטטיסטיקות, ניהול מוצרים והזמנות  
+🔒 **אבטחה ברמה הגבוהה ביותר** – הגנה מפני כל ההתקפות הנפוצות
+
+### למה זה חשוב?
+
+> "בשנת 2025, 21% מכלל הרכישות בעולם בוצעו אונליין. עד 2027, המספר צפוי לעלות ל-25%."  
+> — Statista, E-commerce Worldwide Report
+
+עסקים שלא יהיו אונליין – פשוט יישארו מאחור. **Simple Shop נותן להם את הכלים להצליח.**
 
 ---
 
-### 1.3.3 סקירת מצב קיים בשוק
+## 1.3.2 מטרות המערכת
 
-**סוגי פתרונות קיימים:**
+### החזון
 
-| פתרון | יתרונות | חסרונות |
-|------|---------|---------|
-| Shopify, WooCommerce | מוכנים, חזקים | יקרים, פחות גמישות |
-| Magento | מלא תכונות | מסובך ללמידה, דורש שרת חזק |
-| Open-source (Medusa) | חינם, גמיש | צריך בניית ממשק משלהם |
-| בנית עצמית | מלא בקרה, למידה | זמן רב, דורש ידע רב |
+ליצור את **הפתרון הטוב ביותר** לחנות אונליין קטנה-בינונית:
+- פשוט מספיק שכל אחד יכול להפעיל
+- מאובטח מספיק שהלקוחות יסמכו
+- גמיש מספיק שיתאים לכל עסק
 
-**בחירת הפתרון שלנו:**
-בחרנו לבנות API משלנו כדי:
-- ללמוד את כל השכבות של e-commerce
-- לבקר בטיחות בעצמנו
-- להתאים לדרישות ספציפיות
-- להשתלט על כל הקוד
+### מטרות מדידות
 
----
+| מטרה | יעד | מדד הצלחה |
+|------|-----|-----------|
+| **מהירות תגובה** | < 100ms | 95% מהבקשות |
+| **זמינות** | 99.9% | uptime שנתי |
+| **אבטחה** | 0 פרצות | penetration testing |
+| **קלות שימוש** | < 5 דקות | זמן ללמוד את המערכת |
+| **כיסוי בדיקות** | > 85% | test coverage |
 
-### 1.3.4 מה הפרויקט אמור לחדש או לשפר
+### מטרות למידה (כסטודנטים)
 
-**שיפורים ותכונות חדשות:**
+מעבר לבניית מוצר, רצינו **ללמוד לבנות מערכות production-ready**:
 
-1. **תשלומים בטוחים עם Stripe** – integration עם Stripe עם webhook verification וidempotency
-2. **ניהול מלאי atomic** – מניעת overselling עם MongoDB transactions
-3. **account lockout** – הגנה מפני brute force attacks
-4. **rate limiting per-user** – שמירת משאבים מפני ניסיונות התקפה
-5. **audit logging** – רישום כל פעולה משמעותית
-6. **idempotency keys** – הבטחה שפעולות לא יבוצעו פעמיים
-7. **webhook reliability** – retry logic לwebhooks עם exponential backoff
-
-**חדשנות:**
-המערכת משלבת מספר טכניקות אבטחה מתקדמות:
-- Atomic transactions למניעת race conditions
-- HMAC-SHA256 לverification של webhooks
-- JWT עם refresh tokens
-- Password hashing ב-bcrypt
-- Structured logging עם Pino
+- ✅ ארכיטקטורה נכונה ל-scale
+- ✅ אבטחה מרובת שכבות
+- ✅ עבודה עם שירותים חיצוניים (Stripe, MongoDB Atlas)
+- ✅ כתיבת בדיקות אוטומטיות
+- ✅ תיעוד מקצועי
 
 ---
 
-### 1.3.5 דרישות מערכת ופונקציונאליות
+## 1.3.3 סקירת מצב קיים בשוק
 
-#### 1.3.5.1 דרישות מערכת
+### הבעיה
 
-| דרישה | פרטים |
-|------|--------|
-| **סביבת הטמעה** | Node.js 22.x, MongoDB 8.6, Redis 5.4 |
-| **שרידות** | הצפנה עבור הסיסמאות, JWT tokens בטוחים |
-| **ביצועים** | תמיכה ב-100+ בקשות/שנייה, latency < 100ms |
-| **התמודדות עם עומסים** | Rate limiting, connection pooling, caching |
-| **זמינות** | Graceful shutdown, health checks |
+עסקים קטנים שרוצים למכור אונליין עומדים בפני דילמה:
 
-#### 1.3.5.2 דרישות פונקציונאליות
+| אפשרות | יתרון | חיסרון |
+|--------|-------|--------|
+| **Shopify / Wix** | מוכן מהקופסה | עלות חודשית גבוהה (₪100-500) + עמלות |
+| **WooCommerce** | חינמי, גמיש | דורש ידע טכני, איטי, פגיע לפריצות |
+| **Magento** | עוצמתי, מלא תכונות | מורכב מאוד, דורש שרת חזק |
+| **בנייה מאפס** | שליטה מלאה | זמן פיתוח עצום, סיכון לשגיאות |
 
-**ניהול משתמשים:**
-- ✅ Registration (יצירת חשבון חדש)
-- ✅ Login / Logout (אימות)
-- ✅ Reset password (איפוס סיסמה)
-- ✅ Account lockout (נעילה אחרי 5 ניסיונות שגויים)
+### הפער בשוק
 
-**ניהול מוצרים:**
-- ✅ Get all products (עם pagination)
-- ✅ Get product by ID
-- ✅ Create/Update/Delete product (admin only)
-- ✅ Search and filter
+**אין פתרון ביניים** – משהו שהוא:
+- ✅ חינמי / זול
+- ✅ מאובטח ומקצועי
+- ✅ קל להתאמה אישית
+- ✅ עם קוד פתוח ללמידה
 
-**ניהול עגלות:**
-- ✅ Add item to cart
-- ✅ Remove item from cart
-- ✅ Update quantity
-- ✅ Get cart items
-
-**ניהול הזמנות:**
-- ✅ Create order from cart
-- ✅ Get order by ID
-- ✅ Get all user orders
-- ✅ Cancel order
-- ✅ Track order status
-
-**ניהול תשלומים:**
-- ✅ Create payment intent (checkout)
-- ✅ Process webhook from Stripe
-- ✅ Verify payment signature
-- ✅ Refund logic
+**Simple Shop ממלא את הפער הזה.**
 
 ---
 
-### 1.3.6 בעיות צפויות ופתרונות
+## 1.3.4 מה הפרויקט מחדש ומשפר
 
-#### 1.3.6.1 תיאור הבעיות הצפויות
+### החידושים שלנו
 
-| בעיה | משפעות | חומרה |
-|------|--------|--------|
-| **Race conditions** | שני לקוחות קונים אותו מוצר בו-זמנית = overselling | 🔴 קריטי |
-| **Brute force attacks** | התקפות על login/password reset | 🔴 קריטי |
-| **Webhook failures** | Stripe שלח webhook אבל לא קיבלנו | 🟠 חשוב |
-| **חוסר תיעוד** | קשה להבין את הקוד אחרי חודשים | 🟡 בינוני |
-| **בעיות performance** | API איטה תחת עומס גבוה | 🟡 בינוני |
+| תכונה | מה קיים בשוק | מה עשינו |
+|-------|-------------|----------|
+| **מניעת Overselling** | רוב המערכות לא מטפלות | MongoDB Transactions אטומיות |
+| **אבטחת Login** | רק סיסמה | Account Lockout + Rate Limiting + tokenVersion |
+| **Webhook Reliability** | "fire and forget" | Idempotency + DB Tracking + Retry Logic |
+| **Instant Logout** | Token נשאר תקף | tokenVersion - ביטול מיידי של כל הטוקנים |
+| **תיעוד** | לרוב חסר | OpenAPI Spec + Postman Collection מלאה |
 
-#### 1.3.6.2 פתרונות אפשריים
+### הערך המוסף
 
-| בעיה | פתרון | בחירה |
-|------|-------|--------|
-| **Race conditions** | MongoDB transactions + atomic operations | ✅ **בחרנו זה** |
-| **Brute force** | Rate limiting + account lockout | ✅ **בחרנו זה** |
-| **Webhook reliability** | Idempotency + retry logic + DB tracking | ✅ **בחרנו זה** |
-| **תיעוד** | JSDoc comments + structured logs | ✅ **בחרנו זה** |
-| **Performance** | Redis caching + connection pooling | ✅ **בחרנו זה** |
+🎯 **למפתחים:** קוד נקי, מתועד, עם בדיקות - אפשר ללמוד ממנו  
+🎯 **לעסקים:** מערכת מוכנה להפעלה עם אבטחה ברמה הגבוהה  
+🎯 **לסטודנטים:** דוגמה מלאה לפרויקט production-ready
 
 ---
 
-### 1.3.7 פתרון טכנולוגי נבחר
+<!-- ========== SERVER-SECTION-START ========== -->
+<!-- להסרת חלק השרת, בקש: "הסר את כל סעיפי השרת מהספר" -->
 
-#### 1.3.7.1 טופולוגיית הפתרון
+# חלק ב' - ליבה טכנית: צד שרת (Backend)
 
-```
-┌─────────────────────────────────────┐
-│  Frontend (React/Vue - צד לקוח)     │
-│  רץ ב-Browser של משתמש              │
-└────────────┬────────────────────────┘
-             │
-        HTTPS API
-             │
-             ▼
-┌─────────────────────────────────────┐
-│  Backend API (Node.js/Express)      │
-│  רץ בcluster עם load balancer       │
-│  ┌───────────────────────────────┐  │
-│  │ Controllers (endpoints)       │  │
-│  │ Services (business logic)     │  │
-│  │ Middleware (auth, logging)    │  │
-│  └───────────────┬───────────────┘  │
-└────────┬─────────┼────────┬──────────┘
-         │         │        │
-    HTTP │    HTTP │   HTTP │
-         ▼         ▼        ▼
-    ┌────────┐ ┌──────┐ ┌──────┐
-    │MongoDB │ │Redis │ │Stripe│
-    │Database│ │Cache │ │(API) │
-    └────────┘ └──────┘ └──────┘
-```
+<!-- סגנון כתיבה: טכני - כמו CTO שמסביר למתכנתים -->
 
-**Deployment:**
-- Frontend: Vercel / Netlify
-- Backend: Cloud (AWS/GCP/Azure) או VPS
-- Database: MongoDB Atlas (cloud)
-- Cache: Redis Cloud
+## 1.3.5 דרישות מערכת ופונקציונאליות
 
-#### 1.3.7.2 טכנולוגיות בשימוש
+### 1.3.5.1 דרישות מערכת (Non-Functional)
 
-| Layer | טכנולוגיה | גרסה | תפקיד |
-|-------|-----------|------|--------|
-| **Backend** | Express.js | 4.18 | HTTP server framework |
-| **Runtime** | Node.js | 22.x | JavaScript execution |
-| **Language** | TypeScript | 5.x | Type safety |
-| **Database** | MongoDB | 8.6 | NoSQL data store |
-| **Cache** | Redis | 5.4 | In-memory cache |
-| **Payment** | Stripe API | v1 | Payment processing |
-| **Auth** | JWT | - | Token-based auth |
-| **Logging** | Pino | 8.x | Structured logging |
-| **Metrics** | Prometheus | - | Observability |
-| **Validation** | Zod | - | Runtime type checking |
-| **Testing** | Jest + Supertest | 29.x | Unit & integration tests |
+| קטגוריה | דרישה | פירוט |
+|---------|-------|-------|
+| **סביבה** | Node.js 22.x | Runtime environment |
+| | MongoDB 8.x | Primary database |
+| | Redis 5.x | Caching & sessions |
+| **ביצועים** | Latency < 100ms | 95th percentile |
+| | Throughput 100+ RPS | Requests per second |
+| | Concurrent users 500+ | Simultaneous connections |
+| **שרידות** | Graceful shutdown | No lost requests on restart |
+| | Auto-reconnect | DB/Redis connection recovery |
+| | Health checks | Liveness & readiness probes |
+| **עומסים** | Rate limiting | Per-user & per-IP |
+| | Connection pooling | DB connection reuse |
+| | Response caching | Redis-based caching |
 
-#### 1.3.7.3 שפות הפיתוח
+### 1.3.5.2 דרישות פונקציונאליות
 
-- **TypeScript** – שפת ראשית, compiled to JavaScript
-- **JavaScript (ES2023)** – בזמן runtime
-- **HTML/CSS** – ממשק Frontend (צד לקוח)
+#### מודול Authentication
+| פעולה | Endpoint | תיאור |
+|-------|----------|-------|
+| הרשמה | `POST /auth/register` | יצירת חשבון חדש |
+| התחברות | `POST /auth/login` | אימות + JWT token |
+| התנתקות | `POST /auth/logout` | ביטול כל הטוקנים (tokenVersion) |
+| רענון טוקן | `POST /auth/refresh-token` | קבלת access token חדש |
+| אימות | `GET /auth/verify` | בדיקת תקינות הטוקן |
+| איפוס סיסמה | `POST /auth/forgot-password` | שליחת קוד לאימייל |
 
-#### 1.3.7.4 תיאור הארכיטקטורה הנבחרת
+#### מודול Products
+| פעולה | Endpoint | תיאור |
+|-------|----------|-------|
+| רשימת מוצרים | `GET /products` | עם סינון וחיפוש |
+| מוצר בודד | `GET /products/:id` | פרטי מוצר מלאים |
+| יצירה | `POST /products` | Admin only |
+| עדכון | `PUT /products/:id` | Admin only |
+| מחיקה | `DELETE /products/:id` | Soft delete, Admin only |
 
-**MVC + Layered Architecture:**
+#### מודול Cart
+| פעולה | Endpoint | תיאור |
+|-------|----------|-------|
+| צפייה בעגלה | `GET /cart` | פריטים + סכום |
+| הוספת פריט | `POST /cart` | עם בדיקת מלאי |
+| עדכון כמות | `PUT /cart/:itemId` | עם בדיקת מלאי |
+| הסרת פריט | `DELETE /cart/:itemId` | הסרה מהעגלה |
+| ריקון עגלה | `DELETE /cart` | הסרת כל הפריטים |
 
-```
-Routes (הגדרת endpoints)
-   ↓
-Controllers (HTTP handlers)
-   ↓
-Services (business logic)
-   ↓
-Models (MongoDB schemas)
-   ↓
-Database
-```
+#### מודול Orders
+| פעולה | Endpoint | תיאור |
+|-------|----------|-------|
+| יצירת הזמנה | `POST /orders` | מהעגלה + כתובת |
+| רשימת הזמנות | `GET /orders` | הזמנות המשתמש |
+| הזמנה בודדת | `GET /orders/:id` | פרטים מלאים |
+| ביטול | `PUT /orders/:id/cancel` | לפני שילוח בלבד |
 
-**Middleware stack:**
-```
-express.json() → CORS → helmet → logging → auth → rate-limit → handlers
-```
+#### מודול Payments
+| פעולה | Endpoint | תיאור |
+|-------|----------|-------|
+| יצירת Checkout | `POST /payments/create-checkout` | Stripe session |
+| Webhook | `POST /payments/webhook` | קבלת אירועים מ-Stripe |
 
-**זרימת בקשה:**
-1. Client שולח HTTP request
-2. Router מחפש matching endpoint
-3. Middleware (auth, logging, rate-limit)
-4. Controller עיבד ה-request
-5. Service ביצע עסקי logic
-6. Model תקשורת עם DB
-7. Response חוזר ל-Client
+#### מודול Admin
+| פעולה | Endpoint | תיאור |
+|-------|----------|-------|
+| סטטיסטיקות | `GET /admin/stats/summary` | מכירות, הזמנות, מלאי |
+| משתמשים | `GET /admin/users` | רשימת כל המשתמשים |
+| שינוי role | `PUT /admin/users/:id/role` | user ↔ admin |
+| כל ההזמנות | `GET /admin/orders` | עם פילטרים |
+| עדכון סטטוס | `PUT /admin/orders/:id/status` | שינוי סטטוס הזמנה |
 
-#### 1.3.7.5 חלוקה לתכניות ומודולים
+---
 
-**ארגון תיקיות:**
+## 1.3.6 בעיות צפויות ופתרונות
 
-```
-src/
-├── controllers/         (HTTP handlers)
-│   ├── auth.controller.ts
-│   ├── product.controller.ts
-│   ├── order.controller.ts
-│   └── ...
-├── services/           (business logic)
-│   ├── auth.service.ts
-│   ├── order.service.ts
-│   └── payment.service.ts
-├── models/             (MongoDB schemas)
-│   ├── user.model.ts
-│   ├── product.model.ts
-│   ├── order.model.ts
-│   └── ...
-├── routes/             (endpoint definitions)
-│   ├── auth.routes.ts
-│   ├── product.routes.ts
-│   └── ...
-├── middlewares/        (request handlers)
-│   ├── auth.middleware.ts
-│   ├── rate-limiter.middleware.ts
-│   ├── error.middleware.ts
-│   └── logging.middleware.ts
-├── config/             (configuration)
-│   ├── db.ts
-│   ├── redisClient.ts
-│   └── env.ts
-└── utils/              (utility functions)
-    ├── logger.ts
-    ├── errors.ts
-    └── response.ts
-```
+### 1.3.6.1 תיאור הבעיות
 
-#### 1.3.7.10 פונקציות מרכזיות וחשובות (עם הסברים קצרים)
+| בעיה | תיאור | חומרה | השלכות |
+|------|-------|-------|--------|
+| **Race Conditions** | שני לקוחות קונים את המוצר האחרון בו-זמנית | 🔴 קריטי | Overselling, הפסד כספי |
+| **Brute Force** | ניסיונות login חוזרים לפריצת סיסמה | 🔴 קריטי | גניבת חשבונות |
+| **Webhook Replay** | Stripe שולח webhook פעמיים | 🟠 גבוה | חיוב כפול |
+| **Token Theft** | גניבת JWT token | 🟠 גבוה | התחזות למשתמש |
+| **DDoS** | הצפת השרת בבקשות | 🟡 בינוני | השבתת השירות |
 
-**צד שרת – פונקציות ליבה (דוגמה):**
+### 1.3.6.2 פתרונות שנבחרו
 
-| פונקציה | מיקום | תיאור קצר |
-|---------|-------|-----------|
-| `AuthService.login()` | services/auth.service.ts | אימות משתמש, בדיקת נעילה, עדכון ניסיונות, יצירת JWT עם tokenVersion |
-| `AuthService.logout()` | services/auth.service.ts | הגדלת tokenVersion לביטול מיידי של כל הטוקנים הקיימים |
-| `AuthService.register()` | services/auth.service.ts | יצירת משתמש חדש, הצפנת סיסמה, יצירת token ראשוני |
-| `OrderService.createOrder()` | services/order.service.ts | יצירת הזמנה מהעגלה, חישוב סכום ושמירת מצב pending |
-| `PaymentService.handleWebhook()` | services/payment.service.ts | אימות webhook, בדיקת idempotency, עדכון תשלום והזמנה |
-| `PaymentService.fulfillOrder()` | services/payment.service.ts | הפחתת מלאי אטומית ופתרון race conditions |
-| `CartService.addItem()` | services/cart.service.ts | הוספת פריט לעגלה, אימות מלאי ועדכון כמות |
-| `ProductService.getProducts()` | services/product.service.ts | שליפת מוצרים עם סינון ופג'ינציה |
-| `RateLimiter.authRateLimiter()` | middlewares/rate-limiter.middleware.ts | הגנה מפני brute force לפי משתמש/IP |
-| `AuthMiddleware.protect()` | middlewares/auth.middleware.ts | אימות JWT והגבלת גישה לנתיבים מוגנים |
+| בעיה | פתרונות אפשריים | הפתרון שבחרנו | סיבה |
+|------|-----------------|---------------|------|
+| **Race Conditions** | 1. Optimistic locking<br>2. Pessimistic locking<br>3. **MongoDB Transactions** | MongoDB Transactions | אטומיות מלאה, rollback אוטומטי |
+| **Brute Force** | 1. CAPTCHA<br>2. **Account Lockout + Rate Limit**<br>3. 2FA | Account Lockout + Rate Limiting | UX טוב יותר מ-CAPTCHA, פשוט יותר מ-2FA |
+| **Webhook Replay** | 1. **Idempotency Keys**<br>2. Event sourcing | Idempotency + DB Tracking | פשוט, אמין, מאפשר auditing |
+| **Token Theft** | 1. Short expiry<br>2. **tokenVersion**<br>3. Token blacklist | tokenVersion | ביטול מיידי, ללא DB lookup בכל בקשה |
+| **DDoS** | 1. **Rate Limiting**<br>2. WAF<br>3. CDN | Rate Limiting per IP/User | פשוט, יעיל, לא דורש שירות חיצוני |
 
-**הערה:** הרשימה מיועדת להסביר את פונקציות הליבה בפרויקט. ניתן להחליף/לעדכן לפי שמות פונקציות בפועל בקוד.
+---
 
-#### 1.3.7.6 סביבת השרת
+## 1.3.7 פתרון טכנולוגי נבחר
 
-- **Development:** Local Node.js, local MongoDB, local Redis
-- **Testing:** In-memory databases, mocked Stripe
-- **Production:** Cloud infrastructure (AWS/GCP/Azure)
-  - App server: Node.js cluster
-  - Load balancer: nginx / cloud provider
-  - Database: MongoDB Atlas (managed)
-  - Cache: Redis Cloud / ElastiCache
-  - Monitoring: CloudWatch / DataDog
-
-#### 1.3.7.7 ממשק המשתמש / לקוח (GUI)
-
-**צד לקוח (Frontend):**
-- React / Vue.js application
-- Responsive design
-- API calls דרך axios / fetch
-- State management (Redux / Vuex)
-
-**Screens עיקריים:**
-- Home page (רשימת מוצרים)
-- Product detail page
-- Shopping cart
-- Checkout (עם Stripe)
-- Order tracking
-- Account management
-
-#### 1.3.7.8 ממשקים למערכות אחרות (API)
-
-**External APIs:**
-
-1. **Stripe API** – לעיבוד תשלומים
-   - `POST /v1/checkout/sessions` – יצירת session
-   - `POST /webhooks` – קבלת events
-   
-2. **Email service** – לשליחת מיילים (optional)
-   - Password reset emails
-   - Order confirmation emails
-
-**Internal API endpoints:**
+### 1.3.7.1 טופולוגיית הפתרון
 
 ```
-Authentication:
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/logout
-POST   /api/auth/refresh-token
-
-Products:
-GET    /api/products
-GET    /api/products/:id
-POST   /api/products (admin)
-PUT    /api/products/:id (admin)
-DELETE /api/products/:id (admin)
-
-Orders:
-POST   /api/orders
-GET    /api/orders
-GET    /api/orders/:id
-PUT    /api/orders/:id/cancel
-
-Payments:
-POST   /api/payments/create-checkout
-POST   /api/payments/webhook (Stripe)
-
-Admin:
-GET    /api/admin/stats/summary   // סטטיסטיקות (מכירות, הזמנות, משתמשים, מלאי נמוך)
-GET    /api/admin/products        // רשימת כל המוצרים
-POST   /api/admin/products        // יצירת מוצר חדש
-PUT    /api/admin/products/:id    // עדכון מוצר
-DELETE /api/admin/products/:id    // מחיקת מוצר (soft delete)
-GET    /api/admin/users           // רשימת משתמשים
-PUT    /api/admin/users/:id/role  // שינוי role
-GET    /api/admin/orders          // כל ההזמנות
-PUT    /api/admin/orders/:id/status // עדכון סטטוס הזמנה
-
-Health:
-GET    /api/health
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENTS                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ Web Browser  │  │ Mobile App   │  │ Admin Panel  │          │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
+└─────────┼─────────────────┼─────────────────┼───────────────────┘
+          │                 │                 │
+          └────────────────┬┴─────────────────┘
+                           │ HTTPS
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     RENDER.COM (PaaS)                           │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                    Node.js Server                         │  │
+│  │  ┌─────────────────────────────────────────────────────┐  │  │
+│  │  │                   Express.js                        │  │  │
+│  │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐            │  │  │
+│  │  │  │ Routes  │→ │ Middle- │→ │  Cont-  │            │  │  │
+│  │  │  │         │  │  wares  │  │ rollers │            │  │  │
+│  │  │  └─────────┘  └─────────┘  └────┬────┘            │  │  │
+│  │  │                                  │                 │  │  │
+│  │  │                           ┌──────▼──────┐          │  │  │
+│  │  │                           │  Services   │          │  │  │
+│  │  │                           │ (Business   │          │  │  │
+│  │  │                           │   Logic)    │          │  │  │
+│  │  │                           └──────┬──────┘          │  │  │
+│  │  └──────────────────────────────────┼────────────────┘  │  │
+│  └─────────────────────────────────────┼────────────────────┘  │
+└────────────────────────────────────────┼────────────────────────┘
+                                         │
+          ┌──────────────────────────────┼───────────────────┐
+          │                              │                   │
+          ▼                              ▼                   ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│  MongoDB Atlas   │  │   Redis Cloud    │  │     Stripe       │
+│  (Database)      │  │   (Cache)        │  │   (Payments)     │
+│                  │  │                  │  │                  │
+│ • Users          │  │ • Rate limits    │  │ • Checkout       │
+│ • Products       │  │ • Session cache  │  │ • Webhooks       │
+│ • Orders         │  │ • Cart cache     │  │ • Refunds        │
+│ • Payments       │  │                  │  │                  │
+└──────────────────┘  └──────────────────┘  └──────────────────┘
 ```
 
-**Admin Stats Response Structure:**
-```javascript
+### 1.3.7.2 טכנולוגיות בשימוש
+
+| שכבה | טכנולוגיה | גרסה | תפקיד |
+|------|-----------|------|-------|
+| **Runtime** | Node.js | 22.x | JavaScript execution engine |
+| **Framework** | Express.js | 4.18 | HTTP server & routing |
+| **Language** | TypeScript | 5.x | Type-safe JavaScript |
+| **Database** | MongoDB | 8.x | NoSQL document database |
+| **ODM** | Mongoose | 8.x | MongoDB object modeling |
+| **Cache** | Redis | 5.x | In-memory data store |
+| **Auth** | JWT | - | Stateless authentication |
+| **Payments** | Stripe | v1 | Payment processing |
+| **Validation** | Zod | 3.x | Runtime type validation |
+| **Logging** | Pino | 8.x | Structured JSON logging |
+| **Testing** | Jest | 29.x | Unit & integration tests |
+| **Metrics** | prom-client | 14.x | Prometheus metrics |
+
+### 1.3.7.3 שפות הפיתוח
+
+| שפה | שימוש | סיבה |
+|-----|-------|------|
+| **TypeScript** | קוד השרת כולו | Type safety, autocomplete, תחזוקתיות |
+| **JavaScript ES2023** | Runtime (compiled) | Node.js native support |
+| **JSON** | Configuration, API | Standard data format |
+| **YAML** | Docker, CI/CD | Human-readable config |
+
+### 1.3.7.4 תיאור הארכיטקטורה
+
+**Pattern: Layered Architecture + MVC**
+
+```
+┌─────────────────────────────────────────────────┐
+│                   Routes Layer                   │
+│  • מגדיר URL patterns                           │
+│  • מקשר endpoints ל-controllers                 │
+├─────────────────────────────────────────────────┤
+│                Middleware Layer                  │
+│  • Authentication (JWT verification)            │
+│  • Rate Limiting (brute force protection)       │
+│  • Logging (request/response tracking)          │
+│  • Error Handling (centralized errors)          │
+├─────────────────────────────────────────────────┤
+│               Controller Layer                   │
+│  • מקבל HTTP request                            │
+│  • מפעיל validation                             │
+│  • קורא ל-Service                               │
+│  • מחזיר HTTP response                          │
+├─────────────────────────────────────────────────┤
+│                Service Layer                     │
+│  • Business logic מרוכז                         │
+│  • לא תלוי ב-HTTP                               │
+│  • ניתן לבדיקה בנפרד                            │
+├─────────────────────────────────────────────────┤
+│                 Model Layer                      │
+│  • Mongoose schemas                             │
+│  • Database queries                             │
+│  • Data validation                              │
+└─────────────────────────────────────────────────┘
+```
+
+**למה בחרנו בארכיטקטורה זו?**
+
+| יתרון | הסבר |
+|-------|------|
+| **Separation of Concerns** | כל שכבה אחראית לדבר אחד |
+| **Testability** | אפשר לבדוק כל שכבה בנפרד |
+| **Maintainability** | קל למצוא ולתקן באגים |
+| **Scalability** | אפשר להחליף שכבות בלי לשנות אחרות |
+
+### 1.3.7.5 חלוקה לתכניות ומודולים
+
+```
+server/
+├── src/
+│   ├── app.ts                    # Express app configuration
+│   ├── server.ts                 # Server entry point
+│   │
+│   ├── routes/                   # URL routing
+│   │   ├── auth.routes.ts
+│   │   ├── product.routes.ts
+│   │   ├── cart.routes.ts
+│   │   ├── order.routes.ts
+│   │   ├── payment.routes.ts
+│   │   └── admin.routes.ts
+│   │
+│   ├── controllers/              # HTTP handlers
+│   │   ├── auth.controller.ts
+│   │   ├── product.controller.ts
+│   │   ├── cart.controller.ts
+│   │   ├── order.controller.ts
+│   │   ├── payment.controller.ts
+│   │   └── admin.controller.ts
+│   │
+│   ├── services/                 # Business logic
+│   │   ├── auth.service.ts           # Login, register, tokenVersion
+│   │   ├── product.service.ts        # CRUD, filtering
+│   │   ├── cart.service.ts           # Cart management
+│   │   ├── order.service.ts          # Order creation
+│   │   ├── payment.service.ts        # Stripe integration
+│   │   └── admin.service.ts          # Stats, management
+│   │
+│   ├── models/                   # Database schemas
+│   │   ├── user.model.ts
+│   │   ├── product.model.ts
+│   │   ├── cart.model.ts
+│   │   ├── order.model.ts
+│   │   ├── payment.model.ts
+│   │   └── webhook-event.model.ts
+│   │
+│   ├── middlewares/              # Request processors
+│   │   ├── auth.middleware.ts        # JWT verification
+│   │   ├── rate-limiter.middleware.ts # Brute force protection
+│   │   ├── error.middleware.ts       # Error handling
+│   │   ├── logging.middleware.ts     # Request logging
+│   │   └── idempotency.middleware.ts # Duplicate prevention
+│   │
+│   ├── validators/               # Input validation (Zod)
+│   │   ├── auth.validator.ts
+│   │   ├── product.validator.ts
+│   │   └── order.validator.ts
+│   │
+│   ├── config/                   # Configuration
+│   │   ├── env.ts                    # Environment variables
+│   │   ├── db.ts                     # MongoDB connection
+│   │   ├── redisClient.ts            # Redis connection
+│   │   └── cors.ts                   # CORS settings
+│   │
+│   ├── utils/                    # Utilities
+│   │   ├── logger.ts                 # Pino logger
+│   │   ├── errors.ts                 # Custom error classes
+│   │   └── response.ts               # Standardized responses
+│   │
+│   └── __tests__/                # Test files
+│       ├── auth.test.ts
+│       ├── order.test.ts
+│       └── payment-webhook.test.ts
+│
+├── docs/                         # Documentation
+├── postman/                      # API collection
+├── package.json
+└── tsconfig.json
+```
+
+### 1.3.7.6 סביבת השרת
+
+| סביבה | שירות | תיאור |
+|-------|-------|-------|
+| **Production** | Render.com | PaaS, auto-deploy from GitHub |
+| **Database** | MongoDB Atlas | Managed MongoDB cluster |
+| **Cache** | Redis Cloud | Managed Redis instance |
+| **Development** | Local | Node.js + local DB/Redis |
+| **Testing** | In-memory | Mocked services |
+
+**Production URL:** `https://simple-4-anp6.onrender.com/api`
+
+### 1.3.7.7 ממשק משתמש (GUI)
+
+**הממשק מפותח בנפרד על ידי צד הלקוח** - ראה [חלק ג'](#2-צד-לקוח-frontend).
+
+### 1.3.7.8 ממשקים למערכות אחרות (API)
+
+#### External APIs
+
+**1. Stripe API** - תשלומים
+```
+POST https://api.stripe.com/v1/checkout/sessions
+  → יצירת session לתשלום
+  
+Webhook: POST /api/payments/webhook
+  → קבלת אירועים (payment.succeeded, payment.failed)
+```
+
+#### Internal API - Full Endpoints
+
+```yaml
+# Authentication
+POST   /api/auth/register          # יצירת חשבון
+POST   /api/auth/login             # התחברות
+POST   /api/auth/logout            # התנתקות (tokenVersion++)
+POST   /api/auth/refresh-token     # רענון token
+GET    /api/auth/verify            # בדיקת token
+POST   /api/auth/forgot-password   # איפוס סיסמה
+
+# Products
+GET    /api/products               # רשימה (עם filters)
+GET    /api/products/:id           # מוצר בודד
+
+# Cart (Authenticated)
+GET    /api/cart                   # צפייה בעגלה
+POST   /api/cart                   # הוספת פריט
+PUT    /api/cart/:itemId           # עדכון כמות
+DELETE /api/cart/:itemId           # הסרת פריט
+DELETE /api/cart                   # ריקון עגלה
+
+# Orders (Authenticated)
+POST   /api/orders                 # יצירת הזמנה
+GET    /api/orders                 # רשימת הזמנות
+GET    /api/orders/:id             # הזמנה בודדת
+PUT    /api/orders/:id/cancel      # ביטול
+
+# Payments (Authenticated)
+POST   /api/payments/create-checkout  # יצירת Stripe session
+POST   /api/payments/webhook          # Stripe webhook (no auth)
+
+# Admin (Admin only)
+GET    /api/admin/stats/summary    # סטטיסטיקות
+GET    /api/admin/products         # כל המוצרים
+POST   /api/admin/products         # יצירת מוצר
+PUT    /api/admin/products/:id     # עדכון מוצר
+DELETE /api/admin/products/:id     # מחיקת מוצר
+GET    /api/admin/users            # רשימת משתמשים
+PUT    /api/admin/users/:id/role   # שינוי role
+GET    /api/admin/orders           # כל ההזמנות
+PUT    /api/admin/orders/:id/status # עדכון סטטוס
+
+# Health
+GET    /api/health                 # בריאות המערכת
+```
+
+#### Response Format
+
+כל ה-responses במבנה אחיד:
+
+```typescript
+// Success
+{
+  success: true,
+  data: { ... }  // התוצאה
+}
+
+// Error
+{
+  success: false,
+  message: "Error description",
+  code: "ERROR_CODE"
+}
+```
+
+### 1.3.7.9 שימוש בחבילות תוכנה
+
+#### Production Dependencies
+
+| חבילה | גרסה | תפקיד |
+|-------|------|-------|
+| `express` | ^4.18 | HTTP server framework |
+| `mongoose` | ^8.0 | MongoDB ODM |
+| `redis` | ^4.6 | Redis client |
+| `stripe` | ^14.0 | Payment processing |
+| `jsonwebtoken` | ^9.0 | JWT creation & verification |
+| `bcryptjs` | ^2.4 | Password hashing |
+| `helmet` | ^7.0 | Security headers |
+| `cors` | ^2.8 | Cross-origin support |
+| `zod` | ^3.22 | Schema validation |
+| `pino` | ^8.0 | Structured logging |
+| `prom-client` | ^15.0 | Prometheus metrics |
+
+#### Dev Dependencies
+
+| חבילה | גרסה | תפקיד |
+|-------|------|-------|
+| `typescript` | ^5.3 | Type checking |
+| `jest` | ^29.0 | Testing framework |
+| `supertest` | ^6.3 | HTTP testing |
+| `ts-node` | ^10.0 | TypeScript execution |
+| `nodemon` | ^3.0 | Development auto-restart |
+| `@types/*` | various | TypeScript definitions |
+
+### 1.3.7.10 פונקציות מרכזיות
+
+| פונקציה | קובץ | תיאור |
+|---------|------|-------|
+| `AuthService.login()` | auth.service.ts | אימות משתמש, בדיקת נעילה, יצירת JWT |
+| `AuthService.logout()` | auth.service.ts | הגדלת tokenVersion לביטול כל הטוקנים |
+| `AuthService.register()` | auth.service.ts | יצירת משתמש, hash סיסמה |
+| `OrderService.createOrder()` | order.service.ts | יצירת הזמנה מעגלה |
+| `PaymentService.createCheckout()` | payment.service.ts | יצירת Stripe session |
+| `PaymentService.handleWebhook()` | payment.service.ts | עיבוד webhook, idempotency |
+| `PaymentService.fulfillOrder()` | payment.service.ts | הפחתת מלאי אטומית |
+| `CartService.addItem()` | cart.service.ts | הוספה לעגלה עם בדיקת מלאי |
+| `ProductService.getProducts()` | product.service.ts | שליפה עם סינון |
+| `AdminService.getStats()` | admin.service.ts | סטטיסטיקות מכירות ומלאי |
+| `authMiddleware.protect()` | auth.middleware.ts | אימות JWT + tokenVersion |
+| `rateLimiter.authRateLimiter()` | rate-limiter.middleware.ts | הגנה מ-brute force |
+
+---
+
+## 1.3.8 מבני נתונים וארגון קבצים
+
+### 1.3.8.1 פירוט מבני הנתונים
+
+#### User Schema
+```typescript
+{
+  _id: ObjectId,
+  email: string,              // unique, indexed
+  password: string,           // bcrypt hashed, select: false
+  name: string,
+  phone?: string,
+  role: "user" | "admin",
+  tokenVersion: number,       // ++ on logout, invalidates all tokens
+  failedLoginAttempts: number,
+  lockedUntil?: Date,
+  lastLogin?: Date,
+  addresses: Address[],
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Product Schema
+```typescript
+{
+  _id: ObjectId,
+  sku: string,                // unique
+  name: string,
+  description: string,
+  price: number,
+  stock: number,
+  category: string,           // indexed
+  // Valid categories: accessories, audio, displays, laptops,
+  //   smart-home, smartphones, streaming, tablets, wearables
+  image: string,
+  featured: boolean,
+  rating: number,
+  isActive: boolean,          // soft delete flag
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Cart Schema
+```typescript
+{
+  _id: ObjectId,
+  user: ObjectId,             // ref: User, unique
+  items: [{
+    product: ObjectId,        // ref: Product
+    quantity: number
+  }],
+  updatedAt: Date
+}
+```
+
+#### Order Schema
+```typescript
+{
+  _id: ObjectId,
+  orderNumber: string,        // unique, format: ORD-YYYYMMDD-XXX
+  user: ObjectId,             // ref: User
+  items: [{
+    product: ObjectId,
+    name: string,             // snapshot at order time
+    price: number,            // snapshot at order time
+    quantity: number,
+    image: string
+  }],
+  totalAmount: number,
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled",
+  paymentStatus: "pending" | "paid" | "failed" | "refunded",
+  shippingAddress: {
+    fullName: string,
+    phone: string,
+    street: string,
+    city: string,
+    zipCode: string
+  },
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Payment Schema
+```typescript
+{
+  _id: ObjectId,
+  order: ObjectId,            // ref: Order
+  user: ObjectId,             // ref: User
+  providerPaymentId: string,  // Stripe session ID
+  amount: number,
+  currency: string,
+  status: "pending" | "succeeded" | "failed",
+  checkoutUrl: string,
+  createdAt: Date
+}
+```
+
+#### WebhookEvent Schema (Idempotency)
+```typescript
+{
+  _id: ObjectId,
+  eventId: string,            // unique, from Stripe
+  provider: "stripe",
+  eventType: string,
+  processedAt: Date,
+  ttlExpiry: Date             // auto-delete after 30 days
+}
+```
+
+### 1.3.8.2 שיטת האחסון
+
+| סוג מידע | טכנולוגיה | סיבה |
+|----------|----------|------|
+| **Primary Data** | MongoDB Atlas | Document-based, scalable, transactions |
+| **Sessions/Cache** | Redis Cloud | Fast, in-memory, TTL support |
+| **Files/Images** | External URLs | לא מאחסנים קבצים, רק URLs |
+| **Logs** | Pino → stdout | Render.com collects automatically |
+
+### 1.3.8.3 מנגנוני התאוששות
+
+#### Database Recovery
+```typescript
+// Auto-reconnect with exponential backoff
+mongoose.connection.on('disconnected', () => {
+  setTimeout(() => mongoose.connect(uri), retryDelay);
+});
+```
+
+#### Transaction Rollback
+```typescript
+// Atomic stock reduction - all or nothing
+const session = await mongoose.startSession();
+session.startTransaction();
+try {
+  await Product.updateOne(
+    { _id: productId, stock: { $gte: quantity } },
+    { $inc: { stock: -quantity } },
+    { session }
+  );
+  await session.commitTransaction();
+} catch (error) {
+  await session.abortTransaction();
+  throw error;
+}
+```
+
+#### Webhook Retry Logic
+```typescript
+// Idempotency - prevent duplicate processing
+const existing = await WebhookEvent.findOne({ eventId });
+if (existing) {
+  return { status: 'already_processed' };
+}
+// Process and save eventId
+await WebhookEvent.create({ eventId, processedAt: new Date() });
+```
+
+---
+
+## 1.3.9 תרשימי מערכת
+
+### 1.3.9.1 Use Case Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Simple Shop                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│    ┌──────────┐                              ┌──────────┐       │
+│    │  Guest   │                              │  Admin   │       │
+│    │ (אורח)   │                              │ (מנהל)   │       │
+│    └────┬─────┘                              └────┬─────┘       │
+│         │                                         │              │
+│         │ ┌────────────────────┐                 │              │
+│         ├─► צפייה במוצרים      ◄─────────────────┤              │
+│         │ └────────────────────┘                 │              │
+│         │                                         │              │
+│         │ ┌────────────────────┐                 │              │
+│         ├─► הרשמה / התחברות   │                 │              │
+│         │ └────────────────────┘                 │              │
+│         │                                         │              │
+│    ┌────▼─────┐                                  │              │
+│    │   User   │                                  │              │
+│    │ (משתמש)  │                                  │              │
+│    └────┬─────┘                                  │              │
+│         │                                         │              │
+│         │ ┌────────────────────┐                 │              │
+│         ├─► ניהול עגלה        │                 │              │
+│         │ └────────────────────┘                 │              │
+│         │                                         │              │
+│         │ ┌────────────────────┐                 │              │
+│         ├─► ביצוע הזמנה       │                 │              │
+│         │ └────────────────────┘                 │              │
+│         │                                         │              │
+│         │ ┌────────────────────┐                 │              │
+│         ├─► תשלום ב-Stripe    │                 │              │
+│         │ └────────────────────┘                 │              │
+│         │                                         │              │
+│         │ ┌────────────────────┐                 │              │
+│         ├─► צפייה בהזמנות     │                 │              │
+│         │ └────────────────────┘                 │              │
+│         │                                         │              │
+│         │ ┌────────────────────┐                 │              │
+│         └─► ניהול פרופיל      │                 │              │
+│           └────────────────────┘                 │              │
+│                                                   │              │
+│                         ┌────────────────────┐   │              │
+│                         │ ניהול מוצרים       ◄───┤              │
+│                         └────────────────────┘   │              │
+│                                                   │              │
+│                         ┌────────────────────┐   │              │
+│                         │ ניהול הזמנות       ◄───┤              │
+│                         └────────────────────┘   │              │
+│                                                   │              │
+│                         ┌────────────────────┐   │              │
+│                         │ ניהול משתמשים      ◄───┤              │
+│                         └────────────────────┘   │              │
+│                                                   │              │
+│                         ┌────────────────────┐   │              │
+│                         │ צפייה בסטטיסטיקות  ◄───┘              │
+│                         └────────────────────┘                  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1.3.9.2 Sequence Diagram - Checkout Flow
+
+```
+┌────────┐     ┌────────┐     ┌────────┐     ┌────────┐     ┌────────┐
+│ Client │     │ Server │     │ MongoDB│     │ Stripe │     │  User  │
+└───┬────┘     └───┬────┘     └───┬────┘     └───┬────┘     └───┬────┘
+    │              │              │              │              │
+    │ POST /orders │              │              │              │
+    │─────────────►│              │              │              │
+    │              │ Get cart     │              │              │
+    │              │─────────────►│              │              │
+    │              │◄─────────────│              │              │
+    │              │              │              │              │
+    │              │ Verify stock │              │              │
+    │              │─────────────►│              │              │
+    │              │◄─────────────│              │              │
+    │              │              │              │              │
+    │              │ Create order │              │              │
+    │              │─────────────►│              │              │
+    │              │◄─────────────│              │              │
+    │              │              │              │              │
+    │ POST /payments/create-checkout             │              │
+    │─────────────►│              │              │              │
+    │              │ Create session              │              │
+    │              │─────────────────────────────►│              │
+    │              │◄─────────────────────────────│              │
+    │              │              │              │              │
+    │◄─────────────│              │              │              │
+    │ { checkoutUrl }             │              │              │
+    │              │              │              │              │
+    │ Redirect to Stripe          │              │              │
+    │─────────────────────────────────────────────►│              │
+    │              │              │              │              │
+    │              │              │              │ Enter card   │
+    │              │              │              │◄─────────────│
+    │              │              │              │              │
+    │              │ Webhook: payment.succeeded  │              │
+    │              │◄─────────────────────────────│              │
+    │              │              │              │              │
+    │              │ Check idempotency           │              │
+    │              │─────────────►│              │              │
+    │              │◄─────────────│              │              │
+    │              │              │              │              │
+    │              │ BEGIN TRANSACTION           │              │
+    │              │─────────────►│              │              │
+    │              │              │              │              │
+    │              │ Reduce stock (atomic)       │              │
+    │              │─────────────►│              │              │
+    │              │◄─────────────│              │              │
+    │              │              │              │              │
+    │              │ Update order status         │              │
+    │              │─────────────►│              │              │
+    │              │◄─────────────│              │              │
+    │              │              │              │              │
+    │              │ COMMIT TRANSACTION          │              │
+    │              │─────────────►│              │              │
+    │              │              │              │              │
+    │              │ Return 200   │              │              │
+    │              │─────────────────────────────►│              │
+    │              │              │              │              │
+    │ Redirect to success page    │              │              │
+    │◄─────────────────────────────────────────────              │
+    │              │              │              │              │
+```
+
+### 1.3.9.3 Data Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    LEVEL 0 - CONTEXT                             │
+│                                                                  │
+│  ┌──────────┐         ┌──────────────┐         ┌──────────┐    │
+│  │          │ Request │              │ Payment │          │    │
+│  │  Client  │────────►│  Simple Shop │────────►│  Stripe  │    │
+│  │          │◄────────│    System    │◄────────│          │    │
+│  └──────────┘ Response└──────────────┘ Webhook └──────────┘    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    LEVEL 1 - PROCESSES                          │
+│                                                                  │
+│  ┌─────────┐                                                    │
+│  │ Client  │                                                    │
+│  └────┬────┘                                                    │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Authentication                        │   │
+│  │  Input: email, password                                  │   │
+│  │  Process: validate → check lockout → verify → issue JWT  │   │
+│  │  Output: { token, user }                                 │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Cart Management                       │   │
+│  │  Input: productId, quantity                              │   │
+│  │  Process: check stock → update cart → calculate total    │   │
+│  │  Output: { items, total }                                │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Order Processing                      │   │
+│  │  Input: cart, shippingAddress                            │   │
+│  │  Process: validate → create order → init payment         │   │
+│  │  Output: { order, checkoutUrl }                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Payment & Fulfillment                 │   │
+│  │  Input: webhook event                                    │   │
+│  │  Process: verify → idempotency → reduce stock → update   │   │
+│  │  Output: order.status = 'confirmed'                      │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1.3.9.4 תרשים Login עם tokenVersion
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                     LOGIN FLOW                                  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   User: POST /api/auth/login                                   │
+│         { email, password }                                    │
+│              │                                                  │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ Check Rate Limit    │                                      │
+│   │ (5 attempts/15min)  │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│       ┌──────▼──────┐                                          │
+│       │ Rate limit  │                                          │
+│       │  exceeded?  │───Yes───► 429 Too Many Requests          │
+│       └──────┬──────┘                                          │
+│              │ No                                               │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ Find user by email  │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│       ┌──────▼──────┐                                          │
+│       │    Found?   │───No────► 401 Invalid credentials        │
+│       └──────┬──────┘                                          │
+│              │ Yes                                              │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ Check lockedUntil   │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│       ┌──────▼──────┐                                          │
+│       │   Locked?   │───Yes───► 423 Account Locked             │
+│       └──────┬──────┘           (return remaining time)        │
+│              │ No                                               │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ Verify password     │                                      │
+│   │ (bcrypt.compare)    │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│       ┌──────▼──────┐                                          │
+│       │   Valid?    │───No────┐                                │
+│       └──────┬──────┘         │                                │
+│              │ Yes            ▼                                 │
+│              │      ┌───────────────────┐                      │
+│              │      │ failedAttempts++  │                      │
+│              │      └─────────┬─────────┘                      │
+│              │                │                                 │
+│              │         ┌──────▼──────┐                         │
+│              │         │  >= 5 ?     │───Yes─► Lock 15 min     │
+│              │         └──────┬──────┘                         │
+│              │                │ No                              │
+│              │                ▼                                 │
+│              │         401 Invalid credentials                 │
+│              │         (X attempts remaining)                  │
+│              │                                                  │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ Reset failedAttempts│                                      │
+│   │ Update lastLogin    │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ Generate JWT        │                                      │
+│   │ payload: {          │                                      │
+│   │   userId,           │                                      │
+│   │   tokenVersion ◄────┼──── מוגבל לגרסה הנוכחית              │
+│   │ }                   │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│              ▼                                                  │
+│   200 OK { token, user }                                       │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 1.3.9.5 תרשים Logout עם tokenVersion
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                     LOGOUT FLOW                                 │
+│                  (Instant Token Revocation)                     │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   User: POST /api/auth/logout                                  │
+│         Headers: { Authorization: "Bearer <token>" }           │
+│              │                                                  │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ Verify JWT          │                                      │
+│   │ Extract userId &    │                                      │
+│   │ tokenVersion        │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│              ▼                                                  │
+│   ┌─────────────────────┐                                      │
+│   │ user.tokenVersion++ │  ◄──── הגדלה ב-1                     │
+│   │ await user.save()   │                                      │
+│   └──────────┬──────────┘                                      │
+│              │                                                  │
+│              ▼                                                  │
+│   ┌─────────────────────────────────────────────────────────┐  │
+│   │              ALL EXISTING TOKENS INVALIDATED!            │  │
+│   │                                                          │  │
+│   │  Token in JWT: tokenVersion = 5                          │  │
+│   │  Token in DB:  tokenVersion = 6  ◄── לא תואם!            │  │
+│   │                                                          │  │
+│   │  Any request with old token → 401 Unauthorized           │  │
+│   └─────────────────────────────────────────────────────────┘  │
+│              │                                                  │
+│              ▼                                                  │
+│   200 OK { message: "Logged out successfully" }                │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 1.3.10 מרכיב אלגוריתמי
+
+### 1.3.10.1 בעיות ופתרונות אלגוריתמיים
+
+#### בעיה 1: Race Condition במכירת מוצרים
+
+**הבעיה:**
+```
+Time    User A              User B              Stock
+─────────────────────────────────────────────────────
+T1      Read stock (1)                          1
+T2                          Read stock (1)      1
+T3      Buy (stock--)                           0
+T4                          Buy (stock--)       -1 ❌
+```
+
+**הפתרון: MongoDB Atomic Update**
+```typescript
+// במקום:
+const product = await Product.findById(id);
+if (product.stock >= quantity) {
+  product.stock -= quantity;  // ❌ Not atomic!
+  await product.save();
+}
+
+// עשינו:
+const result = await Product.findOneAndUpdate(
+  { 
+    _id: id, 
+    stock: { $gte: quantity }  // Condition in query
+  },
+  { 
+    $inc: { stock: -quantity }  // Atomic decrement
+  },
+  { new: true }
+);
+
+if (!result) {
+  throw new Error('Insufficient stock');
+}
+```
+
+**סיבוכיות:** O(1) - single atomic operation
+
+---
+
+#### בעיה 2: ביטול מיידי של כל הטוקנים (Logout)
+
+**הבעיה:**  
+משתמש מתנתק, אבל JWT tokens שכבר הופקו עדיין תקפים עד שיפוגו.
+
+**פתרונות אפשריים:**
+
+| פתרון | יתרון | חיסרון |
+|-------|-------|--------|
+| Token Blacklist | פשוט | DB lookup בכל בקשה |
+| Short Expiry | פשוט | UX רע (login תכוף) |
+| **tokenVersion** | מהיר, ללא DB lookup נוסף | צריך לשמור version |
+
+**הפתרון שבחרנו: tokenVersion**
+
+```typescript
+// ב-User Schema:
+tokenVersion: { type: Number, default: 0 }
+
+// ב-Login - JWT payload כולל את הגרסה:
+const token = jwt.sign({
+  userId: user._id,
+  tokenVersion: user.tokenVersion  // e.g., 5
+}, secret);
+
+// ב-Logout - מגדילים את הגרסה:
+user.tokenVersion += 1;  // Now 6
+await user.save();
+
+// ב-Auth Middleware - בודקים התאמה:
+const decoded = jwt.verify(token, secret);
+const user = await User.findById(decoded.userId);
+
+if (decoded.tokenVersion !== user.tokenVersion) {
+  throw new Error('Token revoked');  // 5 !== 6
+}
+```
+
+**סיבוכיות:** O(1) - comparison operation
+
+---
+
+#### בעיה 3: Webhook Replay Attack
+
+**הבעיה:**  
+Stripe שולח webhook פעמיים (network issue, retry) → חיוב כפול / stock כפול
+
+**הפתרון: Idempotency Key**
+
+```typescript
+async function handleWebhook(event: StripeEvent) {
+  // 1. Check if already processed
+  const existing = await WebhookEvent.findOne({ 
+    eventId: event.id 
+  });
+  
+  if (existing) {
+    return { status: 'already_processed' };  // Skip
+  }
+  
+  // 2. Process the event
+  await processPayment(event);
+  
+  // 3. Mark as processed
+  await WebhookEvent.create({
+    eventId: event.id,
+    provider: 'stripe',
+    eventType: event.type,
+    processedAt: new Date()
+  });
+  
+  return { status: 'success' };
+}
+```
+
+**סיבוכיות:** O(1) - single DB lookup with unique index
+
+---
+
+### 1.3.10.2 איסוף מידע וסטטיסטיקות
+
+#### Metrics נאספים
+
+| Metric | מקור | שימוש |
+|--------|------|-------|
+| Response Time | prom-client | זיהוי צווארי בקבוק |
+| Error Rate | Error middleware | התראות |
+| Failed Logins | Auth service | זיהוי התקפות |
+| Stock Levels | Product model | התראת מלאי נמוך |
+| Payment Success Rate | Payment service | בריאות עסקית |
+
+#### Admin Stats Endpoint
+
+```typescript
+// GET /api/admin/stats/summary
 {
   sales: {
-    total: Number,        // סה"כ מכירות (הזמנות delivered בלבד)
-    deliveredCount: Number
+    total: 12345.67,        // סה"כ מכירות (delivered)
+    deliveredCount: 45
   },
   orders: {
-    open: Number,         // הזמנות פתוחות
-    today: Number         // הזמנות היום
+    open: 8,                // הזמנות פתוחות
+    today: 3
   },
   inventory: {
-    lowStockCount: Number,
-    lowStockProducts: [{ _id, name, stock }],  // מוצרים עם מלאי < 5
-    activeProducts: Number
+    lowStockCount: 5,
+    lowStockProducts: [     // מוצרים עם stock < 5
+      { _id, name, stock }
+    ],
+    activeProducts: 50
   },
   users: {
-    total: Number
+    total: 150
   }
 }
 ```
 
-#### 1.3.7.9 שימוש בחבילות תוכנה
-
-**Production Dependencies:**
-
-```json
-{
-  "express": "^4.18.2",           // HTTP server
-  "mongoose": "^7.5.0",           // MongoDB ODM
-  "redis": "^4.6.0",              // Redis client
-  "stripe": "^12.0.0",            // Payment processor
-  "jsonwebtoken": "^9.0.0",       // JWT tokens
-  "bcryptjs": "^2.4.3",           // Password hashing
-  "helmet": "^7.0.0",             // Security headers
-  "cors": "^2.8.5",               // CORS middleware
-  "pino": "^8.0.0",               // Structured logging
-  "zod": "^3.22.0",               // Runtime validation
-  "prom-client": "^14.0.0"        // Prometheus metrics
-}
-```
-
-**Dev Dependencies:**
-
-```json
-{
-  "typescript": "^5.0.0",
-  "@types/node": "^20.0.0",
-  "jest": "^29.0.0",
-  "supertest": "^6.3.0",
-  "ts-node": "^10.0.0",
-  "nodemon": "^3.0.0"
-}
-```
-
----
-
-### 1.3.8 שימוש במבני נתונים וארגון קבצים
-
-#### 1.3.8.1 פרוט מבנה הנתונים
-
-**User Collection:**
-```javascript
-{
-  _id: ObjectId,
-  email: String,
-  password: String (hashed),
-  name: String,
-  phone: String,
-  role: String ("user" | "admin"),
-  failedLoginAttempts: Number,
-  lockedUntil: Date,
-  lastLogin: Date,
-  tokenVersion: Number (default: 0),  // מוגדל ב-logout לביטול כל הטוקנים
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-**Product Collection:**
-```javascript
-{
-  _id: ObjectId,
-  sku: String (unique),
-  name: String,
-  description: String,
-  price: Number,
-  stock: Number,
-  category: String,  // קטגוריות תקפות: accessories, audio, displays, laptops,
-                     // smart-home, smartphones, streaming, tablets, wearables
-  image: String (URL),
-  featured: Boolean,
-  rating: Number,
-  isActive: Boolean,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-**Order Collection:**
-```javascript
-{
-  _id: ObjectId,
-  orderNumber: String (unique),
-  user: ObjectId (ref: User),
-  items: [
-    {
-      product: ObjectId (ref: Product),
-      name: String,
-      price: Number,
-      quantity: Number,
-      image: String
-    }
-  ],
-  totalAmount: Number,
-  status: String ("pending" | "confirmed" | "shipped" | "delivered"),
-  paymentStatus: String ("pending" | "paid" | "failed"),
-  shippingAddress: Address,
-  createdAt: Date
-}
-```
-
-**Payment Collection:**
-```javascript
-{
-  _id: ObjectId,
-  order: ObjectId (ref: Order),
-  user: ObjectId (ref: User),
-  providerPaymentId: String (Stripe ID),
-  amount: Number,
-  currency: String,
-  status: String ("pending" | "succeeded" | "failed"),
-  checkoutUrl: String,
-  createdAt: Date
-}
-```
-
-**WebhookEvent Collection (Idempotency):**
-```javascript
-{
-  _id: ObjectId,
-  eventId: String (unique, from Stripe),
-  provider: String ("stripe"),
-  eventType: String,
-  processedAt: Date,
-  ttl: Date (expires after 30 days)
-}
-```
-
-#### 1.3.8.2 שיטת האיחסון
-
-**MongoDB:**
-- Primary data store
-- Durable (data persists across crashes)
-- Atomic transactions (prevent race conditions)
-- Indexing for performance
-
-**Redis:**
-- Session storage
-- Cart caching (temporary)
-- Rate limit counters
-- Pub/Sub for notifications (future)
-
-**File Storage:**
-- Product images: Cloud storage (S3 / Firebase)
-- Logs: Local files + cloud (LogDNA / DataDog)
-
-#### 1.3.8.3 מנגנוני התאוששות
-
-**מ-Database failures:**
-- Automatic reconnection logic
-- Connection pooling
-- Graceful degradation
-
-**מ-Payment failures:**
-- Webhook retry logic (exponential backoff)
-- Failed webhook tracking
-- Admin dashboard for manual recovery
-
-**מ-Server crashes:**
-- Session persistence (Redis)
-- Distributed tracing
-- Health checks
-
----
-
-### 1.3.9 תרשימי מערכת מרכזיים
-
-#### 1.3.9.1 Use Case Diagram
-
-```
-                    ┌──────────────────┐
-                    │   לקוח משתמש     │
-                    └──────┬───────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-        ▼                  ▼                  ▼
-  ┌──────────────┐  ┌────────────────┐  ┌──────────┐
-  │ צפייה במוצרים│  │ קנייה (checkout)│  │ מעקב HZ │
-  └──────────────┘  └────────────────┘  └──────────┘
-        │                  │                  │
-        └──────────────────┼──────────────────┘
-                           │
-                           ▼
-                    ┌──────────────────┐
-                    │  API Backend     │
-                    └──────────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-        ▼                  ▼                  ▼
-  ┌──────────────┐  ┌────────────────┐  ┌──────────┐
-  │   MongoDB    │  │     Stripe     │  │  Redis   │
-  │  Database    │  │   Payment API  │  │  Cache   │
-  └──────────────┘  └────────────────┘  └──────────┘
-```
-
-#### 1.3.9.2 Sequence Diagram – Checkout Flow
-
-```
-Client          Backend         Stripe          MongoDB
-  │               │               │               │
-  │─ POST /order─>│               │               │
-  │               │─ verify stock─────────────────>│
-  │               │<─ stock OK────────────────────│
-  │               │               │               │
-  │               │─ create payment intent───────>│
-  │               │<─ session URL─────────────────│
-  │               │               │               │
-  │<─ checkout URL│               │               │
-  │               │               │               │
-  │─ redirect to Stripe ──────────────────────────>
-  │               │               │
-  │               │  (user enters card details)
-  │               │               │
-  │               │<─ webhook: payment.success───│
-  │               │               │               │
-  │               │─ reduce stock─────────────────>
-  │               │<─ stock reduced────────────────│
-  │               │               │               │
-  │               │─ create order─────────────────>
-  │               │<─ order created────────────────│
-  │               │               │               │
-  │<─ success ────│               │               │
-```
-
-#### 1.3.9.3 Data Flow Diagram
-
-```
-INPUT:                 PROCESS:                OUTPUT:
-User fills cart   →   Validate cart      →    Order created
-                  →   Check stock         →    Payment intent
-                  →   Calculate total     →    Confirmation email
-                  
-Payment webhook   →   Verify signature   →    Order fulfilled
-                  →   Check idempotency  →    Stock reduced
-                  →   Reduce stock       →    Webhook logged
-                  
-Login attempt     →   Check if locked    →    JWT token
-                  →   Verify password    →    Session created
-                  →   Hash password      →    Rate limit updated
-                  →   Track failed tries
-```
-
-#### 1.3.9.4 תרשים שכבות (Layered Architecture)
-
-```
-┌───────────────────────────────┐
-│           Routes              │  הגדרת נתיבים
-└───────────────┬───────────────┘
-        │
-┌───────────────▼───────────────┐
-│         Controllers           │  טיפול ב-HTTP
-└───────────────┬───────────────┘
-        │
-┌───────────────▼───────────────┐
-│           Services            │  לוגיקה עסקית
-└───────────────┬───────────────┘
-        │
-┌───────────────▼───────────────┐
-│            Models             │  סכמות DB
-└───────────────┬───────────────┘
-        │
-┌───────────────▼───────────────┐
-│           Database            │  MongoDB
-└───────────────────────────────┘
-```
-
-#### 1.3.9.5 תרשים זרימת Login + Lockout
-
-```
-User → POST /login
-     │
-     ▼
-   Check lockedUntil?
-     │ Yes (locked) ──> Return 423/401
-     │ No
-     ▼
-   Verify password
-     │
-     ├─ Success → Reset failed attempts → Issue JWT (with tokenVersion)
-     │
-     └─ Fail → failedLoginAttempts++
-         │
-         ├─ < 5 → Return error (remaining attempts)
-         └─ >= 5 → lockedUntil = now + 15 min
-```
-
-#### 1.3.9.5.1 תרשים Logout עם tokenVersion (Instant Token Revocation)
-
-```
-User → POST /logout
-     │
-     ▼
-   Verify JWT token
-     │
-     ▼
-   user.tokenVersion++
-     │
-     ▼
-   Save to DB
-     │
-     ▼
-   All existing tokens invalid! ✓
-   (tokenVersion in JWT ≠ tokenVersion in DB)
-```
-
-#### 1.3.9.6 תרשים Webhook Processing
-
-```
-Stripe Webhook → Verify Signature → Check Idempotency
-              │                │
-              │                ├─ already processed → return 200
-              │                │
-              ▼                ▼
-          Verify Amount → Reduce Stock (transaction)
-              │                │
-              ▼                ▼
-          Update Payment → Update Order Status
-              │
-              ▼
-             Return 200
-```
-
----
-
-### 1.3.10 תיאור המרכיב האלגוריתמי חישובי
-
-#### 1.3.10.1 בעיות וחישובים
-
-**בעיה 1: Overselling (קנייה כפולה)**
-- מה: שני לקוחות קונים את אותו מוצר בו-זמנית
-- פתרון: MongoDB atomic transactions
-- אלגוריתם:
-  ```
-  BEGIN TRANSACTION
-    1. Lock product in transaction
-    2. Check stock >= quantity needed
-    3. Reduce stock
-    4. Create order
-    5. COMMIT or ROLLBACK
-  END TRANSACTION
-  ```
-
-**בעיה 2: Brute Force Attack**
-- מה: התקפה ניסיון-וטעייה על login
-- פתרון: Account lockout + rate limiting
-- אלגוריתם:
-  ```
-  ON LOGIN FAILURE:
-    1. Increment failedLoginAttempts
-    2. IF attempts >= 5:
-         Set lockedUntil = now + 15 minutes
-    3. Save to DB
-    4. Return error with remaining time
-  ```
-
-**בעיה 3: Webhook Replay Attack**
-- מה: Stripe שלח את אותו webhook פעמיים
-- פתרון: Idempotency with DB tracking
-- אלגוריתם:
-  ```
-  ON WEBHOOK:
-    1. Verify signature (HMAC-SHA256)
-    2. Check if eventId already in DB
-    3. IF already processed:
-         Return 200 OK (don't reprocess)
-    4. ELSE:
-         Process webhook
-         Store eventId in DB
-    5. Return 200 OK
-  ```
-
-#### 1.3.10.2 איסוף מידע וניתוחים סטטיסטיים
-
-**Metrics collected:**
-
-| Metric | תפקיד | דוגמה |
-|--------|--------|--------|
-| **Response time** | ביצועים | 95th percentile < 200ms |
-| **Error rate** | אמינות | < 0.1% (fewer than 1 per 1000) |
-| **Login attempts** | אבטחה | 5 failed = lockout |
-| **Stock levels** | עסקים | Alert if < 10 units |
-| **Payment success** | הכנסות | 98% of checkouts complete |
-| **Webhook retries** | reliability | 3 retries before manual review |
-
-**Logging format (Structured logs):**
+#### Logging Format (Structured)
 
 ```json
 {
   "level": "info",
-  "timestamp": "2026-02-01T12:34:56Z",
-  "service": "OrderService",
-  "method": "createOrder",
-  "userId": "507f1f77bcf86cd799439011",
-  "orderId": "ORD-20260201-001",
-  "totalAmount": 199.99,
-  "duration_ms": 145,
+  "time": 1709308800000,
+  "service": "PaymentService",
+  "method": "handleWebhook",
+  "eventId": "evt_1abc123",
+  "eventType": "checkout.session.completed",
+  "orderId": "ORD-20260301-001",
+  "amount": 199.99,
+  "duration_ms": 45,
   "status": "success"
 }
 ```
 
 ---
 
-### 1.3.11 תיאור התייחסות לנושאי אבטחת מידע
+## 1.3.11 אבטחת מידע
 
-#### אזורים הדורשים אבטחה:
+### אזורים הדורשים הגנה
 
-**1. Authentication & Authorization**
-- ✅ **JWT tokens** – כל בקשה אחרי login צריכה token
-- ✅ **Password hashing** – bcrypt with 12 rounds
-- ✅ **Account lockout** – אחרי 5 failed logins
-- ✅ **Rate limiting** – 5 attempts per 15 minutes per user
-- ✅ **Refresh tokens** – JWT עם expiry כדי להגביל חלון זמן
-- ✅ **tokenVersion** – ביטול מיידי של כל הטוקנים ב-logout (instant revocation)
+| אזור | איומים | הגנות |
+|------|--------|-------|
+| **Authentication** | Brute force, Credential stuffing | Rate limit, Account lockout, bcrypt |
+| **Sessions** | Token theft, Session fixation | JWT, tokenVersion, HTTPS only |
+| **API** | Injection, XSS, CSRF | Zod validation, Helmet, CORS |
+| **Database** | SQL injection, Data leak | Mongoose ODM, select: false |
+| **Payments** | Webhook spoofing, Replay | HMAC verification, Idempotency |
 
-**2. Database (MongoDB)**
-- ✅ **Connection encryption** – HTTPS + TLS
-- ✅ **At-rest encryption** – MongoDB Atlas encryption
-- ✅ **Access control** – Network whitelist, IAM roles
-- ✅ **Input validation** – Zod schemas prevent injection
-- ✅ **Sensitive fields** – Passwords hidden with `select: false`
+### מנגנוני ההגנה המיושמים
 
-**3. API Security**
-- ✅ **CORS** – Whitelist allowed origins
-- ✅ **CSRF protection** – SameSite cookies
-- ✅ **Helmet.js** – Security headers (CSP, X-Frame-Options, etc.)
-- ✅ **Input validation** – All user input validated
-- ✅ **Rate limiting** – Prevent brute force & DoS
+#### 1. Password Security
+```typescript
+// Hash with bcrypt (12 rounds = ~250ms)
+const hash = await bcrypt.hash(password, 12);
 
-**4. Payment Security (Stripe)**
-- ✅ **Webhook signature verification** – HMAC-SHA256
-- ✅ **Idempotency** – No duplicate charges
-- ✅ **Amount verification** – DB vs webhook
-- ✅ **PCI compliance** – Never touch card data (Stripe handles it)
-- ✅ **Tokenization** – Card details stored in Stripe, not our DB
+// Verify
+const isValid = await bcrypt.compare(password, hash);
+```
 
-**5. Data Privacy**
-- ✅ **No sensitive logs** – Passwords/tokens never logged
-- ✅ **Email validation** – Prevent data enumeration
-- ✅ **Account deletion** – Support GDPR compliance
-- ✅ **Audit logs** – Track who did what when
+#### 2. JWT with tokenVersion
+```typescript
+// Token payload
+{
+  userId: "507f1f77bcf86cd799439011",
+  tokenVersion: 5,  // Must match DB
+  iat: 1709308800,
+  exp: 1709312400   // 1 hour
+}
 
-#### 5 סצנריוים של התקפה ותגובה:
+// Verification includes version check
+if (decoded.tokenVersion !== user.tokenVersion) {
+  throw new UnauthorizedError('Token revoked');
+}
+```
 
-| התקפה | טרחת | תגובה |
-|--------|-------|--------|
-| **Brute force login** | 100 attempts | Account locked, logged, admin alerted |
-| **SQL Injection** | `email: "'; DROP TABLE users; --"` | Zod validation rejects, query safe |
-| **Rate limit bypass** | 1000 req/min | Rate limiter blocks, IP banned |
-| **Webhook spoofing** | Fake Stripe webhook | Signature verify fails, rejected |
-| **CSRF attack** | Cross-site form | SameSite cookie blocks request |
+#### 3. Rate Limiting
+```typescript
+// Auth endpoints: 5 requests per 15 minutes per user
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.body.email || req.ip
+});
+
+// General API: 100 requests per minute
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100
+});
+```
+
+#### 4. Account Lockout
+```typescript
+if (user.failedLoginAttempts >= 5) {
+  user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+  throw new Error('Account locked for 15 minutes');
+}
+```
+
+#### 5. Webhook Signature Verification
+```typescript
+const signature = req.headers['stripe-signature'];
+const event = stripe.webhooks.constructEvent(
+  req.body,
+  signature,
+  process.env.STRIPE_WEBHOOK_SECRET
+);
+// Throws if signature invalid
+```
+
+### 5 תרחישי התקפה ותגובה
+
+| # | התקפה | תגובה | קוד שגיאה |
+|---|-------|-------|-----------|
+| 1 | Brute force login (100 ניסיונות) | Account locked, logged, IP rate limited | 429/423 |
+| 2 | SQL Injection in email field | Zod validation rejects, query parameterized | 400 |
+| 3 | Stolen JWT token used | tokenVersion mismatch after logout | 401 |
+| 4 | Fake Stripe webhook | HMAC signature verification fails | 400 |
+| 5 | Same webhook sent twice | Idempotency check blocks duplicate | 200 (skip) |
 
 ---
 
-### 1.3.12 משאבים הנדרשים לפרויקט
+<!-- ========== SERVER-SECTION-END ========== -->
 
-#### 1.3.12.1 חלוקת שעות
+---
+
+<!-- ========== CLIENT-SECTION-START ========== -->
+<!-- להסרת חלק הלקוח, בקש: "הסר את כל סעיפי הלקוח מהספר" -->
+
+# חלק ג' - ליבה טכנית: צד לקוח (Frontend)
+
+<!-- סגנון כתיבה: טכני - כמו CTO שמסביר למתכנתים -->
+
+## 2. צד לקוח (Frontend)
+
+### 2.1 סקירה כללית
+
+צד הלקוח הוא אפליקציית **React** מודרנית שמתקשרת עם ה-API של השרת.
+
+| היבט | מימוש |
+|------|-------|
+| **ביצועים** | Vite build, code splitting, lazy loading |
+| **עיצוב** | Tailwind CSS, responsive design |
+| **State** | RTK Query (server state) + useState (UI) |
+| **Routing** | React Router v6 |
+| **RTL** | תמיכה מלאה בעברית |
+
+### 2.2 טכנולוגיות
+
+| טכנולוגיה | גרסה | תפקיד |
+|-----------|------|-------|
+| **React** | 18.x | UI Library |
+| **Vite** | 5.x | Build tool (10x faster than CRA) |
+| **TypeScript** | 5.x | Type safety |
+| **RTK Query** | 2.x | API calls + automatic caching |
+| **Tailwind CSS** | 3.x | Utility-first CSS |
+| **React Router** | 6.x | Client-side routing |
+
+### 2.3 מבנה קבצים
+
+```
+client/
+├── src/
+│   ├── api.ts              # RTK Query - כל ה-API endpoints
+│   ├── store.ts            # Redux store
+│   ├── hooks.ts            # useAuth, useCart
+│   ├── types.ts            # TypeScript interfaces
+│   ├── App.tsx             # Main app + routing
+│   ├── main.tsx            # Entry point
+│   ├── index.css           # Tailwind + globals
+│   │
+│   ├── components/
+│   │   ├── Layout.tsx          # Header + navigation
+│   │   ├── AuthModal.tsx       # Login/Register
+│   │   ├── ProductCard.tsx     # Product card
+│   │   ├── CartItem.tsx        # Cart item row
+│   │   ├── AddressForm.tsx     # Address form
+│   │   └── ProtectedRoute.tsx  # Auth guard
+│   │
+│   └── pages/
+│       ├── Home.tsx            # Product listing
+│       ├── Product.tsx         # Single product
+│       ├── Cart.tsx            # Shopping cart
+│       ├── Checkout.tsx        # Checkout flow
+│       ├── Orders.tsx          # Order history
+│       ├── Order.tsx           # Single order
+│       ├── Profile.tsx         # User profile
+│       └── Admin.tsx           # Admin dashboard
+│
+├── package.json
+├── vite.config.ts
+└── tailwind.config.js
+```
+
+### 2.4 קומפוננטות מרכזיות
+
+| קומפוננטה | תפקיד | Props |
+|-----------|-------|-------|
+| `Layout` | עטיפה לכל הדפים | `children` |
+| `AuthModal` | Login/Register modal | `isOpen`, `view`, `onClose` |
+| `ProductCard` | כרטיס מוצר | `product` |
+| `CartItem` | שורת פריט בעגלה | `item`, `compact?` |
+| `ProtectedRoute` | הגנה על routes | `children` |
+
+### 2.5 Custom Hooks
+
+```typescript
+// useAuth - מצב התחברות
+const { user, isAuthenticated, isAdmin, isLoading } = useAuth();
+
+// useCart - נתוני עגלה
+const { items, total, itemCount, isEmpty, isLoading } = useCart();
+```
+
+### 2.6 Data Flow
+
+```
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│  Component  │──────►│  RTK Query  │──────►│   Server    │
+│             │◄──────│   (cache)   │◄──────│             │
+└─────────────┘       └─────────────┘       └─────────────┘
+    useState              automatic            MongoDB
+   (UI state)           invalidation
+```
+
+### 2.7 דפי האפליקציה
+
+| דף | נתיב | תיאור | Auth |
+|----|------|-------|------|
+| Home | `/` | רשימת מוצרים + סינון | ❌ |
+| Product | `/product/:id` | דף מוצר | ❌ |
+| Cart | `/cart` | עגלת קניות | ✅ |
+| Checkout | `/checkout` | תשלום | ✅ |
+| Orders | `/orders` | היסטוריה | ✅ |
+| Order | `/orders/:id` | פרטי הזמנה | ✅ |
+| Profile | `/profile` | פרופיל | ✅ |
+| Admin | `/admin` | לוח ניהול | ✅ Admin |
+
+### 2.8 תרשים זרימת משתמש
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                         HOME                                  │
+│  [סינון] [מוצר 1] [מוצר 2] [מוצר 3] ...                      │
+└────────────────────────┬─────────────────────────────────────┘
+                         │ Click
+                         ▼
+┌──────────────────────────────────────────────────────────────┐
+│                       PRODUCT                                 │
+│  תמונה | שם | ₪199 | תיאור | כמות | [הוסף לעגלה]             │
+└────────────────────────┬─────────────────────────────────────┘
+                         │ Add to cart
+                         ▼
+┌──────────────────────────────────────────────────────────────┐
+│                         CART                                  │
+│  פריט 1: מוצר X | 2 | ₪398                                   │
+│  פריט 2: מוצר Y | 1 | ₪99                                    │
+│  ─────────────────────────                                    │
+│  סה"כ: ₪497              [המשך לתשלום]                        │
+└────────────────────────┬─────────────────────────────────────┘
+                         │
+                         ▼
+┌──────────────────────────────────────────────────────────────┐
+│                      CHECKOUT                                 │
+│  1. בחר/הזן כתובת                                             │
+│  2. סיכום הזמנה                                               │
+│  3. [לתשלום]                                                  │
+└────────────────────────┬─────────────────────────────────────┘
+                         │ Redirect
+                         ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   STRIPE CHECKOUT                             │
+│              (דף תשלום מאובטח)                                 │
+└────────────────────────┬─────────────────────────────────────┘
+                         │ Success/Cancel
+                         ▼
+                   ORDER CONFIRMED
+```
+
+### 2.9 אבטחה בצד לקוח
+
+| נושא | מימוש |
+|------|-------|
+| Token Storage | localStorage |
+| Protected Routes | ProtectedRoute component |
+| Auto Refresh | Token refresh on 401 |
+| XSS Prevention | React escapes by default |
+| Input Validation | Client-side + server-side |
+
+### 2.10 Environment Variables
+
+```env
+VITE_API_BASE_URL=https://simple-4-anp6.onrender.com/api
+```
+
+### 2.11 Scripts
+
+```bash
+npm run dev      # Development server
+npm run build    # Production build
+npm run preview  # Preview build
+npm run lint     # ESLint
+```
+
+<!-- ========== CLIENT-SECTION-END ========== -->
+
+---
+
+# חלק ד' - ניהול פרויקט
+
+## 1.3.12 משאבים נדרשים
+
+### 1.3.12.1 חלוקת שעות
 
 | משימה | שעות | סטודנט 1 (Server) | סטודנט 2 (Client) |
 |-------|------|-------------------|-------------------|
-| Planning & Design | 30 | 15 | 15 |
+| תכנון וארכיטקטורה | 30 | 20 | 10 |
 | Backend API | 120 | 120 | - |
 | Frontend | 100 | - | 100 |
-| Testing | 30 | 20 | 10 |
+| בדיקות | 30 | 20 | 10 |
 | Deployment | 10 | 7 | 3 |
-| Documentation | 10 | 6 | 4 |
-| **Total** | **300** | **168** | **132** |
+| תיעוד | 10 | 6 | 4 |
+| **סה"כ** | **300** | **173** | **127** |
 
-#### 1.3.12.2 ציוד נדרש
+### 1.3.12.2 ציוד נדרש
 
-- Laptop (Windows/Mac/Linux) עם 8GB RAM
-- Internet connection (לapi.stripe.com וmongodb.com)
-- Text editor: VS Code + extensions
-- Git/GitHub account
-- MongoDB Atlas account (חינם)
-- Stripe account (חינם - test mode)
+- מחשב עם 8GB+ RAM
+- חיבור אינטרנט (ל-APIs חיצוניים)
+- חשבון GitHub
+- חשבון MongoDB Atlas (חינם)
+- חשבון Stripe (test mode)
+- חשבון Render.com (חינם)
 
-#### 1.3.12.3 תוכנות נדרשות
+### 1.3.12.3 תוכנות נדרשות
 
-| תוכנה | קובץ הורדה | קצת |
-|------|-----------|------|
-| Node.js 22+ | nodejs.org | Runtime |
-| npm / yarn | (included w/ Node) | Package manager |
-| MongoDB (local) | mongodb.com/download | Database (optional - use Atlas) |
-| Redis (local) | redis.io | Cache (optional - use Redis Cloud) |
-| Postman / Insomnia | postman.com | API testing |
-| VS Code | code.visualstudio.com | Text editor |
+| תוכנה | שימוש |
+|-------|-------|
+| VS Code | IDE |
+| Node.js 22+ | Runtime |
+| Git | Version control |
+| Postman | API testing |
+| Chrome DevTools | Debugging |
 
-#### 1.3.12.4 ידע חדש שנדרש ללמידה
+### 1.3.12.4 ידע חדש שנלמד
 
-- **Express.js** – HTTP framework
-- **MongoDB & Mongoose** – NoSQL database
-- **JWT & bcrypt** – Authentication
-- **Stripe API** – Payment processing
-- **Webhooks** – Async event handling
-- **TypeScript** – Type-safe JavaScript
-- **Testing** (Jest) – Unit & integration tests
-- **Docker** (optional) – Containerization
+| נושא | מקור למידה |
+|------|------------|
+| Express.js | expressjs.com |
+| MongoDB + Mongoose | mongodb.com/docs |
+| JWT Authentication | jwt.io |
+| Stripe Payments | stripe.com/docs |
+| TypeScript | typescriptlang.org |
+| React + RTK Query | redux-toolkit.js.org |
+| Tailwind CSS | tailwindcss.com |
 
-#### 1.3.12.5 ספרות ומקורות מידע
+### 1.3.12.5 ספרות ומקורות
 
-- Express.js Documentation: expressjs.com
-- MongoDB Docs: mongodb.com/docs
-- Stripe Documentation: stripe.com/docs
-- OWASP Top 10: owasp.org (Security)
-- Node.js Best Practices: goldbergyoni/nodebestpractices
-- Clean Code: Martin, Robert C.
-
----
-
-### 1.3.13 תכנית עבודה ושלבים למימוש
-
-**Sprint 1 (שבועות 1-2):**
-- [ ] Setup project + Git
-- [ ] Design DB schemas
-- [ ] Setup MongoDB + Redis
-- [ ] User model + registration/login
-
-**Sprint 2 (שבועות 3-4):**
-- [ ] Product CRUD
-- [ ] Category filtering
-- [ ] Rate limiting & account lockout
-- [ ] Unit tests for auth
-
-**Sprint 3 (שבועות 5-6):**
-- [ ] Order creation
-- [ ] Cart management
-- [ ] MongoDB transactions
-- [ ] Order tracking
-
-**Sprint 4 (שבועות 7-8):**
-- [ ] Stripe integration
-- [ ] Webhook handling
-- [ ] Idempotency
-- [ ] Payment tests
-
-**Sprint 5 (שבועות 9-10):**
-- [ ] Admin endpoints
-- [ ] Audit logging
-- [ ] Metrics & monitoring
-- [ ] Performance testing
-
-**Sprint 6 (שבועות 11-12):**
-- [ ] Deployment
-- [ ] Documentation
-- [ ] Security audit
-- [ ] Final testing
+- Express.js Documentation
+- MongoDB University (free courses)
+- Stripe Documentation
+- OWASP Top 10 (security)
+- "Clean Code" - Robert C. Martin
+- Node.js Best Practices - goldbergyoni/nodebestpractices
 
 ---
 
-### 1.3.14 תכנון הבדיקות
+## 1.3.13 תכנית עבודה
 
-#### 1.3.14.1 בדיקות תהליכיות (Full Flow)
+### Sprint Plan
 
-| מס | תיאור | צעדים | תוצאה צפויה |
-|----|--------|--------|----------------|
-| 1 | משתמש חדש נרשם | 1. POST /register 2. Check DB | User created, token issued |
-| 2 | Login מוצלח | 1. POST /login 2. GET /me | JWT token returned |
-| 3 | קנייה מלאה | 1. Add to cart 2. Checkout 3. Stripe payment 4. Webhook | Order created, stock reduced |
-| 4 | Brute force blocked | 1. POST /login (wrong password x5) | Account locked after 5 attempts |
-| 5 | Order tracking | 1. Create order 2. GET /orders/:id | Status = pending → shipped |
-
-#### 1.3.14.2 בדיקות יחידה (Unit Tests)
-
-| מודול | Test cases | Coverage |
-|--------|-----------|----------|
-| **Auth Service** | - Login success/failure - Password hashing - Token generation - Account lockout | 95% |
-| **Order Service** | - Create order - Stock validation - Overselling prevention - Order cancellation | 90% |
-| **Payment Service** | - Webhook verification - Idempotency - Amount validation - Retry logic | 92% |
-| **Product Service** | - Get/create/update/delete - Stock updates - Search/filter | 88% |
+| Sprint | שבועות | משימות |
+|--------|--------|--------|
+| **1** | 1-2 | Setup, DB design, User model, Auth |
+| **2** | 3-4 | Products CRUD, Rate limiting, Tests |
+| **3** | 5-6 | Cart, Orders, Transactions |
+| **4** | 7-8 | Stripe integration, Webhooks |
+| **5** | 9-10 | Admin, Metrics, Performance |
+| **6** | 11-12 | Deployment, Docs, Final testing |
 
 ---
 
-### 1.3.15 בקרת גרסאות
+## 1.3.14 תכנון בדיקות
 
-**Git Workflow:**
-- `main` – Production-ready
-- `develop` – Latest development
-- `feature/*` – New features
-- `bugfix/*` – Bug fixes
+### 1.3.14.1 בדיקות תהליכיות (Full Flow)
 
-**Commit convention:**
+| # | תרחיש | צעדים | תוצאה צפויה |
+|---|-------|-------|-------------|
+| 1 | הרשמה | POST /register → Login | User created, token issued |
+| 2 | התחברות | POST /login → GET /verify | JWT valid, user data |
+| 3 | קנייה מלאה | Add to cart → Checkout → Pay | Order confirmed, stock reduced |
+| 4 | Brute force | 5 wrong passwords | Account locked 15 min |
+| 5 | Logout | POST /logout → Use old token | 401 Unauthorized |
+| 6 | Webhook | Stripe event → Order update | Payment processed once |
+
+### 1.3.14.2 בדיקות יחידה (Unit Tests)
+
+| מודול | בדיקות | Coverage |
+|-------|--------|----------|
+| **Auth Service** | Login, Register, Lockout, tokenVersion | 95% |
+| **Order Service** | Create, Cancel, Stock validation | 90% |
+| **Payment Service** | Webhook verify, Idempotency | 92% |
+| **Product Service** | CRUD, Search, Filter | 88% |
+| **Cart Service** | Add, Remove, Update quantity | 85% |
+
+### Test Results
+
+```
+PASS  src/__tests__/auth.test.ts
+PASS  src/__tests__/order.test.ts
+PASS  src/__tests__/payment-webhook.test.ts
+PASS  src/__tests__/products.test.ts
+PASS  src/__tests__/health.test.ts
+
+Test Suites: 6 passed, 6 total
+Tests:       38 passed, 38 total
+Coverage:    89%
+```
+
+---
+
+## 1.3.15 בקרת גרסאות
+
+### Git Workflow
+
+```
+main ─────────────────────────────────► Production
+  │
+  └─── develop ───────────────────────► Development
+         │
+         ├─── feature/auth ────────────► New features
+         ├─── feature/payments
+         ├─── bugfix/cart-total
+         └─── ...
+```
+
+### Commit Convention
+
 ```
 feat: Add account lockout after 5 failed logins
 fix: Correct race condition in order creation
 docs: Update API documentation
 test: Add tests for payment webhook
+refactor: Extract validation to separate module
 ```
 
-**Version numbering:** Semantic Versioning (1.0.0)
-- Major (1.x.x) – Breaking changes
-- Minor (x.1.x) – New features
-- Patch (x.x.1) – Bug fixes
+### Version Numbering
+
+**Semantic Versioning (SemVer)**
+- Major (X.0.0) – Breaking changes
+- Minor (0.X.0) – New features
+- Patch (0.0.X) – Bug fixes
+
+**Current Version:** 1.0.0
 
 ---
 
-## הערות סיום
+# חלק ה' - סיכום
 
-מערכת זו היא דוגמה למערכת e-commerce production-ready עם דגש על:
-- ✅ **אבטחה** – מרובה שכבות הגנה
-- ✅ **אמינות** – Atomic operations, retry logic
-- ✅ **ביצועים** – Caching, indexing, optimization
-- ✅ **קריאות** – Clean code, good documentation
+<!-- סגנון כתיבה: סטודנטים - מה למדנו, איך זה עזר -->
 
-עם הערכה,
-[שמות הסטודנטים]
+## סיכום - מה למדנו
+
+### הלמידה הטכנית
+
+בפרויקט הזה למדנו לבנות מערכת מורכבת מאפס ועד production:
+
+**צד שרת:**
+- 🔧 ארכיטקטורת Layered Architecture עם הפרדה ברורה בין שכבות
+- 🔒 אבטחה מרובת שכבות: JWT, bcrypt, rate limiting, tokenVersion
+- 💳 אינטגרציה עם Stripe כולל webhooks ו-idempotency
+- 🗄️ MongoDB transactions למניעת race conditions
+- ✅ כתיבת בדיקות אוטומטיות עם Jest
+
+**צד לקוח:**
+- ⚛️ React 18 עם TypeScript
+- 🔄 RTK Query לניהול state של שרת
+- 🎨 Tailwind CSS לעיצוב מהיר ו-responsive
+- 🔐 Protected routes והגנה על ממשק המשתמש
+
+### הלמידה האישית
+
+מעבר לטכנולוגיות, למדנו:
+
+| נושא | מה למדנו |
+|------|----------|
+| **עבודת צוות** | חלוקת עבודה, Git workflow, code review |
+| **תכנון** | לחשוב קדימה, לצפות בעיות, לתכנן פתרונות |
+| **תיעוד** | הקוד הוא רק חצי מהעבודה - תיעוד חשוב לא פחות |
+| **אבטחה** | לחשוב כמו תוקף, לא לסמוך על קלט מהמשתמש |
+| **Production** | ההבדל בין "עובד על המחשב שלי" ל-production |
+
+### אתגרים והתמודדות
+
+| אתגר | איך התמודדנו |
+|------|-------------|
+| Race conditions | למדנו על MongoDB transactions |
+| Token security | חקרנו ומצאנו את שיטת tokenVersion |
+| Webhook reliability | הבנו idempotency patterns |
+| TypeScript errors | למדנו להקפיד על types מההתחלה |
+
+### המלצות לפרויקטים עתידיים
+
+1. **תכננו את הארכיטקטורה לפני שמתחילים לקודד** - זה חוסך שעות של refactoring
+2. **כתבו בדיקות מההתחלה** - לא בסוף כשכבר אין זמן
+3. **תעדו תוך כדי** - לא לזכור בסוף מה עשיתם לפני 3 חודשים
+4. **אל תזלזלו באבטחה** - זה לא "נוסיף אחר כך"
+5. **Deploy מוקדם** - תגלו בעיות production לפני שמאוחר מדי
+
+### סיכום
+
+הפרויקט הזה היה הרבה יותר מ"עוד פרויקט לימודים". זו הייתה הזדמנות לבנות משהו אמיתי, להתמודד עם בעיות אמיתיות, וללמוד איך נראה פיתוח תוכנה מקצועי.
+
+אנחנו גאים במה שבנינו, ומרגישים מוכנים להיכנס לעולם העבודה עם ידע מעשי וניסיון אמיתי.
 
 ---
 
 **תאריך עדכון אחרון:** 01/03/2026  
-**מצב:** Final
+**מצב:** Final  
+**גרסה:** 1.0.0
