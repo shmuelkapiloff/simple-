@@ -53,7 +53,8 @@ export default function Admin() {
 // ==== Stats ====
 function StatsTab() {
   const { data, isLoading } = useGetAdminStatsQuery();
-  const stats = data?.data;
+  // Server returns { data: { stats: ... } }
+  const stats = data?.data?.stats;
 
   if (isLoading) return <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[1,2,3,4].map(i => <div key={i} className="h-28 bg-gray-200 rounded-xl animate-pulse" />)}</div>;
 
@@ -98,8 +99,8 @@ function ProductsTab() {
   const [updateProduct, { isLoading: updatingProd }] = useUpdateProductMutation();
   const [deleteProduct] = useDeleteProductMutation();
 
-  // Server returns products array directly
-  const products = Array.isArray(data?.data) ? data.data : [];
+  // Server returns { data: { products: [...] } }
+  const products = data?.data?.products ?? [];
   const [editing, setEditing] = useState<Product | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -218,8 +219,8 @@ function ProductsTab() {
 function OrdersTab() {
   const { data, isLoading } = useGetAdminOrdersQuery();
   const [updateStatus, { isLoading: updatingStatus }] = useUpdateOrderStatusMutation();
-  // Server returns orders array directly
-  const orders = Array.isArray(data?.data) ? data.data : [];
+  // Server returns { data: { orders: [...] } }
+  const orders = data?.data?.orders ?? [];
   const [editingOrder, setEditingOrder] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState("");
 
@@ -289,8 +290,8 @@ function OrdersTab() {
 function UsersTab() {
   const { data, isLoading } = useGetAdminUsersQuery();
   const [updateRole, { isLoading: updatingRole }] = useUpdateUserRoleMutation();
-  // Server returns users array directly
-  const users = Array.isArray(data?.data) ? data.data : [];
+  // Server returns users directly in data (no wrapper)
+  const users = Array.isArray(data?.data) ? data.data : (data?.data?.users ?? []);
 
   if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-gray-200 rounded-xl" />)}</div>;
 
