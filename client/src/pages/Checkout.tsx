@@ -9,7 +9,7 @@ import {
 } from "../api";
 import CartItem from "../components/CartItem";
 import AddressForm from "../components/AddressForm";
-import type { AddressRequest } from "../types";
+import type { AddressRequest, CartItem as CartItemType } from "../types";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -18,8 +18,8 @@ export default function Checkout() {
   const cancelled = searchParams.get("canceled");
 
   // ---- Stripe return: success polling ----
-  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(() =>
-    sessionId ? localStorage.getItem("checkout_order_id") : null,
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(
+    () => sessionId ? localStorage.getItem("checkout_order_id") : null
   );
   const { data: paymentData } = useGetPaymentStatusQuery(paymentOrderId!, {
     skip: !paymentOrderId,
@@ -27,15 +27,15 @@ export default function Checkout() {
   });
 
   useEffect(() => {
-    // Server returns payment directly in data
-    if (paymentData?.data?.status === "succeeded") {
+    // Server returns { data: { payment } }
+    if (paymentData?.data?.payment?.status === "succeeded") {
       localStorage.removeItem("checkout_order_id");
     }
   }, [paymentData]);
 
   // If returned from Stripe success
   if (sessionId && paymentOrderId) {
-    const status = paymentData?.data?.status;
+    const status = paymentData?.data?.payment?.status;
     const paid = status === "succeeded";
 
     return (
@@ -43,9 +43,7 @@ export default function Checkout() {
         {paid ? (
           <>
             <div className="text-6xl mb-4">✅</div>
-            <h1 className="text-2xl font-bold text-green-600 mb-2">
-              התשלום בוצע בהצלחה!
-            </h1>
+            <h1 className="text-2xl font-bold text-green-600 mb-2">התשלום בוצע בהצלחה!</h1>
             <p className="text-gray-500 mb-6">ההזמנה שלך אושרה</p>
             <Link
               to="/orders"
@@ -86,15 +84,10 @@ export default function Checkout() {
 }
 
 // ---- Main checkout flow ----
-function CheckoutFlow({
-  navigate,
-}: {
-  navigate: ReturnType<typeof useNavigate>;
-}) {
+function CheckoutFlow({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const { data: cartData, isLoading: cartLoading } = useGetCartQuery();
   const { data: addrData, isLoading: addrLoading } = useGetAddressesQuery();
-  const [createAddress, { isLoading: creatingAddr }] =
-    useCreateAddressMutation();
+  const [createAddress, { isLoading: creatingAddr }] = useCreateAddressMutation();
   const [createOrder, { isLoading: ordering }] = useCreateOrderMutation();
   const [selectedAddr, setSelectedAddr] = useState<string>("");
   const [showAddrForm, setShowAddrForm] = useState(false);
@@ -214,12 +207,8 @@ function CheckoutFlow({
                         className="accent-primary-600"
                       />
                       <div>
-                        <p className="font-medium">
-                          {addr.street}, {addr.city}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {addr.postalCode}, {addr.country}
-                        </p>
+                        <p className="font-medium">{addr.street}, {addr.city}</p>
+                        <p className="text-sm text-gray-500">{addr.postalCode}, {addr.country}</p>
                       </div>
                       {addr.isDefault && (
                         <span className="mr-auto text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
@@ -254,7 +243,7 @@ function CheckoutFlow({
           {/* Order items summary */}
           <div className="bg-white rounded-xl border p-6">
             <h2 className="font-bold text-lg mb-4">פריטים בהזמנה</h2>
-            {items.map((item) => (
+            {items.map((item: CartItemType) => (
               <CartItem key={item.product._id} item={item} compact />
             ))}
           </div>
@@ -281,9 +270,7 @@ function CheckoutFlow({
             </div>
 
             {error && (
-              <div className="mt-4 bg-red-50 text-red-600 text-sm rounded-lg p-3">
-                {error}
-              </div>
+              <div className="mt-4 bg-red-50 text-red-600 text-sm rounded-lg p-3">{error}</div>
             )}
 
             <button

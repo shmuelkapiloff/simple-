@@ -40,7 +40,7 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
   user: User;
-  accessToken: string;
+  token: string;
   refreshToken: string;
 }
 
@@ -199,12 +199,22 @@ export interface Payment {
 
 // ---------- אדמין ----------
 export interface AdminStats {
-  totalSales: number;
-  totalOrders: number;
-  totalUsers: number;
-  totalProducts: number;
-  lowStockProducts: Product[];
-  recentOrders: Order[];
+  sales: {
+    total: number;
+    deliveredCount: number;
+  };
+  orders: {
+    open: number;
+    today: number;
+  };
+  inventory: {
+    lowStockCount: number;
+    lowStockProducts: Array<{ _id: string; name: string; stock: number }>;
+    activeProducts: number;
+  };
+  users: {
+    total: number;
+  };
 }
 
 export interface AdminProductRequest {

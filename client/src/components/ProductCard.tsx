@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAddToCartMutation } from "../api";
 import { useAuth, useCart } from "../hooks";
 import { useOutletContext } from "react-router-dom";
-import type { Product } from "../types";
+import type { Product, CartItem } from "../types";
 
 interface Props {
   product: Product;
@@ -17,7 +17,7 @@ export default function ProductCard({ product }: Props) {
   const [addToCart, { isLoading }] = useAddToCartMutation();
 
   // Check if product is already in cart
-  const cartItem = items.find((item) => item.product?._id === product._id);
+  const cartItem = items.find((item: CartItem) => item.product?._id === product._id);
   const quantityInCart = cartItem?.quantity ?? 0;
 
   const handleAdd = async () => {

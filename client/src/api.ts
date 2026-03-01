@@ -147,32 +147,32 @@ export const productsApi = apiSlice.injectEndpoints({
 // ============================================================
 export const cartApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
-    getCart: build.query<ApiResponse<{ cart: Cart }>, void>({
+    getCart: build.query<ApiResponse<Cart>, void>({
       query: () => "/cart",
       providesTags: ["Cart"],
     }),
     addToCart: build.mutation<
-      ApiResponse<{ cart: Cart }>,
+      ApiResponse<Cart>,
       { productId: string; quantity: number }
     >({
       query: (body) => ({ url: "/cart/add", method: "POST", body }),
       invalidatesTags: ["Cart"],
     }),
     updateCartItem: build.mutation<
-      ApiResponse<{ cart: Cart }>,
+      ApiResponse<Cart>,
       { productId: string; quantity: number }
     >({
       query: (body) => ({ url: "/cart/update", method: "PUT", body }),
       invalidatesTags: ["Cart"],
     }),
     removeFromCart: build.mutation<
-      ApiResponse<{ cart: Cart }>,
+      ApiResponse<Cart>,
       { productId: string }
     >({
       query: (body) => ({ url: "/cart/remove", method: "DELETE", body }),
       invalidatesTags: ["Cart"],
     }),
-    clearCart: build.mutation<ApiResponse<{ cart: Cart }>, void>({
+    clearCart: build.mutation<ApiResponse<Cart>, void>({
       query: () => ({ url: "/cart/clear", method: "DELETE", body: {} }),
       invalidatesTags: ["Cart"],
     }),
@@ -185,7 +185,7 @@ export const cartApi = apiSlice.injectEndpoints({
 export const ordersApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
     createOrder: build.mutation<
-      ApiResponse<{ order: Order; checkoutUrl?: string }>,
+      ApiResponse<{ order: Order; payment?: { checkoutUrl?: string } }>,
       CreateOrderRequest
     >({
       query: (body) => ({ url: "/orders", method: "POST", body }),
@@ -266,7 +266,7 @@ export const addressesApi = apiSlice.injectEndpoints({
 // ============================================================
 export const adminApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
-    getAdminStats: build.query<ApiResponse<AdminStats>, void>({
+    getAdminStats: build.query<ApiResponse<{ stats: AdminStats }>, void>({
       query: () => "/admin/stats/summary",
       providesTags: ["Admin"],
     }),

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useGetCartQuery, useClearCartMutation } from "../api";
 import { useAuth } from "../hooks";
 import CartItem from "../components/CartItem";
+import type { CartItem as CartItemType } from "../types";
 
 export default function Cart() {
   const { isAuthenticated } = useAuth();
@@ -76,7 +77,7 @@ export default function Cart() {
       </div>
 
       <div className="bg-white rounded-xl border p-4 mb-6">
-        {items.map((item) => (
+        {items.map((item: CartItemType) => (
           <CartItem key={item.product._id} item={item} />
         ))}
       </div>

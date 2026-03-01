@@ -13,7 +13,7 @@ export default function Product() {
   const [added, setAdded] = useState(false);
 
   // Server returns product directly in data
-  const product = data?.data;
+  const product = data?.data?.product;
 
   if (isLoading) {
     return (
@@ -35,9 +35,7 @@ export default function Product() {
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
         <p className="text-6xl mb-4">😕</p>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">המוצר לא נמצא</h1>
-        <Link to="/" className="text-primary-600 hover:underline">
-          חזרה לחנות
-        </Link>
+        <Link to="/" className="text-primary-600 hover:underline">חזרה לחנות</Link>
       </div>
     );
   }
@@ -59,9 +57,7 @@ export default function Product() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <nav className="text-sm text-gray-500 mb-6">
-        <Link to="/" className="hover:text-primary-600">
-          מוצרים
-        </Link>
+        <Link to="/" className="hover:text-primary-600">מוצרים</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-900">{product.name}</span>
       </nav>
@@ -69,15 +65,9 @@ export default function Product() {
       <div className="grid md:grid-cols-2 gap-8">
         <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
           {product.image.startsWith("http") ? (
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-8xl">
-              {product.image}
-            </div>
+            <div className="w-full h-full flex items-center justify-center text-8xl">{product.image}</div>
           )}
         </div>
 
@@ -85,9 +75,7 @@ export default function Product() {
           <span className="text-sm text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
             {product.category}
           </span>
-          <h1 className="text-3xl font-bold text-gray-900 mt-3 mb-2">
-            {product.name}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mt-3 mb-2">{product.name}</h1>
 
           <div className="flex items-center gap-1 mb-4">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -100,24 +88,14 @@ export default function Product() {
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
             ))}
-            <span className="text-sm text-gray-500 mr-2">
-              {product.rating.toFixed(1)}
-            </span>
+            <span className="text-sm text-gray-500 mr-2">{product.rating.toFixed(1)}</span>
           </div>
 
-          <p className="text-3xl font-bold text-gray-900 mb-4">
-            ₪{product.price.toLocaleString()}
-          </p>
-          <p className="text-gray-600 leading-relaxed mb-6">
-            {product.description}
-          </p>
+          <p className="text-3xl font-bold text-gray-900 mb-4">₪{product.price.toLocaleString()}</p>
+          <p className="text-gray-600 leading-relaxed mb-6">{product.description}</p>
 
-          <p
-            className={`text-sm mb-6 ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}
-          >
-            {product.stock > 0
-              ? `✓ במלאי (${product.stock} יח')`
-              : "✗ אזל מהמלאי"}
+          <p className={`text-sm mb-6 ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}>
+            {product.stock > 0 ? `✓ במלאי (${product.stock} יח')` : "✗ אזל מהמלאי"}
           </p>
 
           {product.stock > 0 && (

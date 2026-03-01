@@ -55,8 +55,8 @@ function ProfileTab() {
   const [changePassword, { isLoading: changingPw }] =
     useChangePasswordMutation();
 
-  // Server returns user directly in data
-  const user = data?.data;
+  // Server returns { data: { user } }
+  const user = data?.data?.user;
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
