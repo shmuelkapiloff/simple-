@@ -1,419 +1,252 @@
-import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useState } from "react";
 import {
-  selectUser,
-  selectAuthLoading,
-  selectAuthError,
-  updateProfile,
-} from "../app/authSlice";
-import AddressManager from "../components/AddressManager";
-import ChangePasswordModal from "../components/ChangePasswordModal";
-import { useToast } from "../components/ToastProvider";
-import type { RootState } from "../app/store";
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+  useChangePasswordMutation,
+  useGetAddressesQuery,
+  useCreateAddressMutation,
+  useUpdateAddressMutation,
+  useDeleteAddressMutation,
+  useSetDefaultAddressMutation,
+} from "../api";
+import AddressForm from "../components/AddressForm";
+import type { Address, AddressRequest } from "../types";
 
-const Profile: React.FC = () => {
-    const dispatch = useDispatch();
-    const toast = useToast();
-  const user = useSelector((state: RootState) => selectUser(state));
-  const isLoading = useSelector((state: RootState) => selectAuthLoading(state));
-  const error = useSelector((state: RootState) => selectAuthError(state));
+type Tab = "profile" | "addresses";
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "addresses">(
-    "profile"
-  );
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-    const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-  });
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            🔐 נדרשת התחברות
-          </h2>
-          <p className="text-gray-600">אנא התחבר כדי לצפות בפרופיל שלך.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const validateForm = () => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      errors.name = "שם מלא הוא שדה חובה";
-    } else if (formData.name.trim().length < 2) {
-      errors.name = "שם חייב להכיל לפחות 2 תווים";
-    }
-
-    if (!formData.email.trim()) {
-      errors.email = "אימייל הוא שדה חובה";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = "כתובת אימייל לא תקינה";
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleEditToggle = async () => {
-    if (isEditing) {
-      // Save mode - validate and submit
-      if (!validateForm()) {
-        toast.addToast("אנא תקן את השגיאות בטופס", "error");
-        return;
-      }
-
-      setIsSaving(true);
-      
-      try {
-        const result = await dispatch(
-          updateProfile({
-            name: formData.name,
-            email: formData.email,
-          }) as any
-        );
-
-        if (result.type === "auth/updateProfile/fulfilled") {
-          toast.addToast("✅ הפרופיל עודכן בהצלחה!", "success");
-          setIsEditing(false);
-          setValidationErrors({});
-        } else {
-          const errorMessage = result.payload || "עדכון נכשל";
-          toast.addToast(`❌ ${errorMessage}`, "error");
-        }
-      } catch (error) {
-        toast.addToast("❌ שגיאה בעדכון הפרופיל", "error");
-      } finally {
-        setIsSaving(false);
-      }
-    } else {
-      // Enter edit mode
-      setFormData({
-        name: user?.name || "",
-        email: user?.email || "",
-      });
-      setValidationErrors({});
-    }
-    setIsEditing(!isEditing);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-    // Clear validation error for this field when user starts typing
-    if (validationErrors[name]) {
-      setValidationErrors({
-        ...validationErrors,
-        [name]: "",
-      });
-    }
-  };
-
-  const handlePasswordChange = () => {
-    setIsPasswordModalOpen(true);
-  };
-
-  const handleDeleteAccount = () => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete your account? This action is irreversible."
-      )
-    ) {
-      // TODO: Feature - Add API call for account deletion
-      // This is a future feature requiring additional security measures
-    }
-  };
+export default function Profile() {
+  const [tab, setTab] = useState<Tab>("profile");
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8" dir="rtl">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <header className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 font-bold text-2xl">
-                  {user.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  👤 הפרופיל שלי
-                </h1>
-                <p className="text-gray-600">
-                  ניהול פרטים אישיים והגדרות חשבון
-                </p>
-              </div>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">החשבון שלי</h1>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 mb-8">
+        {([["profile", "פרופיל"], ["addresses", "כתובות"]] as [Tab, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex-1 py-2 rounded-md text-sm font-medium transition ${
+              tab === key ? "bg-white shadow text-primary-600" : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "profile" ? <ProfileTab /> : <AddressesTab />}
+    </div>
+  );
+}
+
+// ---- Profile Tab ----
+function ProfileTab() {
+  const { data, isLoading } = useGetProfileQuery();
+  const [updateProfile, { isLoading: updating }] = useUpdateProfileMutation();
+  const [changePassword, { isLoading: changingPw }] = useChangePasswordMutation();
+
+  const user = data?.data?.user;
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [msg, setMsg] = useState("");
+
+  // Password
+  const [showPw, setShowPw] = useState(false);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [pwMsg, setPwMsg] = useState("");
+
+  const startEdit = () => {
+    setName(user?.name ?? "");
+    setPhone(user?.phone ?? "");
+    setEditing(true);
+    setMsg("");
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateProfile({ name, phone }).unwrap();
+      setMsg("הפרופיל עודכן בהצלחה");
+      setEditing(false);
+    } catch {
+      setMsg("שגיאה בעדכון");
+    }
+  };
+
+  const handleChangePw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwMsg("");
+    try {
+      await changePassword({ currentPassword: currentPw, newPassword: newPw }).unwrap();
+      setPwMsg("הסיסמה שונתה בהצלחה");
+      setCurrentPw("");
+      setNewPw("");
+      setShowPw(false);
+    } catch (err: unknown) {
+      const apiErr = err as { data?: { message?: string } };
+      setPwMsg(apiErr.data?.message || "שגיאה בשינוי סיסמה");
+    }
+  };
+
+  if (isLoading) {
+    return <div className="animate-pulse space-y-4"><div className="h-6 bg-gray-200 rounded w-1/3" /><div className="h-6 bg-gray-200 rounded w-1/2" /></div>;
+  }
+
+  return (
+    <div className="bg-white rounded-xl border p-6 space-y-6">
+      {/* Info */}
+      <div>
+        <h2 className="font-bold text-lg mb-4">פרטים אישיים</h2>
+        {!editing ? (
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-gray-500">שם</p>
+              <p className="font-medium">{user?.name}</p>
             </div>
-            <button
-              onClick={handleEditToggle}
-              disabled={isSaving || isLoading}
-              className={`px-6 py-3 rounded-md font-medium transition-all flex items-center gap-2 ${
-                isEditing
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-              } disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg`}
-            >
-              {isSaving ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  שומר...
-                </>
-              ) : isEditing ? (
-                "💾 שמור שינויים"
-              ) : (
-                "✏️ ערוך פרטים"
-              )}
+            <div>
+              <p className="text-sm text-gray-500">אימייל</p>
+              <p className="font-medium" dir="ltr">{user?.email}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">טלפון</p>
+              <p className="font-medium">{user?.phone || "לא הוגדר"}</p>
+            </div>
+            <button onClick={startEdit} className="text-primary-600 text-sm font-medium hover:underline">
+              ערוך פרטים
             </button>
           </div>
-        </header>
-
-        {/* Tabs */}
-        <nav
-          aria-label="קטגוריות פרופיל"
-          className="bg-white rounded-lg shadow-sm mb-8"
-        >
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab("profile")}
-                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-                  activeTab === "profile"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                📋 פרטים אישיים
-              </button>
-              <button
-                onClick={() => setActiveTab("addresses")}
-                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-                  activeTab === "addresses"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                📍 כתובות
-              </button>
-            </nav>
-          </div>
-        </nav>
-
-        {activeTab === "addresses" ? (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <AddressManager mode="view" />
-          </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Profile Info */}
-            {/* Main Profile Info */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                  📋 פרטים אישיים
-                </h2>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">
-                    ❌ {error}
-                  </div>
-                )}
-
-                <div className="space-y-6">
-                  {/* Name Field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      שם מלא
-                    </label>
-                    {isEditing ? (
-                      <>
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
-                            validationErrors.name
-                              ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                              : "border-gray-300 focus:ring-blue-500 focus:border-transparent"
-                          }`}
-                          placeholder="הזן את שמך המלא"
-                        />
-                        {validationErrors.name && (
-                          <p className="mt-1 text-sm text-red-600">
-                            ⚠️ {validationErrors.name}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-gray-900 font-medium py-2">
-                        {user.name}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Email Field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      כתובת אימייל
-                    </label>
-                    {isEditing ? (
-                      <>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
-                            validationErrors.email
-                              ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                              : "border-gray-300 focus:ring-blue-500 focus:border-transparent"
-                          }`}
-                          placeholder="הזן את כתובת האימייל שלך"
-                        />
-                        {validationErrors.email && (
-                          <p className="mt-1 text-sm text-red-600">
-                            ⚠️ {validationErrors.email}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-gray-900 font-medium py-2">
-                        {user.email}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Member Since */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      חבר מאז
-                    </label>
-                    <p className="text-gray-900 py-2">
-                      📅 {new Date(user.createdAt).toLocaleDateString("he-IL")}
-                    </p>
-                  </div>
-
-                  {/* Last Login */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      התחברות אחרונה
-                    </label>
-                    <p className="text-gray-900 py-2">
-                      🕐{" "}
-                      {user.updatedAt
-                        ? new Date(user.updatedAt).toLocaleString("he-IL")
-                        : "לא זמין"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">שם</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none" />
             </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Account Actions */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  ⚙️ פעולות חשבון
-                </h3>
-
-                <div className="space-y-3">
-                  <button
-                    onClick={handlePasswordChange}
-                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    🔑 שינוי סיסמה
-                  </button>
-
-                  <button
-                    disabled
-                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors opacity-50 cursor-not-allowed"
-                    title="Feature coming soon"
-                  >
-                    📥 Download Personal Data
-                  </button>
-
-                  <button
-                    disabled
-                    className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors opacity-50 cursor-not-allowed"
-                    title="Feature coming soon"
-                  >
-                    🔒 Privacy Settings
-                  </button>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  📊 סטטיסטיקות
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">הזמנות בוצעו</span>
-                    <span className="font-semibold text-gray-900">0</span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">סך כל הוצאות</span>
-                    <span className="font-semibold text-gray-900">₪0</span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">מוצרים בעגלה</span>
-                    <span className="font-semibold text-gray-900">-</span>
-                  </div>
-                </div>
-
-                <p className="text-xs text-gray-500 mt-4">
-                  💡 הנתונים יתעדכנו כשנוסיף את מערכת ההזמנות
-                </p>
-              </div>
-
-              {/* Danger Zone */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-red-900 mb-4">
-                  ⚠️ אזור סכנה
-                </h3>
-
-                <p className="text-sm text-red-700 mb-4">
-                  מחיקת החשבון תסיר את כל הנתונים שלך לצמיתות.
-                </p>
-
-                <button
-                  onClick={handleDeleteAccount}
-                  className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
-                >
-                  🗑️ מחק חשבון
-                </button>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">טלפון</label>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleSave} disabled={updating} className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
+                {updating ? "שומר..." : "שמור"}
+              </button>
+              <button onClick={() => setEditing(false)} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50">ביטול</button>
             </div>
           </div>
         )}
+        {msg && <p className="text-sm text-green-600 mt-2">{msg}</p>}
       </div>
 
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setIsPasswordModalOpen(false)}
-      />
-    </main>
-  );
-};
+      <hr />
 
-export default Profile;
+      {/* Password */}
+      <div>
+        {!showPw ? (
+          <button onClick={() => setShowPw(true)} className="text-primary-600 text-sm font-medium hover:underline">
+            שנה סיסמה
+          </button>
+        ) : (
+          <form onSubmit={handleChangePw} className="space-y-3">
+            <h3 className="font-bold">שינוי סיסמה</h3>
+            <input type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} required dir="ltr" placeholder="סיסמה נוכחית" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none" />
+            <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required dir="ltr" minLength={6} placeholder="סיסמה חדשה" className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none" />
+            <div className="flex gap-3">
+              <button type="submit" disabled={changingPw} className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
+                {changingPw ? "משנה..." : "שנה סיסמה"}
+              </button>
+              <button type="button" onClick={() => { setShowPw(false); setPwMsg(""); }} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50">ביטול</button>
+            </div>
+            {pwMsg && <p className={`text-sm ${pwMsg.includes("שגיאה") ? "text-red-600" : "text-green-600"}`}>{pwMsg}</p>}
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---- Addresses Tab ----
+function AddressesTab() {
+  const { data, isLoading } = useGetAddressesQuery();
+  const [createAddress, { isLoading: creating }] = useCreateAddressMutation();
+  const [updateAddress, { isLoading: updatingAddr }] = useUpdateAddressMutation();
+  const [deleteAddress] = useDeleteAddressMutation();
+  const [setDefault] = useSetDefaultAddressMutation();
+
+  const addresses = data?.data?.addresses ?? [];
+  const [showForm, setShowForm] = useState(false);
+  const [editingAddr, setEditingAddr] = useState<Address | null>(null);
+
+  const handleCreate = async (d: AddressRequest) => {
+    try {
+      await createAddress(d).unwrap();
+      setShowForm(false);
+    } catch { /* */ }
+  };
+
+  const handleUpdate = async (d: AddressRequest) => {
+    if (!editingAddr) return;
+    try {
+      await updateAddress({ id: editingAddr._id, data: d }).unwrap();
+      setEditingAddr(null);
+    } catch { /* */ }
+  };
+
+  if (isLoading) {
+    return <div className="animate-pulse space-y-3">{[1, 2].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-xl" />)}</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {addresses.map((addr) =>
+        editingAddr?._id === addr._id ? (
+          <div key={addr._id} className="bg-white rounded-xl border p-6">
+            <h3 className="font-bold mb-3">עריכת כתובת</h3>
+            <AddressForm
+              address={addr}
+              onSubmit={handleUpdate}
+              onCancel={() => setEditingAddr(null)}
+              isLoading={updatingAddr}
+            />
+          </div>
+        ) : (
+          <div key={addr._id} className="bg-white rounded-xl border p-6 flex items-start justify-between">
+            <div>
+              <p className="font-medium">{addr.street}, {addr.city}</p>
+              <p className="text-sm text-gray-500">{addr.postalCode}, {addr.country}</p>
+              {addr.isDefault && (
+                <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full mt-1 inline-block">
+                  ברירת מחדל
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2 text-sm">
+              {!addr.isDefault && (
+                <button onClick={() => setDefault(addr._id)} className="text-primary-600 hover:underline">
+                  קבע כברירת מחדל
+                </button>
+              )}
+              <button onClick={() => setEditingAddr(addr)} className="text-gray-600 hover:underline">ערוך</button>
+              <button onClick={() => deleteAddress(addr._id)} className="text-red-500 hover:underline">מחק</button>
+            </div>
+          </div>
+        )
+      )}
+
+      {showForm ? (
+        <div className="bg-white rounded-xl border p-6">
+          <h3 className="font-bold mb-3">כתובת חדשה</h3>
+          <AddressForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} isLoading={creating} />
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-primary-400 hover:text-primary-600 transition"
+        >
+          + הוסף כתובת חדשה
+        </button>
+      )}
+    </div>
+  );
+}

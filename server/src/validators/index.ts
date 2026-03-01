@@ -72,7 +72,13 @@ export {
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { ZodSchema, ZodError, ZodObject } from "zod";
-import { ValidationError } from "../utils/errors";
+import { ValidationError } from "../utils/asyncHandler";
+
+// Helper to create ValidationError with field context
+function createValidationError(message: string, field?: string): ValidationError {
+  const errors = field ? [{ field, message }] : undefined;
+  return new ValidationError(message, errors);
+}
 
 /**
  * Parse and validate data against a schema
@@ -90,7 +96,7 @@ export function validate<T>(schema: ZodSchema, data: unknown): T {
     if (error instanceof ZodError) {
       const firstError = error.errors[0];
       const message = `${firstError.path.join(".")}: ${firstError.message}`;
-      throw new ValidationError(message, firstError.path[0]?.toString());
+      throw createValidationError(message, firstError.path[0]?.toString());
     }
     throw error;
   }
@@ -116,10 +122,10 @@ export function validateSafe<T>(
       const message = `${firstError.path.join(".")}: ${firstError.message}`;
       return [
         null,
-        new ValidationError(message, firstError.path[0]?.toString()),
+        createValidationError(message, firstError.path[0]?.toString()),
       ];
     }
-    return [null, new ValidationError("Validation failed")];
+    return [null, createValidationError("Validation failed")];
   }
 }
 
@@ -142,7 +148,7 @@ export function validatePartial<T extends ZodObject<any>>(
     if (error instanceof ZodError) {
       const firstError = error.errors[0];
       const message = `${firstError.path.join(".")}: ${firstError.message}`;
-      throw new ValidationError(message, firstError.path[0]?.toString());
+      throw createValidationError(message, firstError.path[0]?.toString());
     }
     throw error;
   }

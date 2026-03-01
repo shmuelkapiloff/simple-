@@ -1,67 +1,42 @@
 import { Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import ProductList from "./components/ProductList";
-import Cart from "./components/Cart";
-import { NavBar } from "./components/NavBar";
-import { ToastProvider } from "./components/ToastProvider";
-import Profile from "./pages/Profile";
-import Orders from "./pages/Orders";
-import TrackOrder from "./pages/TrackOrder";
+import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./pages/Home";
+import Product from "./pages/Product";
+import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminStats from "./pages/admin/AdminStats";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminUsers from "./pages/admin/AdminUsers";
-import { verifyToken } from "./app/authSlice";
-import type { AppDispatch } from "./app/store";
+import Orders from "./pages/Orders";
+import Order from "./pages/Order";
+import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
 
-function App() {
-  const dispatch = useDispatch<AppDispatch>();
-
-  // Auto-verify token on app startup
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      dispatch(verifyToken());
-    }
-  }, [dispatch]);
-
+export default function App() {
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-gray-50">
-        {/* Navigation Bar with Authentication */}
-        <NavBar />
+    <Routes>
+      <Route element={<Layout />}>
+        {/* Public */}
+        <Route path="/" element={<Home />} />
+        <Route path="/products/:id" element={<Product />} />
+        <Route path="/cart" element={<Cart />} />
 
-        <main className="pt-16">
-          <Routes>
-            <Route path="/" element={<ProductList />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/orders/:orderId" element={<TrackOrder />} />
-            <Route path="/track/:orderId" element={<TrackOrder />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
+        {/* Protected - user */}
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+        <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+        <Route path="/orders/:id" element={<ProtectedRoute><Order /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />}>
-              <Route index element={<AdminStats />} />
-              <Route path="stats" element={<AdminStats />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="users" element={<AdminUsers />} />
-            </Route>
-          </Routes>
-        </main>
-      </div>
-    </ToastProvider>
+        {/* Protected - admin */}
+        <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+
+        {/* 404 */}
+        <Route path="*" element={
+          <div className="text-center py-20">
+            <p className="text-6xl mb-4">404</p>
+            <h1 className="text-2xl font-bold mb-2">העמוד לא נמצא</h1>
+            <a href="/" className="text-primary-600 hover:underline">חזרה לדף הבית</a>
+          </div>
+        } />
+      </Route>
+    </Routes>
   );
 }
-
-export default App;
