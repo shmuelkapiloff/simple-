@@ -20,6 +20,15 @@ const DEFAULT_PRODUCT_IMAGE =
 
 // 🔒 Security: Whitelist valid product categories to prevent NoSQL injection
 const VALID_CATEGORIES = [
+  "accessories",
+  "audio",
+  "displays",
+  "laptops",
+  "smart-home",
+  "smartphones",
+  "streaming",
+  "tablets",
+  "wearables",
   "electronics",
   "clothing",
   "books",
