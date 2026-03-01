@@ -18,8 +18,8 @@ export default function Home() {
   });
   const { data: catData } = useGetCategoriesQuery();
 
-  const products = data?.data?.products ?? [];
-  const pagination = data?.data?.pagination;
+  // API returns array directly: { success: true, data: [...products] }
+  const products = Array.isArray(data?.data) ? data.data : [];
   const categories = catData?.data ?? [];
 
   return (
@@ -111,46 +111,6 @@ export default function Home() {
               <ProductCard key={product._id} product={product} />
             ))}
           </div>
-
-          {pagination && pagination.pages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-10">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                הקודם
-              </button>
-              <div className="flex gap-1">
-                {Array.from({ length: pagination.pages }, (_, i) => i + 1)
-                  .filter((p) => p === 1 || p === pagination.pages || Math.abs(p - page) <= 1)
-                  .map((p, idx, arr) => (
-                    <span key={p}>
-                      {idx > 0 && arr[idx - 1] !== p - 1 && (
-                        <span className="px-2 text-gray-400">...</span>
-                      )}
-                      <button
-                        onClick={() => setPage(p)}
-                        className={`w-10 h-10 rounded-lg font-medium transition ${
-                          p === page
-                            ? "bg-primary-600 text-white"
-                            : "border hover:bg-gray-50"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    </span>
-                  ))}
-              </div>
-              <button
-                onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
-                disabled={page >= pagination.pages}
-                className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                הבא
-              </button>
-            </div>
-          )}
         </>
       )}
     </div>

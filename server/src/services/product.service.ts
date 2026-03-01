@@ -6,24 +6,29 @@ export interface ProductFilters {
   maxPrice?: number;
   search?: string;
   featured?: boolean;
-  sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'rating_desc' | 'newest';
-  page?: number;
-  limit?: number;
+  sort?:
+    | "price_asc"
+    | "price_desc"
+    | "name_asc"
+    | "name_desc"
+    | "rating_desc"
+    | "newest";
 }
 
-const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400/e2e8f0/64748b?text=Product+Image";
+const DEFAULT_PRODUCT_IMAGE =
+  "https://placehold.co/600x400/e2e8f0/64748b?text=Product+Image";
 
 // 🔒 Security: Whitelist valid product categories to prevent NoSQL injection
 const VALID_CATEGORIES = [
-  'electronics',
-  'clothing',
-  'books',
-  'home',
-  'sports',
-  'toys',
-  'beauty',
-  'food',
-  'other'
+  "electronics",
+  "clothing",
+  "books",
+  "home",
+  "sports",
+  "toys",
+  "beauty",
+  "food",
+  "other",
 ] as const;
 
 export async function listProducts(filters: ProductFilters = {}) {
@@ -62,15 +67,18 @@ export async function listProducts(filters: ProductFilters = {}) {
   if (filters.search) {
     // Limit search string length to prevent DoS
     const sanitizedSearch = filters.search.trim().slice(0, 100);
-    
+
     // Only proceed if search has meaningful content
     if (sanitizedSearch.length >= 2) {
       // Escape special regex characters to prevent ReDoS attacks
-      const escapedSearch = sanitizedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
+      const escapedSearch = sanitizedSearch.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
+
       query.$or = [
-        { name: { $regex: escapedSearch, $options: 'i' } },
-        { description: { $regex: escapedSearch, $options: 'i' } },
+        { name: { $regex: escapedSearch, $options: "i" } },
+        { description: { $regex: escapedSearch, $options: "i" } },
       ];
     }
   }
@@ -79,51 +87,37 @@ export async function listProducts(filters: ProductFilters = {}) {
   let sort: any = { createdAt: -1 }; // default: newest first
   if (filters.sort) {
     switch (filters.sort) {
-      case 'price_asc':
+      case "price_asc":
         sort = { price: 1 };
         break;
-      case 'price_desc':
+      case "price_desc":
         sort = { price: -1 };
         break;
-      case 'name_asc':
+      case "name_asc":
         sort = { name: 1 };
         break;
-      case 'name_desc':
+      case "name_desc":
         sort = { name: -1 };
         break;
-      case 'rating_desc':
+      case "rating_desc":
         sort = { rating: -1 };
         break;
-      case 'newest':
+      case "newest":
         sort = { createdAt: -1 };
         break;
     }
   }
 
-  const page = filters.page || 1;
-  const limit = filters.limit || 12;
-  const skip = (page - 1) * limit;
+  const products = await ProductModel.find(query).sort(sort).lean();
 
-  const [products, total] = await Promise.all([
-    ProductModel.find(query).sort(sort).skip(skip).limit(limit).lean(),
-    ProductModel.countDocuments(query)
-  ]);
-  
   // Ensure all products have valid images
-  const productsWithImages = products.map(product => ({
+  return products.map((product) => ({
     ...product,
-    image: product.image && product.image.startsWith('http') ? product.image : DEFAULT_PRODUCT_IMAGE
+    image:
+      product.image && product.image.startsWith("http")
+        ? product.image
+        : DEFAULT_PRODUCT_IMAGE,
   }));
-
-  return {
-    products: productsWithImages,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit)
-    }
-  };
 }
 
 export async function getProductById(id: string) {
@@ -131,12 +125,15 @@ export async function getProductById(id: string) {
   if (product) {
     return {
       ...product,
-      image: product.image && product.image.startsWith('http') ? product.image : DEFAULT_PRODUCT_IMAGE
+      image:
+        product.image && product.image.startsWith("http")
+          ? product.image
+          : DEFAULT_PRODUCT_IMAGE,
     };
   }
   return product;
 }
 
 export async function getCategories() {
-  return ProductModel.distinct('category', { isActive: true });
+  return ProductModel.distinct("category", { isActive: true });
 }

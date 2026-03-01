@@ -10,12 +10,10 @@ export async function getProducts(req: Request, res: Response) {
     search: req.query.search as string,
     featured: req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : undefined,
     sort: req.query.sort as any,
-    page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
-    limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 12,
   };
 
-  const result = await listProducts(filters);
-  res.json(ok(result));
+  const products = await listProducts(filters);
+  res.json(ok(products));
 }
 
 export async function getProduct(req: Request, res: Response) {
