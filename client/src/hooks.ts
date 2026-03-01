@@ -11,7 +11,8 @@ export const useAppSelector = useSelector.withTypes<RootState>();
 export function useAuth() {
   const token = localStorage.getItem("token");
   const { data, isLoading } = useVerifyQuery(undefined, { skip: !token });
-  const user = data?.data?.user ?? null;
+  // Server returns user directly in data
+  const user = data?.data ?? null;
 
   return useMemo(
     () => ({
@@ -28,7 +29,8 @@ export function useAuth() {
 export function useCart() {
   const { user } = useAuth();
   const { data, isLoading } = useGetCartQuery(undefined, { skip: !user });
-  const cart = data?.data?.cart;
+  // Server returns cart directly in data
+  const cart = data?.data;
 
   return useMemo(() => {
     const items = cart?.items ?? [];

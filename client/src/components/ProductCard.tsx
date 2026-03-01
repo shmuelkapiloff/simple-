@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAddToCartMutation } from "../api";
-import { useAuth } from "../hooks";
+import { useAuth, useCart } from "../hooks";
 import { useOutletContext } from "react-router-dom";
 import type { Product } from "../types";
 
@@ -10,10 +10,15 @@ interface Props {
 
 export default function ProductCard({ product }: Props) {
   const { isAuthenticated } = useAuth();
+  const { items } = useCart();
   const authModal = useOutletContext<
     { openLogin: (msg?: string) => void } | undefined
   >();
   const [addToCart, { isLoading }] = useAddToCartMutation();
+
+  // Check if product is already in cart
+  const cartItem = items.find((item) => item.product?._id === product._id);
+  const quantityInCart = cartItem?.quantity ?? 0;
 
   const handleAdd = async () => {
     if (!isAuthenticated) {
@@ -83,17 +88,24 @@ export default function ProductCard({ product }: Props) {
           <span className="text-lg font-bold text-gray-900">
             ₪{product.price.toLocaleString()}
           </span>
-          <button
-            onClick={handleAdd}
-            disabled={isLoading || !inStock}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-              inStock
-                ? "bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed"
-            }`}
-          >
-            {!inStock ? "אזל" : isLoading ? "..." : "הוסף לעגלה"}
-          </button>
+          <div className="flex items-center gap-2">
+            {quantityInCart > 0 && (
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                {quantityInCart} בעגלה
+              </span>
+            )}
+            <button
+              onClick={handleAdd}
+              disabled={isLoading || !inStock}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                inStock
+                  ? "bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {!inStock ? "אזל" : isLoading ? "..." : quantityInCart > 0 ? "+" : "הוסף לעגלה"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
