@@ -7,6 +7,8 @@ export interface ProductFilters {
   search?: string;
   featured?: boolean;
   sort?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'rating_desc' | 'newest';
+  page?: number;
+  limit?: number;
 }
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400/e2e8f0/64748b?text=Product+Image";
@@ -98,13 +100,30 @@ export async function listProducts(filters: ProductFilters = {}) {
     }
   }
 
-  const products = await ProductModel.find(query).sort(sort).lean();
+  const page = filters.page || 1;
+  const limit = filters.limit || 12;
+  const skip = (page - 1) * limit;
+
+  const [products, total] = await Promise.all([
+    ProductModel.find(query).sort(sort).skip(skip).limit(limit).lean(),
+    ProductModel.countDocuments(query)
+  ]);
   
   // Ensure all products have valid images
-  return products.map(product => ({
+  const productsWithImages = products.map(product => ({
     ...product,
     image: product.image && product.image.startsWith('http') ? product.image : DEFAULT_PRODUCT_IMAGE
   }));
+
+  return {
+    products: productsWithImages,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit)
+    }
+  };
 }
 
 export async function getProductById(id: string) {

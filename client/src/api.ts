@@ -24,8 +24,10 @@ import type {
 } from "./types";
 
 // ---------- Base Query עם Token ----------
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+
 const baseQuery = fetchBaseQuery({
-  baseUrl: "/api",
+  baseUrl: API_BASE_URL,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("token");
     if (token) {
