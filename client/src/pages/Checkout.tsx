@@ -149,7 +149,8 @@ function CheckoutFlow({ navigate }: { navigate: ReturnType<typeof useNavigate> }
       }).unwrap();
 
       const order = result.data.order;
-      const checkoutUrl = result.data.checkoutUrl;
+      // checkoutUrl is inside payment object
+      const checkoutUrl = result.data.payment?.checkoutUrl;
 
       // Save order ID for polling on return
       localStorage.setItem("checkout_order_id", order._id);
