@@ -402,7 +402,11 @@ const definition = {
                 user: { $ref: "#/components/schemas/User" },
                 token: {
                   type: "string",
-                  description: "JWT access token",
+                  description: "JWT access token (7 days, contains tokenVersion)",
+                },
+                refreshToken: {
+                  type: "string",
+                  description: "JWT refresh token (7 days, contains tokenVersion)",
                 },
               },
             },
@@ -442,7 +446,11 @@ const definition = {
                 user: { $ref: "#/components/schemas/User" },
                 token: {
                   type: "string",
-                  description: "JWT access token",
+                  description: "JWT access token (7 days, contains tokenVersion)",
+                },
+                refreshToken: {
+                  type: "string",
+                  description: "JWT refresh token (7 days, contains tokenVersion)",
                 },
               },
             },
@@ -650,10 +658,59 @@ const definition = {
       },
     },
 
+    "/api/auth/refresh": {
+      post: {
+        tags: ["Authentication"],
+        summary: "Refresh access token using refresh token",
+        description:
+          "Exchange a valid refresh token for a new access token. Both tokens contain tokenVersion for instant revocation on logout.",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["refreshToken"],
+                properties: {
+                  refreshToken: {
+                    type: "string",
+                    description: "JWT refresh token (7 days validity)",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: successEnvelope(
+            {
+              type: "object",
+              properties: {
+                token: {
+                  type: "string",
+                  description: "New JWT access token (7 days validity)",
+                },
+                refreshToken: {
+                  type: "string",
+                  description: "Same refresh token (can be reused)",
+                },
+              },
+            },
+            "Access token refreshed successfully",
+          ),
+          ...auth401,
+          ...badRequest400,
+        },
+      },
+    },
+
     "/api/auth/logout": {
       post: {
         tags: ["Authentication"],
-        summary: "Logout current user",
+        summary: "Logout current user (invalidates all tokens)",
+        description:
+          "Increments user's tokenVersion to instantly invalidate ALL existing tokens (access + refresh). This provides true logout security - tokens become invalid immediately even if stored by attacker.",
         responses: {
           200: {
             description: "Logged out successfully",
