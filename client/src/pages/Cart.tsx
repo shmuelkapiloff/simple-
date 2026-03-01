@@ -5,7 +5,9 @@ import CartItem from "../components/CartItem";
 
 export default function Cart() {
   const { isAuthenticated } = useAuth();
-  const { data, isLoading } = useGetCartQuery(undefined, { skip: !isAuthenticated });
+  const { data, isLoading } = useGetCartQuery(undefined, {
+    skip: !isAuthenticated,
+  });
   const [clearCart, { isLoading: clearing }] = useClearCartMutation();
 
   // Server returns cart directly in data, not wrapped in { cart: ... }
@@ -48,7 +50,10 @@ export default function Cart() {
         <p className="text-6xl mb-4">🛒</p>
         <h1 className="text-2xl font-bold mb-2">העגלה ריקה</h1>
         <p className="text-gray-500 mb-4">עדיין לא הוספת מוצרים לעגלה</p>
-        <Link to="/" className="inline-block bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 transition">
+        <Link
+          to="/"
+          className="inline-block bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 transition"
+        >
           לחנות
         </Link>
       </div>
@@ -58,7 +63,9 @@ export default function Cart() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">העגלה שלך ({items.length} פריטים)</h1>
+        <h1 className="text-2xl font-bold">
+          העגלה שלך ({items.length} פריטים)
+        </h1>
         <button
           onClick={() => clearCart()}
           disabled={clearing}
@@ -85,7 +92,10 @@ export default function Cart() {
         >
           לתשלום
         </Link>
-        <Link to="/" className="block text-center text-sm text-gray-500 hover:text-gray-700 mt-3">
+        <Link
+          to="/"
+          className="block text-center text-sm text-gray-500 hover:text-gray-700 mt-3"
+        >
           המשך בקניות
         </Link>
       </div>

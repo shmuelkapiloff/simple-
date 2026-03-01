@@ -25,7 +25,7 @@ router.get("/default", asyncHandler(AddressController.getDefaultAddress));
 router.get(
   "/:addressId",
   validateAddressId,
-  asyncHandler(AddressController.getAddressById)
+  asyncHandler(AddressController.getAddressById),
 );
 
 // POST /api/addresses - Create new address
@@ -35,21 +35,21 @@ router.post("/", asyncHandler(AddressController.createAddress));
 router.put(
   "/:addressId",
   validateAddressId,
-  asyncHandler(AddressController.updateAddress)
+  asyncHandler(AddressController.updateAddress),
 );
 
 // DELETE /api/addresses/:addressId - Delete address
 router.delete(
   "/:addressId",
   validateAddressId,
-  asyncHandler(AddressController.deleteAddress)
+  asyncHandler(AddressController.deleteAddress),
 );
 
 // POST /api/addresses/:addressId/set-default - Set address as default
 router.post(
   "/:addressId/set-default",
   validateAddressId,
-  asyncHandler(AddressController.setDefaultAddress)
+  asyncHandler(AddressController.setDefaultAddress),
 );
 
 export default router;

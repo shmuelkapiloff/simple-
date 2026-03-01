@@ -126,7 +126,7 @@ export class AdminService {
       deliveredAgg,
       openOrders,
       ordersToday,
-      lowStock,
+      lowStockProducts,
       usersCount,
       productsCount,
     ] = await Promise.all([
@@ -144,7 +144,9 @@ export class AdminService {
         status: { $in: ["pending", "confirmed", "processing", "shipped"] },
       }),
       OrderModel.countDocuments({ createdAt: { $gte: startOfDay } }),
-      ProductModel.countDocuments({ isActive: true, stock: { $lt: 5 } }),
+      ProductModel.find({ isActive: true, stock: { $lt: 5 } })
+        .select("_id name stock")
+        .lean(),
       UserModel.countDocuments({}),
       ProductModel.countDocuments({ isActive: true }),
     ]);
@@ -161,7 +163,8 @@ export class AdminService {
         today: ordersToday,
       },
       inventory: {
-        lowStock,
+        lowStockCount: lowStockProducts.length,
+        lowStockProducts,
         activeProducts: productsCount,
       },
       users: {

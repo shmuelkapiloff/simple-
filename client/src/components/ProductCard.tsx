@@ -103,7 +103,13 @@ export default function ProductCard({ product }: Props) {
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
-              {!inStock ? "אזל" : isLoading ? "..." : quantityInCart > 0 ? "+" : "הוסף לעגלה"}
+              {!inStock
+                ? "אזל"
+                : isLoading
+                  ? "..."
+                  : quantityInCart > 0
+                    ? "+"
+                    : "הוסף לעגלה"}
             </button>
           </div>
         </div>

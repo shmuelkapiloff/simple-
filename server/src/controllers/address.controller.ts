@@ -38,13 +38,11 @@ export class AddressController {
     if (!userId) throw new UnauthorizedError();
     log.info("Setting default address", { userId, addressId });
     const address = await AddressService.setDefaultAddress(userId, addressId);
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: address,
-        message: "Default address set successfully",
-      });
+    res.status(200).json({
+      success: true,
+      data: address,
+      message: "Default address set successfully",
+    });
   }
 
   static async getAddressById(req: Request, res: Response) {
@@ -62,13 +60,11 @@ export class AddressController {
     const validated: CreateAddressDTO = addressSchema.parse(req.body);
     log.info("Creating address", { userId });
     const address = await AddressService.createAddress(userId, validated);
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: address,
-        message: "Address created successfully",
-      });
+    res.status(201).json({
+      success: true,
+      data: address,
+      message: "Address created successfully",
+    });
   }
 
   static async updateAddress(req: Request, res: Response) {
@@ -82,13 +78,11 @@ export class AddressController {
       addressId,
       validated,
     );
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: address,
-        message: "Address updated successfully",
-      });
+    res.status(200).json({
+      success: true,
+      data: address,
+      message: "Address updated successfully",
+    });
   }
 
   static async deleteAddress(req: Request, res: Response) {

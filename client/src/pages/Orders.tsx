@@ -3,7 +3,10 @@ import { useGetOrdersQuery } from "../api";
 
 const statusMap: Record<string, { label: string; color: string }> = {
   pending: { label: "ממתין", color: "bg-yellow-100 text-yellow-800" },
-  pending_payment: { label: "ממתין לתשלום", color: "bg-orange-100 text-orange-800" },
+  pending_payment: {
+    label: "ממתין לתשלום",
+    color: "bg-orange-100 text-orange-800",
+  },
   confirmed: { label: "אושר", color: "bg-blue-100 text-blue-800" },
   processing: { label: "בטיפול", color: "bg-purple-100 text-purple-800" },
   shipped: { label: "נשלח", color: "bg-indigo-100 text-indigo-800" },
@@ -45,13 +48,21 @@ export default function Orders() {
           <p className="text-6xl mb-4">📦</p>
           <h2 className="text-xl font-bold mb-2">אין הזמנות עדיין</h2>
           <p className="text-gray-500 mb-4">ההזמנות שלך יופיעו כאן</p>
-          <Link to="/" className="text-primary-600 hover:underline">לחנות</Link>
+          <Link to="/" className="text-primary-600 hover:underline">
+            לחנות
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">
           {orders.map((order) => {
-            const s = statusMap[order.status] ?? { label: order.status, color: "bg-gray-100 text-gray-800" };
-            const ps = paymentStatusMap[order.paymentStatus] ?? { label: order.paymentStatus, color: "text-gray-600" };
+            const s = statusMap[order.status] ?? {
+              label: order.status,
+              color: "bg-gray-100 text-gray-800",
+            };
+            const ps = paymentStatusMap[order.paymentStatus] ?? {
+              label: order.paymentStatus,
+              color: "text-gray-600",
+            };
 
             return (
               <Link
@@ -68,9 +79,13 @@ export default function Orders() {
                     </p>
                   </div>
                   <div className="text-left">
-                    <p className="text-lg font-bold">₪{order.totalAmount.toLocaleString()}</p>
+                    <p className="text-lg font-bold">
+                      ₪{order.totalAmount.toLocaleString()}
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.color}`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.color}`}
+                      >
                         {s.label}
                       </span>
                       <span className={`text-xs font-medium ${ps.color}`}>

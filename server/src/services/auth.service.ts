@@ -289,7 +289,10 @@ export class AuthService {
    */
   static async verifyToken(token: string) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; tokenVersion?: number };
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        userId: string;
+        tokenVersion?: number;
+      };
       const user = await UserModel.findById(decoded.userId);
 
       if (!user || !user.isActive) {
@@ -297,7 +300,10 @@ export class AuthService {
       }
 
       // ✨ Token Version check: if user logged out, version incremented and old tokens are invalid
-      if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+      if (
+        decoded.tokenVersion !== undefined &&
+        decoded.tokenVersion !== user.tokenVersion
+      ) {
         throw new Error("Token revoked");
       }
 
@@ -485,7 +491,10 @@ export class AuthService {
    * @param tokenVersion Current token version for instant revocation
    * @returns JWT token (valid for 15 minutes)
    */
-  private static generateToken(userId: string, tokenVersion: number = 0): string {
+  private static generateToken(
+    userId: string,
+    tokenVersion: number = 0,
+  ): string {
     return jwt.sign({ userId, tokenVersion }, JWT_SECRET, {
       expiresIn: JWT_EXPIRE,
     } as jwt.SignOptions);
@@ -497,7 +506,10 @@ export class AuthService {
    * @param tokenVersion Current token version for instant revocation
    * @returns Refresh token (valid for 7 days)
    */
-  private static generateRefreshToken(userId: string, tokenVersion: number = 0): string {
+  private static generateRefreshToken(
+    userId: string,
+    tokenVersion: number = 0,
+  ): string {
     return jwt.sign({ userId, tokenVersion }, JWT_REFRESH_SECRET, {
       expiresIn: JWT_REFRESH_EXPIRE,
     } as jwt.SignOptions);
@@ -522,7 +534,10 @@ export class AuthService {
       }
 
       // ✨ Token Version check: reject refresh if user logged out
-      if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+      if (
+        decoded.tokenVersion !== undefined &&
+        decoded.tokenVersion !== user.tokenVersion
+      ) {
         throw new UnauthorizedError("Refresh token revoked");
       }
 

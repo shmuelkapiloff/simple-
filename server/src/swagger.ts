@@ -402,11 +402,13 @@ const definition = {
                 user: { $ref: "#/components/schemas/User" },
                 token: {
                   type: "string",
-                  description: "JWT access token (7 days, contains tokenVersion)",
+                  description:
+                    "JWT access token (7 days, contains tokenVersion)",
                 },
                 refreshToken: {
                   type: "string",
-                  description: "JWT refresh token (7 days, contains tokenVersion)",
+                  description:
+                    "JWT refresh token (7 days, contains tokenVersion)",
                 },
               },
             },
@@ -446,11 +448,13 @@ const definition = {
                 user: { $ref: "#/components/schemas/User" },
                 token: {
                   type: "string",
-                  description: "JWT access token (7 days, contains tokenVersion)",
+                  description:
+                    "JWT access token (7 days, contains tokenVersion)",
                 },
                 refreshToken: {
                   type: "string",
-                  description: "JWT refresh token (7 days, contains tokenVersion)",
+                  description:
+                    "JWT refresh token (7 days, contains tokenVersion)",
                 },
               },
             },

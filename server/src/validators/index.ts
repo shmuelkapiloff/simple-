@@ -75,7 +75,10 @@ import { ZodSchema, ZodError, ZodObject } from "zod";
 import { ValidationError } from "../utils/asyncHandler";
 
 // Helper to create ValidationError with field context
-function createValidationError(message: string, field?: string): ValidationError {
+function createValidationError(
+  message: string,
+  field?: string,
+): ValidationError {
   const errors = field ? [{ field, message }] : undefined;
   return new ValidationError(message, errors);
 }
