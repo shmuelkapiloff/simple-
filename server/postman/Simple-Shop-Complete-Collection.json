@@ -1,7 +1,7 @@
 ﻿{
   "info": {
     "name": "Simple Shop - Complete API Collection",
-    "description": "Collection מלא לבדיקת כל endpoints של Simple Shop\n\n Authentication: JWT Token\n Features: Products, Cart, Orders, Auth\n\n**How to use:**\n1. הרץ את השרת: `npm run dev`\n2. הרץ את Auth → Register או Login\n3. Token נשמר אוטומטית\n4. כל ה-requests משתמשים בטוקן\n\nCreated: December 2025",
+    "description": "Collection מלא לבדיקת כל endpoints של Simple Shop\n\n## Features:\n- 🔐 Authentication: JWT Token + tokenVersion (instant logout)\n- 🛍️ Products, Cart, Orders\n- 💳 Stripe Payments\n- 👨‍💼 Admin Panel\n\n## How to use:\n1. הרץ את השרת: `npm run dev`\n2. הרץ Auth → Register או Login\n3. Token נשמר אוטומטית\n4. כל ה-requests משתמשים בטוקן\n\n## Security:\n- tokenVersion: Logout מבטל את כל הטוקנים מיידית\n- Rate limiting: 5 login attempts / 15 min\n- Account lockout after 5 failed attempts\n\nUpdated: March 2026",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -347,7 +347,7 @@
                 "logout"
               ]
             },
-            "description": "התנתקות מהמערכת"
+            "description": "התנתקות מהמערכת\n\n**מה קורה:**\n- tokenVersion מוגדל ב-1\n- כל הטוקנים הקיימים נפסלים מיידית!\n- אפילו אם מישהו גנב את הטוקן - הוא לא יעבוד יותר"
           },
           "event": [
             {
