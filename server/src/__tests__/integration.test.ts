@@ -125,6 +125,8 @@ describe("Integration Tests - Complete Payment Flow", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           shippingAddress: {
+            fullName: "Test User",
+            phone: "0501234567",
             street: "123 Main St",
             city: "Tel Aviv",
             postalCode: "12345",
@@ -166,6 +168,8 @@ describe("Integration Tests - Complete Payment Flow", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           shippingAddress: {
+            fullName: "Test User",
+            phone: "0501234567",
             street: "123 Main St",
             city: "Tel Aviv",
             postalCode: "12345",
@@ -265,6 +269,8 @@ describe("Integration Tests - Complete Payment Flow", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           shippingAddress: {
+            fullName: "Test User",
+            phone: "0501234567",
             street: "123 Main St",
             city: "Tel Aviv",
             postalCode: "12345",

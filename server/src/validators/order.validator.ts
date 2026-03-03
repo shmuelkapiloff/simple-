@@ -1,10 +1,24 @@
 import { z } from "zod";
 
-// Shipping address validation
+// Israeli phone regex: supports 05X-XXXXXXX, 05XXXXXXXX, +972...
+const israeliPhoneRegex = /^(\+972|0)([23489]|5[0-9])[0-9]{7}$/;
+
+/**
+ * Shipping address = "כרטיס משלוח" מלא
+ * כולל את כל המידע הדרוש לשליח: שם מקבל, טלפון, כתובת
+ * בהזמנה זה מועתק מהכתובת שהמשתמש בחר
+ */
 export const shippingAddressSchema = z.object({
+  // פרטי איש קשר - חובה!
+  fullName: z.string()
+    .min(2, "Recipient name must be at least 2 characters")
+    .max(100, "Recipient name cannot exceed 100 characters"),
+  phone: z.string()
+    .regex(israeliPhoneRegex, "Please provide a valid Israeli phone number"),
+  
+  // פרטי כתובת
   street: z.string().min(1, "Street is required"),
   city: z.string().min(1, "City is required"),
-  state: z.string().optional(),
   postalCode: z.string().min(1, "Postal code is required"),
   country: z.string().min(1, "Country is required"),
 });

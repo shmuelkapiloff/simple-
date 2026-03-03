@@ -38,6 +38,8 @@ export interface IOrder extends Document {
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
   paymentMethod: string;
   shippingAddress: {
+    fullName: string;    // שם מקבל החבילה
+    phone: string;       // טלפון ליצירת קשר
     street: string;
     city: string;
     postalCode: string;
@@ -139,6 +141,14 @@ const OrderSchema = new Schema<IOrder>(
     },
 
     shippingAddress: {
+      fullName: {
+        type: String,
+        required: [true, "Recipient name is required"],
+      },
+      phone: {
+        type: String,
+        required: [true, "Contact phone is required"],
+      },
       street: {
         type: String,
         required: true,

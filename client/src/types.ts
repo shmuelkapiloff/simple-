@@ -20,7 +20,6 @@ export interface User {
   _id: string;
   email: string;
   name: string;
-  phone?: string;
   role: "user" | "admin";
   isActive: boolean;
   createdAt: string;
@@ -46,7 +45,6 @@ export interface AuthResponse {
 
 export interface UpdateProfileRequest {
   name?: string;
-  phone?: string;
 }
 
 export interface ChangePasswordRequest {
@@ -126,7 +124,13 @@ export interface OrderItem {
 }
 
 export interface ShippingAddress {
-  street: string;
+/**
+ * ShippingAddress = "כרטיס משלוח" מלא
+ * כולל את כל המידע הדרוש לשליח: שם מקבל, טלפון, כתובת
+ */
+export interface ShippingAddress {
+  fullName: string;    // שם מקבל החבילה
+  phone: string;       // טלפון ליצירת קשר
   city: string;
   postalCode: string;
   country: string;
@@ -158,19 +162,27 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
-  shippingAddress: ShippingAddress;
-  paymentMethod?: string;
-  notes?: string;
-}
-
-// ---------- כתובת ----------
+/**
+ * Address = "כרטיס משלוח" מלא ששמור באקאונט
+ * כולל fullName ו-phone כי השליח צריך לדעת למי למסור ואיך ליצור קשר
+ */
 export interface Address {
   _id: string;
   user: string;
+  fullName: string;    // שם מקבל החבילה
+  phone: string;       // טלפון ליצירת קשר
   street: string;
   city: string;
   postalCode: string;
   country: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddressRequest {
+  fullName: string;
+  phone: string;
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;

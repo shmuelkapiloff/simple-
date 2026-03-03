@@ -120,14 +120,27 @@ export default function Order() {
         </div>
       </div>
 
-      {/* Shipping Address */}
+      {/* Shipping Address - כרטיס משלוח מלא */}
       <div className="bg-white rounded-xl border p-6 mb-6">
-        <h2 className="font-bold mb-2">כתובת משלוח</h2>
-        <p className="text-gray-600">
-          {order.shippingAddress.street}, {order.shippingAddress.city}
-          <br />
-          {order.shippingAddress.postalCode}, {order.shippingAddress.country}
-        </p>
+        <h2 className="font-bold mb-3">📦 פרטי משלוח</h2>
+        <div className="bg-blue-50 rounded-lg p-4 space-y-2">
+          <div>
+            <p className="text-sm text-gray-500">מקבל החבילה</p>
+            <p className="font-semibold text-lg">{order.shippingAddress.fullName || "—"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">טלפון</p>
+            <p className="font-medium" dir="ltr">{order.shippingAddress.phone || "—"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">כתובת</p>
+            <p className="text-gray-800">
+              {order.shippingAddress.street}, {order.shippingAddress.city}
+              <br />
+              {order.shippingAddress.postalCode}, {order.shippingAddress.country}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Tracking History */}

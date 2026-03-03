@@ -7,8 +7,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
-  phone?: string; // ⬅️ חדש
-  role: "user" | "admin"; // ⬅️ חדש
+  role: "user" | "admin";
 
   createdAt: Date;
   updatedAt: Date;
@@ -60,14 +59,6 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       minlength: [2, "Name must be at least 2 characters long"],
       maxlength: [50, "Name cannot exceed 50 characters"],
-    },
-
-    // ⬅️ חדש - שדות נוספים
-    phone: {
-      type: String,
-      trim: true,
-      default: "",
-      match: [/^[0-9\-\+\(\)\s]*$/, "Please provide a valid phone number"],
     },
 
     role: {

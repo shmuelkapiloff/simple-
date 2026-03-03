@@ -114,6 +114,8 @@ describe("Order Routes - Order Management & Permissions", () => {
           paymentStatus: "pending",
           paymentMethod: "stripe",
           shippingAddress: {
+            fullName: "Test User",
+            phone: "0501234567",
             street: "123 Main St",
             city: "Tel Aviv",
             postalCode: "12345",
@@ -166,6 +168,8 @@ describe("Order Routes - Order Management & Permissions", () => {
         paymentStatus: "paid",
         paymentMethod: "stripe",
         shippingAddress: {
+          fullName: "Test User",
+          phone: "0501234567",
           street: "123 Main St",
           city: "Tel Aviv",
           postalCode: "12345",
@@ -232,6 +236,8 @@ describe("Order Routes - Order Management & Permissions", () => {
         paymentStatus: "pending",
         paymentMethod: "stripe",
         shippingAddress: {
+          fullName: "Test User",
+          phone: "0501234567",
           street: "123 Main St",
           city: "Tel Aviv",
           postalCode: "12345",

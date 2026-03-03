@@ -147,6 +147,8 @@ function CheckoutFlow({
     try {
       const result = await createOrder({
         shippingAddress: {
+          fullName: addr.fullName,
+          phone: addr.phone,
           street: addr.street,
           city: addr.city,
           postalCode: addr.postalCode,
@@ -213,8 +215,10 @@ function CheckoutFlow({
                         onChange={() => setSelectedAddr(addr._id)}
                         className="accent-primary-600"
                       />
-                      <div>
-                        <p className="font-medium">
+                      <div className="flex-1">
+                        <p className="font-semibold">{addr.fullName}</p>
+                        <p className="text-sm text-gray-500" dir="ltr">{addr.phone}</p>
+                        <p className="text-sm text-gray-600 mt-1">
                           {addr.street}, {addr.city}
                         </p>
                         <p className="text-sm text-gray-500">

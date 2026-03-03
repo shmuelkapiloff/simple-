@@ -14,6 +14,11 @@ export default function AddressForm({
   onCancel,
   isLoading,
 }: Props) {
+  // פרטי איש קשר - חובה!
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  
+  // פרטי כתובת
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
@@ -21,6 +26,8 @@ export default function AddressForm({
 
   useEffect(() => {
     if (address) {
+      setFullName(address.fullName);
+      setPhone(address.phone);
       setStreet(address.street);
       setCity(address.city);
       setPostalCode(address.postalCode);
@@ -30,11 +37,49 @@ export default function AddressForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ street, city, postalCode, country });
+    onSubmit({ fullName, phone, street, city, postalCode, country });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* פרטי מקבל החבילה */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h3 className="text-sm font-semibold text-blue-800 mb-3">👤 פרטי מקבל החבילה</h3>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              שם מלא
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              minLength={2}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              placeholder="ישראל ישראלי"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              טלפון
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              dir="ltr"
+              pattern="^(\+972|0)([23489]|5[0-9])[0-9]{7}$"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              placeholder="0501234567"
+            />
+            <p className="text-xs text-gray-500 mt-1">טלפון נייד ישראלי (למשל 0501234567)</p>
+          </div>
+        </div>
+      </div>
+
+      {/* פרטי כתובת */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           רחוב

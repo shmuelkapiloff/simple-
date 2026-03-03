@@ -59,7 +59,6 @@ function ProfileTab() {
   const user = data?.data?.user;
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [msg, setMsg] = useState("");
 
   // Password
@@ -70,7 +69,6 @@ function ProfileTab() {
 
   const startEdit = () => {
     setName(user?.name ?? "");
-    setPhone(user?.phone ?? "");
     setEditing(true);
     setMsg("");
   };
@@ -78,7 +76,7 @@ function ProfileTab() {
   const handleSave = async () => {
     try {
       await updateProfile({ name, phone }).unwrap();
-      setMsg("הפרופיל עודכן בהצלחה");
+      setMsg("הפרופיל עודכן בהצל
       setEditing(false);
     } catch {
       setMsg("שגיאה בעדכון");
@@ -129,10 +127,9 @@ function ProfileTab() {
                 {user?.email}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">טלפון</p>
-              <p className="font-medium">{user?.phone || "לא הוגדר"}</p>
-            </div>
+            <p className="text-xs text-gray-400">
+              💡 טלפון ושם מקבל החבילה מוגדרים בכתובות המשלוח
+            </p>
             <button
               onClick={startEdit}
               className="text-primary-600 text-sm font-medium hover:underline"
@@ -149,17 +146,6 @@ function ProfileTab() {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                טלפון
-              </label>
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                dir="ltr"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none"
               />
             </div>
@@ -311,14 +297,18 @@ function AddressesTab() {
             className="bg-white rounded-xl border p-6 flex items-start justify-between"
           >
             <div>
-              <p className="font-medium">
+              {/* פרטי מקבל */}
+              <p className="font-bold text-lg">{addr.fullName}</p>
+              <p className="text-sm text-gray-500" dir="ltr">{addr.phone}</p>
+              {/* כתובת */}
+              <p className="font-medium mt-2">
                 {addr.street}, {addr.city}
               </p>
               <p className="text-sm text-gray-500">
                 {addr.postalCode}, {addr.country}
               </p>
               {addr.isDefault && (
-                <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full mt-1 inline-block">
+                <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full mt-2 inline-block">
                   ברירת מחדל
                 </span>
               )}

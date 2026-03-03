@@ -74,6 +74,8 @@ describe("Payment Webhook Security", () => {
       paymentStatus: "pending",
       paymentMethod: "stripe",
       shippingAddress: {
+        fullName: "Test User",
+        phone: "0501234567",
         street: "123 Test St",
         city: "Test City",
         postalCode: "12345",
