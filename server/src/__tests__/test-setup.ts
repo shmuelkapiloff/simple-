@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { logger } from "../utils/logger";
 
-// Test environment defaults (do not override user-provided values)
+// ── Environment defaults ────────────────────────────────────────────────
 process.env.NODE_ENV = process.env.NODE_ENV || "test";
 process.env.JWT_SECRET = process.env.JWT_SECRET || "test-jwt-secret-change-me";
 process.env.PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || "stripe";
@@ -10,60 +11,50 @@ process.env.STRIPE_SECRET_KEY =
 process.env.STRIPE_WEBHOOK_SECRET =
   process.env.STRIPE_WEBHOOK_SECRET || "whsec_test_dummy_secret";
 
-// Set test timeout globally
 jest.setTimeout(30000);
 
-/**
- * Jest Setup - Runs before all tests
- */
+let mongoServer: MongoMemoryServer;
+
+// ── Setup: start in-memory MongoDB ──────────────────────────────────────
 beforeAll(async () => {
-  logger.info("🚀 Jest setup starting...");
-  // Give MongoDB time to initialize
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  logger.info("🚀 Jest setup — starting in-memory MongoDB…");
+  mongoServer = await MongoMemoryServer.create();
+  const uri = mongoServer.getUri();
+  await mongoose.connect(uri);
+  logger.info("✅ In-memory MongoDB connected");
 });
 
-/**
- * Jest Teardown - Runs after all tests
- */
+// ── Teardown: stop in-memory MongoDB ────────────────────────────────────
 afterAll(async () => {
-  logger.info("🧹 Jest cleanup starting...");
-
+  logger.info("🧹 Jest cleanup…");
   try {
-    // Properly close MongoDB connection
     if (mongoose.connection.readyState !== 0) {
-      if (
-        process.env.TEST_MODE === "integration" &&
-        process.env.NODE_ENV === "test"
-      ) {
-        await mongoose.connection.dropDatabase();
-        logger.info("✅ Test database dropped (integration mode)");
-      }
+      await mongoose.connection.dropDatabase();
       await mongoose.disconnect();
       logger.info("✅ MongoDB disconnected");
     }
   } catch (err) {
-    logger.error({ err }, "❌ Error closing MongoDB connection");
+    logger.error({ err }, "❌ Error closing MongoDB");
   }
 
-  // Clear all timers
-  jest.clearAllTimers();
-  logger.info("✅ All timers cleared");
+  if (mongoServer) {
+    await mongoServer.stop();
+    logger.info("✅ In-memory MongoDB stopped");
+  }
 
-  // Give async operations time to complete
+  jest.clearAllTimers();
   await new Promise((resolve) => setTimeout(resolve, 100));
 });
 
-// Handle uncaught exceptions
-process.on("unhandledRejection", (reason: any, promise: Promise<any>) => {
+// ── Global error handlers ───────────────────────────────────────────────
+process.on("unhandledRejection", (reason) => {
   logger.error({ reason }, "⚠️ Unhandled Rejection");
 });
-
-// Handle uncaught exceptions
-process.on("uncaughtException", (error: any) => {
+process.on("uncaughtException", (error) => {
   logger.error({ error }, "⚠️ Uncaught Exception");
 });
 
-// Mock Redis for tests
+// ── Mock Redis (tests don't need real Redis) ────────────────────────────
 jest.mock("../config/redisClient", () => ({
   redis: {
     status: "ready",

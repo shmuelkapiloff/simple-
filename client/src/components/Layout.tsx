@@ -56,12 +56,14 @@ export default function Layout() {
             <Link
               to="/cart"
               className="relative text-gray-600 hover:text-primary-600 transition"
+              aria-label={`עגלת קניות${itemCount > 0 ? ` (${itemCount} פריטים)` : ""}`}
             >
               <svg
                 className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -83,6 +85,9 @@ export default function Layout() {
                 <button
                   onClick={() => setUserMenu(!userMenu)}
                   className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition"
+                  aria-expanded={userMenu}
+                  aria-haspopup="true"
+                  aria-label="תפריט משתמש"
                 >
                   <span className="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center font-bold text-sm">
                     {user?.name?.charAt(0).toUpperCase()}
@@ -133,12 +138,17 @@ export default function Layout() {
 
           {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-3">
-            <Link to="/cart" className="relative text-gray-600">
+            <Link
+              to="/cart"
+              className="relative text-gray-600"
+              aria-label={`עגלת קניות${itemCount > 0 ? ` (${itemCount} פריטים)` : ""}`}
+            >
               <svg
                 className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -156,12 +166,15 @@ export default function Layout() {
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="text-gray-600"
+              aria-label={mobileOpen ? "סגור תפריט" : "פתח תפריט"}
+              aria-expanded={mobileOpen}
             >
               <svg
                 className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 {mobileOpen ? (
                   <path

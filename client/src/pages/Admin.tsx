@@ -10,6 +10,9 @@ import {
   useGetAdminOrdersQuery,
   useUpdateOrderStatusMutation,
 } from "../api";
+import { ORDER_STATUS_MAP } from "../constants";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import type { Product, AdminProductRequest, User, Order } from "../types";
 
 type Tab = "stats" | "products" | "orders" | "users";
@@ -124,12 +127,14 @@ function ProductsTab() {
   const [createProduct, { isLoading: creating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: updatingProd }] =
     useUpdateProductMutation();
-  const [deleteProduct] = useDeleteProductMutation();
+  const [deleteProduct, { isLoading: deleting }] = useDeleteProductMutation();
+  const toast = useToast();
 
   // Server returns { data: { products: [...] } }
   const products = data?.data?.products ?? [];
   const [editing, setEditing] = useState<Product | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const emptyProduct: AdminProductRequest = {
     name: "",
@@ -168,13 +173,15 @@ function ProductsTab() {
     try {
       if (editing) {
         await updateProduct({ id: editing._id, data: form }).unwrap();
+        toast.success("המוצר עודכן בהצלחה");
       } else {
         await createProduct(form).unwrap();
+        toast.success("המוצר נוצר בהצלחה");
       }
       setShowForm(false);
       setEditing(null);
     } catch {
-      /* */
+      toast.error("שגיאה בשמירת המוצר");
     }
   };
 
@@ -306,7 +313,7 @@ function ProductsTab() {
                       ערוך
                     </button>
                     <button
-                      onClick={() => deleteProduct(p._id)}
+                      onClick={() => setDeleteTarget(p)}
                       className="text-red-500 hover:underline"
                     >
                       מחק
@@ -318,6 +325,25 @@ function ProductsTab() {
           </tbody>
         </table>
       </div>
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="מחיקת מוצר"
+          message={`האם למחוק את "${deleteTarget.name}"? פעולה זו לא ניתנת לביטול.`}
+          confirmLabel="מחק"
+          isLoading={deleting}
+          onConfirm={async () => {
+            try {
+              await deleteProduct(deleteTarget._id).unwrap();
+              toast.success("המוצר נמחק בהצלחה");
+              setDeleteTarget(null);
+            } catch {
+              toast.error("שגיאה במחיקת המוצר");
+            }
+          }}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   );
 }
@@ -327,36 +353,19 @@ function OrdersTab() {
   const { data, isLoading } = useGetAdminOrdersQuery();
   const [updateStatus, { isLoading: updatingStatus }] =
     useUpdateOrderStatusMutation();
+  const toast = useToast();
   // Server returns { data: { orders: [...] } }
   const orders = data?.data?.orders ?? [];
   const [editingOrder, setEditingOrder] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState("");
 
-  const statuses = [
-    "pending",
-    "pending_payment",
-    "confirmed",
-    "processing",
-    "shipped",
-    "delivered",
-    "cancelled",
-  ];
-  const statusLabels: Record<string, string> = {
-    pending: "ממתין",
-    pending_payment: "ממתין לתשלום",
-    confirmed: "אושר",
-    processing: "בטיפול",
-    shipped: "נשלח",
-    delivered: "נמסר",
-    cancelled: "בוטל",
-  };
-
   const handleUpdate = async (orderId: string) => {
     try {
       await updateStatus({ id: orderId, status: newStatus }).unwrap();
+      toast.success("סטטוס ההזמנה עודכן");
       setEditingOrder(null);
     } catch {
-      /* */
+      toast.error("שגיאה בעדכון סטטוס");
     }
   };
 
@@ -399,15 +408,15 @@ function OrdersTab() {
                     onChange={(e) => setNewStatus(e.target.value)}
                     className="border rounded px-2 py-1 text-xs"
                   >
-                    {statuses.map((s) => (
-                      <option key={s} value={s}>
-                        {statusLabels[s]}
+                    {Object.entries(ORDER_STATUS_MAP).map(([key, val]) => (
+                      <option key={key} value={key}>
+                        {val.label}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <span className="text-xs font-medium">
-                    {statusLabels[o.status] ?? o.status}
+                    {ORDER_STATUS_MAP[o.status]?.label ?? o.status}
                   </span>
                 )}
               </td>
@@ -452,6 +461,8 @@ function OrdersTab() {
 function UsersTab() {
   const { data, isLoading } = useGetAdminUsersQuery();
   const [updateRole, { isLoading: updatingRole }] = useUpdateUserRoleMutation();
+  const toast = useToast();
+  const [roleTarget, setRoleTarget] = useState<User | null>(null);
   // Server returns users directly in data (no wrapper)
   const users = Array.isArray(data?.data)
     ? data.data
@@ -496,12 +507,7 @@ function UsersTab() {
               </td>
               <td className="px-4 py-3">
                 <button
-                  onClick={() =>
-                    updateRole({
-                      id: u._id,
-                      role: u.role === "admin" ? "user" : "admin",
-                    })
-                  }
+                  onClick={() => setRoleTarget(u)}
                   disabled={updatingRole}
                   className="text-primary-600 hover:underline text-xs disabled:opacity-50"
                 >
@@ -512,6 +518,29 @@ function UsersTab() {
           ))}
         </tbody>
       </table>
+
+      {roleTarget && (
+        <ConfirmDialog
+          title="שינוי תפקיד"
+          message={`האם לשנות את התפקיד של ${roleTarget.name} ל${roleTarget.role === "admin" ? "משתמש רגיל" : "מנהל"}?`}
+          confirmLabel="שנה תפקיד"
+          variant="warning"
+          isLoading={updatingRole}
+          onConfirm={async () => {
+            try {
+              await updateRole({
+                id: roleTarget._id,
+                role: roleTarget.role === "admin" ? "user" : "admin",
+              }).unwrap();
+              toast.success("התפקיד עודכן בהצלחה");
+              setRoleTarget(null);
+            } catch {
+              toast.error("שגיאה בעדכון תפקיד");
+            }
+          }}
+          onCancel={() => setRoleTarget(null)}
+        />
+      )}
     </div>
   );
 }

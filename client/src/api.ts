@@ -1,7 +1,13 @@
 // ============================================================
 // Simple Shop — כל ה-API Endpoints במקום אחד (RTK Query)
 // ============================================================
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {
+  createApi,
+  fetchBaseQuery,
+  type BaseQueryFn,
+  type FetchArgs,
+  type FetchBaseQueryError,
+} from "@reduxjs/toolkit/query/react";
 import type {
   ApiResponse,
   AuthResponse,
@@ -12,7 +18,6 @@ import type {
   User,
   Product,
   ProductsQuery,
-  ProductsResponse,
   Cart,
   Order,
   CreateOrderRequest,
@@ -38,14 +43,44 @@ const baseQuery = fetchBaseQuery({
   credentials: "include",
 });
 
-// Wrapper: אם 401 → מנקה token
-const baseQueryWithAuth: typeof baseQuery = async (args, api, extraOptions) => {
-  const result = await baseQuery(args, api, extraOptions);
+// Wrapper: on 401, try refresh token once before clearing
+const baseQueryWithReauth: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+  let result = await baseQuery(args, api, extraOptions);
+
   if (result.error?.status === 401) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
-    // invalidate verify cache so UI updates
-    api.dispatch(apiSlice.util.invalidateTags(["Auth"]));
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      // Attempt to refresh
+      const refreshResult = await baseQuery(
+        {
+          url: "/auth/refresh",
+          method: "POST",
+          body: { refreshToken },
+        },
+        api,
+        extraOptions,
+      );
+
+      if (refreshResult.data) {
+        const data = (refreshResult.data as ApiResponse<{ token: string; refreshToken: string }>).data;
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        // Retry original request with new token
+        result = await baseQuery(args, api, extraOptions);
+      } else {
+        // Refresh failed — clear everything
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        api.dispatch(apiSlice.util.invalidateTags(["Auth"]));
+      }
+    } else {
+      localStorage.removeItem("token");
+      api.dispatch(apiSlice.util.invalidateTags(["Auth"]));
+    }
   }
   return result;
 };
@@ -55,7 +90,7 @@ const baseQueryWithAuth: typeof baseQuery = async (args, api, extraOptions) => {
 // ============================================================
 const apiSlice = createApi({
   reducerPath: "api",
-  baseQuery: baseQueryWithAuth,
+  baseQuery: baseQueryWithReauth,
   tagTypes: ["Auth", "Products", "Cart", "Orders", "Addresses", "Admin"],
   endpoints: () => ({}),
 });
@@ -117,7 +152,7 @@ export const authApi = apiSlice.injectEndpoints({
 export const productsApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
     getProducts: build.query<
-      ApiResponse<ProductsResponse>,
+      ApiResponse<Product[]>,
       ProductsQuery | void
     >({
       query: (params) => {
@@ -207,7 +242,7 @@ export const ordersApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Orders"],
     }),
     getPaymentStatus: build.query<ApiResponse<{ payment: Payment }>, string>({
-      query: (orderId) => `/payments/status/${orderId}`,
+      query: (orderId) => `/payments/${orderId}/status`,
       providesTags: ["Orders"],
     }),
   }),
@@ -343,8 +378,6 @@ export const {
   useGetProfileQuery,
   useUpdateProfileMutation,
   useChangePasswordMutation,
-  useForgotPasswordMutation,
-  useResetPasswordMutation,
 } = authApi;
 
 export const {
@@ -371,7 +404,6 @@ export const {
 
 export const {
   useGetAddressesQuery,
-  useGetDefaultAddressQuery,
   useCreateAddressMutation,
   useUpdateAddressMutation,
   useDeleteAddressMutation,

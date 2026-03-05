@@ -5,11 +5,13 @@ import {
   validateProductId,
   validateObjectId,
 } from "../middlewares/validateObjectId.middleware";
+import { apiRateLimiter } from "../middlewares/rate-limiter.middleware";
 
 const router = Router();
 
-// All admin routes require auth + admin role
+// All admin routes require auth + admin role + rate limiting
 router.use(requireAdmin);
+router.use(apiRateLimiter);
 
 // Products
 router.get("/products", AdminController.listProducts);
@@ -18,7 +20,7 @@ router.put("/products/:id", validateProductId, AdminController.updateProduct);
 router.delete(
   "/products/:id",
   validateProductId,
-  AdminController.deleteProduct
+  AdminController.deleteProduct,
 );
 
 // Users
@@ -26,7 +28,7 @@ router.get("/users", AdminController.listUsers);
 router.put(
   "/users/:id/role",
   validateObjectId("id"),
-  AdminController.updateUserRole
+  AdminController.updateUserRole,
 );
 
 // Orders
@@ -34,7 +36,7 @@ router.get("/orders", AdminController.listOrders);
 router.put(
   "/orders/:id/status",
   validateObjectId("id"),
-  AdminController.updateOrderStatus
+  AdminController.updateOrderStatus,
 );
 
 // Stats

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLoginMutation, useRegisterMutation } from "../api";
 
 // Eye icons for show/hide password
@@ -64,15 +64,57 @@ export default function AuthModal({
   const [login, { isLoading: loginLoading }] = useLoginMutation();
   const [register, { isLoading: regLoading }] = useRegisterMutation();
   const isLoading = loginLoading || regLoading;
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  if (!isOpen) return null;
-
-  const reset = () => {
+  const reset = useCallback(() => {
     setEmail("");
     setPassword("");
     setName("");
     setError("");
-  };
+    setShowPassword(false);
+  }, []);
+
+  // Reset form when switching views
+  useEffect(() => {
+    reset();
+  }, [view, reset]);
+
+  // Escape key handler
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isOpen, close]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+    const modal = modalRef.current;
+    const focusable = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length > 0) focusable[0].focus();
+
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", trap);
+    return () => document.removeEventListener("keydown", trap);
+  }, [isOpen, view]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,19 +143,26 @@ export default function AuthModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40" onClick={close} />
+      <div className="absolute inset-0 bg-black/40" onClick={close} aria-hidden="true" />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6"
+      >
         {/* Close button */}
         <button
           onClick={close}
           className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 text-xl"
+          aria-label="סגור"
         >
           ✕
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">
+        <h2 id="auth-modal-title" className="text-2xl font-bold text-gray-900 mb-1">
           {view === "login" ? "התחברות" : "הרשמה"}
         </h2>
         {message && <p className="text-sm text-primary-600 mb-4">{message}</p>}

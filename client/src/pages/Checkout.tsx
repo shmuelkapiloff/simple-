@@ -9,6 +9,7 @@ import {
 } from "../api";
 import CartItem from "../components/CartItem";
 import AddressForm from "../components/AddressForm";
+import { useToast } from "../components/Toast";
 import type { AddressRequest, CartItem as CartItemType } from "../types";
 
 export default function Checkout() {
@@ -99,6 +100,7 @@ function CheckoutFlow({
   const [selectedAddr, setSelectedAddr] = useState<string>("");
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [error, setError] = useState("");
+  const toast = useToast();
 
   // Server returns data directly, not wrapped in { cart: ... } or { addresses: ... }
   const items = cartData?.data?.items ?? [];
@@ -131,8 +133,9 @@ function CheckoutFlow({
       const result = await createAddress(data).unwrap();
       setSelectedAddr(result.data.address._id);
       setShowAddrForm(false);
+      toast.success("הכתובת נוספה בהצלחה");
     } catch {
-      setError("שגיאה ביצירת כתובת");
+      toast.error("שגיאה ביצירת כתובת");
     }
   };
 
@@ -217,7 +220,9 @@ function CheckoutFlow({
                       />
                       <div className="flex-1">
                         <p className="font-semibold">{addr.fullName}</p>
-                        <p className="text-sm text-gray-500" dir="ltr">{addr.phone}</p>
+                        <p className="text-sm text-gray-500" dir="ltr">
+                          {addr.phone}
+                        </p>
                         <p className="text-sm text-gray-600 mt-1">
                           {addr.street}, {addr.city}
                         </p>

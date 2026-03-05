@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useGetCartQuery, useClearCartMutation } from "../api";
 import { useAuth } from "../hooks";
 import CartItem from "../components/CartItem";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import type { CartItem as CartItemType } from "../types";
 
 export default function Cart() {
@@ -10,6 +13,8 @@ export default function Cart() {
     skip: !isAuthenticated,
   });
   const [clearCart, { isLoading: clearing }] = useClearCartMutation();
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const toast = useToast();
 
   // Server returns cart directly in data, not wrapped in { cart: ... }
   const cart = data?.data;
@@ -68,7 +73,7 @@ export default function Cart() {
           העגלה שלך ({items.length} פריטים)
         </h1>
         <button
-          onClick={() => clearCart()}
+          onClick={() => setShowClearConfirm(true)}
           disabled={clearing}
           className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
         >
@@ -100,6 +105,25 @@ export default function Cart() {
           המשך בקניות
         </Link>
       </div>
+
+      {showClearConfirm && (
+        <ConfirmDialog
+          title="ניקוי עגלה"
+          message="האם לרוקן את כל פריטי העגלה?"
+          confirmLabel="נקה עגלה"
+          isLoading={clearing}
+          onConfirm={async () => {
+            try {
+              await clearCart().unwrap();
+              toast.success("העגלה נוקתה");
+              setShowClearConfirm(false);
+            } catch {
+              toast.error("שגיאה בניקוי העגלה");
+            }
+          }}
+          onCancel={() => setShowClearConfirm(false)}
+        />
+      )}
     </div>
   );
 }

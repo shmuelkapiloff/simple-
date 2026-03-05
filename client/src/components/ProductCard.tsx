@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
-import { useAddToCartMutation } from "../api";
+import {
+  useAddToCartMutation,
+  useUpdateCartItemMutation,
+  useRemoveFromCartMutation,
+} from "../api";
 import { useAuth, useCart } from "../hooks";
 import { useOutletContext } from "react-router-dom";
+import StarRating from "./StarRating";
 import type { Product, CartItem } from "../types";
 
 interface Props {
@@ -14,7 +19,10 @@ export default function ProductCard({ product }: Props) {
   const authModal = useOutletContext<
     { openLogin: (msg?: string) => void } | undefined
   >();
-  const [addToCart, { isLoading }] = useAddToCartMutation();
+  const [addToCart, { isLoading: adding }] = useAddToCartMutation();
+  const [updateQty, { isLoading: updating }] = useUpdateCartItemMutation();
+  const [remove, { isLoading: removing }] = useRemoveFromCartMutation();
+  const isLoading = adding || updating || removing;
 
   // Check if product is already in cart
   const cartItem = items.find(
@@ -34,6 +42,17 @@ export default function ProductCard({ product }: Props) {
     }
   };
 
+  const handleDecrease = async () => {
+    if (quantityInCart <= 1) {
+      await remove({ productId: product._id }).unwrap();
+    } else {
+      await updateQty({
+        productId: product._id,
+        quantity: quantityInCart - 1,
+      }).unwrap();
+    }
+  };
+
   const inStock = product.stock > 0;
 
   return (
@@ -47,6 +66,7 @@ export default function ProductCard({ product }: Props) {
           <img
             src={product.image}
             alt={product.name}
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
@@ -69,21 +89,7 @@ export default function ProductCard({ product }: Props) {
         </Link>
 
         {/* Rating */}
-        <div className="flex items-center gap-1 mb-2">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <svg
-              key={star}
-              className={`w-4 h-4 ${star <= Math.round(product.rating) ? "text-yellow-400" : "text-gray-200"}`}
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          ))}
-          <span className="text-xs text-gray-400 mr-1">
-            {product.rating.toFixed(1)}
-          </span>
-        </div>
+        <StarRating rating={product.rating} />
 
         {/* Price + Button */}
         <div className="mt-auto flex items-center justify-between pt-3 border-t">
@@ -91,28 +97,41 @@ export default function ProductCard({ product }: Props) {
             ₪{product.price.toLocaleString()}
           </span>
           <div className="flex items-center gap-2">
-            {quantityInCart > 0 && (
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                {quantityInCart} בעגלה
-              </span>
+            {quantityInCart > 0 ? (
+              /* Quantity controls when item is in cart */
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleDecrease}
+                  disabled={isLoading}
+                  className="w-8 h-8 rounded-lg border text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50 transition"
+                >
+                  {quantityInCart === 1 ? "🗑️" : "−"}
+                </button>
+                <span className="w-8 text-center font-medium text-sm">
+                  {quantityInCart}
+                </span>
+                <button
+                  onClick={handleAdd}
+                  disabled={isLoading || quantityInCart >= product.stock}
+                  className="w-8 h-8 rounded-lg bg-primary-600 text-white hover:bg-primary-700 flex items-center justify-center disabled:opacity-50 transition"
+                >
+                  +
+                </button>
+              </div>
+            ) : (
+              /* Add to cart button when not in cart */
+              <button
+                onClick={handleAdd}
+                disabled={isLoading || !inStock}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  inStock
+                    ? "bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {!inStock ? "אזל" : isLoading ? "..." : "הוסף לעגלה"}
+              </button>
             )}
-            <button
-              onClick={handleAdd}
-              disabled={isLoading || !inStock}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                inStock
-                  ? "bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              {!inStock
-                ? "אזל"
-                : isLoading
-                  ? "..."
-                  : quantityInCart > 0
-                    ? "+"
-                    : "הוסף לעגלה"}
-            </button>
           </div>
         </div>
       </div>

@@ -10,6 +10,8 @@ import {
   useSetDefaultAddressMutation,
 } from "../api";
 import AddressForm from "../components/AddressForm";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import type { Address, AddressRequest } from "../types";
 
 type Tab = "profile" | "addresses";
@@ -54,50 +56,47 @@ function ProfileTab() {
   const [updateProfile, { isLoading: updating }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: changingPw }] =
     useChangePasswordMutation();
+  const toast = useToast();
 
   // Server returns { data: { user } }
   const user = data?.data?.user;
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
-  const [msg, setMsg] = useState("");
 
   // Password
   const [showPw, setShowPw] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
-  const [pwMsg, setPwMsg] = useState("");
 
   const startEdit = () => {
     setName(user?.name ?? "");
     setEditing(true);
-    setMsg("");
   };
 
   const handleSave = async () => {
     try {
-      await updateProfile({ name, phone }).unwrap();
-      setMsg("הפרופיל עודכן בהצל
+      await updateProfile({ name }).unwrap();
+      toast.success("הפרופיל עודכן בהצלחה");
       setEditing(false);
     } catch {
-      setMsg("שגיאה בעדכון");
+      toast.error("שגיאה בעדכון הפרופיל");
     }
   };
 
   const handleChangePw = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPwMsg("");
     try {
       await changePassword({
         currentPassword: currentPw,
         newPassword: newPw,
       }).unwrap();
-      setPwMsg("הסיסמה שונתה בהצלחה");
+      toast.success("הסיסמה שונתה בהצלחה");
       setCurrentPw("");
       setNewPw("");
       setShowPw(false);
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string } };
-      setPwMsg(apiErr.data?.message || "שגיאה בשינוי סיסמה");
+      toast.error(apiErr.data?.message || "שגיאה בשינוי סיסמה");
     }
   };
 
@@ -166,7 +165,6 @@ function ProfileTab() {
             </div>
           </div>
         )}
-        {msg && <p className="text-sm text-green-600 mt-2">{msg}</p>}
       </div>
 
       <hr />
@@ -214,20 +212,12 @@ function ProfileTab() {
                 type="button"
                 onClick={() => {
                   setShowPw(false);
-                  setPwMsg("");
                 }}
                 className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50"
               >
                 ביטול
               </button>
             </div>
-            {pwMsg && (
-              <p
-                className={`text-sm ${pwMsg.includes("שגיאה") ? "text-red-600" : "text-green-600"}`}
-              >
-                {pwMsg}
-              </p>
-            )}
           </form>
         )}
       </div>
@@ -241,20 +231,23 @@ function AddressesTab() {
   const [createAddress, { isLoading: creating }] = useCreateAddressMutation();
   const [updateAddress, { isLoading: updatingAddr }] =
     useUpdateAddressMutation();
-  const [deleteAddress] = useDeleteAddressMutation();
+  const [deleteAddress, { isLoading: deletingAddr }] = useDeleteAddressMutation();
   const [setDefault] = useSetDefaultAddressMutation();
+  const toast = useToast();
 
   // Server returns addresses array directly
   const addresses = Array.isArray(data?.data) ? data.data : [];
   const [showForm, setShowForm] = useState(false);
   const [editingAddr, setEditingAddr] = useState<Address | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Address | null>(null);
 
   const handleCreate = async (d: AddressRequest) => {
     try {
       await createAddress(d).unwrap();
+      toast.success("הכתובת נוספה בהצלחה");
       setShowForm(false);
     } catch {
-      /* */
+      toast.error("שגיאה ביצירת כתובת");
     }
   };
 
@@ -262,9 +255,10 @@ function AddressesTab() {
     if (!editingAddr) return;
     try {
       await updateAddress({ id: editingAddr._id, data: d }).unwrap();
+      toast.success("הכתובת עודכנה בהצלחה");
       setEditingAddr(null);
     } catch {
-      /* */
+      toast.error("שגיאה בעדכון כתובת");
     }
   };
 
@@ -299,7 +293,9 @@ function AddressesTab() {
             <div>
               {/* פרטי מקבל */}
               <p className="font-bold text-lg">{addr.fullName}</p>
-              <p className="text-sm text-gray-500" dir="ltr">{addr.phone}</p>
+              <p className="text-sm text-gray-500" dir="ltr">
+                {addr.phone}
+              </p>
               {/* כתובת */}
               <p className="font-medium mt-2">
                 {addr.street}, {addr.city}
@@ -329,7 +325,7 @@ function AddressesTab() {
                 ערוך
               </button>
               <button
-                onClick={() => deleteAddress(addr._id)}
+                onClick={() => setDeleteTarget(addr)}
                 className="text-red-500 hover:underline"
               >
                 מחק
@@ -355,6 +351,25 @@ function AddressesTab() {
         >
           + הוסף כתובת חדשה
         </button>
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="מחיקת כתובת"
+          message={`האם למחוק את הכתובת של ${deleteTarget.fullName}?`}
+          confirmLabel="מחק"
+          isLoading={deletingAddr}
+          onConfirm={async () => {
+            try {
+              await deleteAddress(deleteTarget._id).unwrap();
+              toast.success("הכתובת נמחקה בהצלחה");
+              setDeleteTarget(null);
+            } catch {
+              toast.error("שגיאה במחיקת הכתובת");
+            }
+          }}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
     </div>
   );

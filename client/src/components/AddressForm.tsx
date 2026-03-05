@@ -17,7 +17,7 @@ export default function AddressForm({
   // פרטי איש קשר - חובה!
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  
+
   // פרטי כתובת
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
@@ -44,7 +44,9 @@ export default function AddressForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* פרטי מקבל החבילה */}
       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-        <h3 className="text-sm font-semibold text-blue-800 mb-3">👤 פרטי מקבל החבילה</h3>
+        <h3 className="text-sm font-semibold text-blue-800 mb-3">
+          👤 פרטי מקבל החבילה
+        </h3>
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -74,7 +76,9 @@ export default function AddressForm({
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               placeholder="0501234567"
             />
-            <p className="text-xs text-gray-500 mt-1">טלפון נייד ישראלי (למשל 0501234567)</p>
+            <p className="text-xs text-gray-500 mt-1">
+              טלפון נייד ישראלי (למשל 0501234567)
+            </p>
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@ import request from "supertest";
 import app from "../app";
 import { UserModel } from "../models/user.model";
 import bcrypt from "bcryptjs";
-import { connectMongo } from "../config/db";
 
 describe("Auth Routes - Authentication & Authorization", () => {
   /**
@@ -23,14 +22,6 @@ describe("Auth Routes - Authentication & Authorization", () => {
    * Interview talking point: "Authentication is critical.
    * I test every path: happy path, error cases, edge cases."
    */
-
-  beforeAll(async () => {
-    try {
-      await connectMongo();
-    } catch (err) {
-      console.warn("MongoDB connection failed (may be expected in CI)");
-    }
-  });
 
   afterEach(async () => {
     try {

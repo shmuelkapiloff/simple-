@@ -1,4 +1,5 @@
-import { Navigate, useOutletContext } from "react-router-dom";
+import { useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../hooks";
 
 interface Props {
@@ -12,6 +13,13 @@ export default function ProtectedRoute({ children, adminOnly }: Props) {
     { openLogin: (msg?: string) => void } | undefined
   >();
 
+  // Open modal when unauthenticated (after loading finishes)
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && authModal) {
+      authModal.openLogin("יש להתחבר כדי לגשת לעמוד זה");
+    }
+  }, [isLoading, isAuthenticated, authModal]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -21,11 +29,14 @@ export default function ProtectedRoute({ children, adminOnly }: Props) {
   }
 
   if (!isAuthenticated) {
-    // If we have the modal context, open it — otherwise redirect
-    if (authModal) {
-      authModal.openLogin("יש להתחבר כדי לגשת לעמוד זה");
-    }
-    return <Navigate to="/" replace />;
+    // Show a message while modal is open — don't navigate away
+    return (
+      <div className="max-w-lg mx-auto mt-20 text-center">
+        <p className="text-6xl mb-4">🔒</p>
+        <h1 className="text-2xl font-bold mb-2">נדרשת התחברות</h1>
+        <p className="text-gray-500">יש להתחבר כדי לגשת לעמוד זה</p>
+      </div>
+    );
   }
 
   if (adminOnly && !isAdmin) {

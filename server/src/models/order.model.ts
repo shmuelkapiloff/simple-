@@ -38,8 +38,8 @@ export interface IOrder extends Document {
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
   paymentMethod: string;
   shippingAddress: {
-    fullName: string;    // שם מקבל החבילה
-    phone: string;       // טלפון ליצירת קשר
+    fullName: string; // שם מקבל החבילה
+    phone: string; // טלפון ליצירת קשר
     street: string;
     city: string;
     postalCode: string;

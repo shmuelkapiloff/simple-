@@ -1,25 +1,6 @@
 import { Link } from "react-router-dom";
 import { useGetOrdersQuery } from "../api";
-
-const statusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: "ממתין", color: "bg-yellow-100 text-yellow-800" },
-  pending_payment: {
-    label: "ממתין לתשלום",
-    color: "bg-orange-100 text-orange-800",
-  },
-  confirmed: { label: "אושר", color: "bg-blue-100 text-blue-800" },
-  processing: { label: "בטיפול", color: "bg-purple-100 text-purple-800" },
-  shipped: { label: "נשלח", color: "bg-indigo-100 text-indigo-800" },
-  delivered: { label: "נמסר", color: "bg-green-100 text-green-800" },
-  cancelled: { label: "בוטל", color: "bg-red-100 text-red-800" },
-};
-
-const paymentStatusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: "ממתין", color: "text-yellow-600" },
-  paid: { label: "שולם", color: "text-green-600" },
-  failed: { label: "נכשל", color: "text-red-600" },
-  refunded: { label: "הוחזר", color: "text-gray-600" },
-};
+import { ORDER_STATUS_MAP, PAYMENT_STATUS_MAP } from "../constants";
 
 export default function Orders() {
   const { data, isLoading } = useGetOrdersQuery();
@@ -55,11 +36,11 @@ export default function Orders() {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => {
-            const s = statusMap[order.status] ?? {
+            const s = ORDER_STATUS_MAP[order.status] ?? {
               label: order.status,
               color: "bg-gray-100 text-gray-800",
             };
-            const ps = paymentStatusMap[order.paymentStatus] ?? {
+            const ps = PAYMENT_STATUS_MAP[order.paymentStatus] ?? {
               label: order.paymentStatus,
               color: "text-gray-600",
             };

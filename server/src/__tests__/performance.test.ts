@@ -15,7 +15,6 @@ import app from "../app";
 import { UserModel } from "../models/user.model";
 import { ProductModel } from "../models/product.model";
 import { CartModel } from "../models/cart.model";
-import { connectMongo } from "../config/db";
 import { logger } from "../utils/logger";
 
 describe("Performance Tests", () => {
@@ -28,12 +27,6 @@ describe("Performance Tests", () => {
   let loadTestPassword: string;
 
   beforeAll(async () => {
-    try {
-      await connectMongo();
-    } catch (err) {
-      console.warn("MongoDB connection failed (may be expected in CI)");
-    }
-
     loadTestEmail = `loadtest-${Date.now()}@example.com`;
     loadTestPassword = "Password123!";
 

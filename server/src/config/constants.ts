@@ -66,7 +66,17 @@ export const AUDIT_LOG_TTL = 90 * 24 * 60 * 60; // 90 days in seconds
 // JWT & AUTHENTICATION CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** JWT access token expiration: 7 days (single token, revoked instantly with tokenVersion) */
+/**
+ * JWT access token expiration: 7 days
+ *
+ * ⚠️ INTENTIONALLY LONG — the client currently uses a single token strategy.
+ * Instant revocation is handled via `tokenVersion` on each user document:
+ * when a user logs out or changes password, tokenVersion is incremented,
+ * immediately invalidating all existing tokens without waiting for expiry.
+ *
+ * If migrating to a short-lived access + refresh token flow (e.g. 15m / 7d),
+ * update this value to "15m" and update the client to use the /auth/refresh endpoint.
+ */
 export const JWT_EXPIRATION = "7d";
 
 /** JWT refresh token expiration: 7 days (long-lived, used to get new access tokens) */

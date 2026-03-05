@@ -1,14 +1,17 @@
 import { Router } from "express";
 import { CartController } from "../controllers/cart.controller";
 import { requireAuth } from "../middlewares/auth.middleware";
+import { apiRateLimiter } from "../middlewares/rate-limiter.middleware";
 
 const router = Router();
 
 /**
  * Cart Routes
  * Base URL: /api/cart
- * Note: All cart routes require authentication - no guest mode
+ * All cart routes require authentication — no guest mode
  */
+router.use(requireAuth);
+router.use(apiRateLimiter);
 
 // GET /api/cart - קבלת עגלה נוכחית
 router.get("/", requireAuth, CartController.getCart);

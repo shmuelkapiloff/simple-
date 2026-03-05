@@ -6,7 +6,7 @@ import {
 import { CartModel } from "../models/cart.model";
 import { ProductModel } from "../models/product.model";
 import { getNextSequence } from "../models/sequence.model";
-import { NotFoundError } from "../utils/asyncHandler";
+import { NotFoundError, ApiError } from "../utils/asyncHandler";
 
 export class OrderService {
   /**
@@ -20,22 +20,44 @@ export class OrderService {
     const cart = await CartModel.findOne({ userId }).populate("items.product");
 
     if (!cart || cart.items.length === 0) {
-      throw new Error("Cart is empty");
+      throw new ApiError(400, "Cart is empty", undefined, "BAD_REQUEST");
     }
 
     // ✅ Verify stock (but DON'T reduce it yet!)
+    // Fetch all products in one query to avoid N+1
+    const productIds = cart.items.map((item: any) =>
+      typeof item.product === "object" ? item.product._id : item.product,
+    );
+    const products = await ProductModel.find({ _id: { $in: productIds } });
+    const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+
     const orderItems = [];
     let totalAmount = 0;
 
     for (const item of cart.items) {
-      const product = await ProductModel.findById(item.product);
+      const pid = (
+        typeof item.product === "object"
+          ? (item.product as any)._id
+          : item.product
+      ).toString();
+      const product = productMap.get(pid);
 
       if (!product || !product.isActive) {
-        throw new Error(`Product ${item.product} is not available`);
+        throw new ApiError(
+          400,
+          `Product ${item.product} is not available`,
+          undefined,
+          "BAD_REQUEST",
+        );
       }
 
       if (product.stock < item.quantity) {
-        throw new Error(`Insufficient stock for ${product.name}`);
+        throw new ApiError(
+          400,
+          `Insufficient stock for ${product.name}`,
+          undefined,
+          "VALIDATION_ERROR",
+        );
       }
 
       orderItems.push({
@@ -164,7 +186,7 @@ export class OrderService {
     const order = await OrderModel.findById(orderId);
 
     if (!order) {
-      throw new Error("Order not found");
+      throw new NotFoundError("Order");
     }
 
     // Validate status transition
@@ -177,7 +199,7 @@ export class OrderService {
       "cancelled",
     ];
     if (!validStatuses.includes(newStatus)) {
-      throw new Error("Invalid status");
+      throw new ApiError(400, "Invalid status", undefined, "VALIDATION_ERROR");
     }
 
     // Update status
@@ -206,15 +228,24 @@ export class OrderService {
     }
 
     // Can only cancel pending/confirmed orders
-    if (!["pending", "confirmed"].includes(order.status)) {
-      throw new Error(`Cannot cancel order with status: ${order.status}`);
+    if (!["pending", "pending_payment", "confirmed"].includes(order.status)) {
+      throw new ApiError(
+        400,
+        `Cannot cancel order with status: ${order.status}`,
+        undefined,
+        "BAD_REQUEST",
+      );
     }
 
-    // Restore stock
-    for (const item of order.items) {
-      await ProductModel.findByIdAndUpdate(item.product, {
-        $inc: { stock: item.quantity },
-      });
+    // Only restore stock if payment was already confirmed (stock was deducted by webhook).
+    // For "pending_payment" orders, stock was never deducted so nothing to restore.
+    const paidStatuses = ["confirmed", "processing"];
+    if (paidStatuses.includes(order.status)) {
+      for (const item of order.items) {
+        await ProductModel.findByIdAndUpdate(item.product, {
+          $inc: { stock: item.quantity },
+        });
+      }
     }
 
     // Update status

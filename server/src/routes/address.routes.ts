@@ -1,55 +1,40 @@
 import { Router } from "express";
 import { AddressController } from "../controllers/address.controller";
 import { requireAuth } from "../middlewares/auth.middleware";
-import { asyncHandler } from "../utils/asyncHandler";
 import { validateAddressId } from "../middlewares/validateObjectId.middleware";
 
 const router = Router();
 
-/**
- * All address routes require authentication
- */
+// All address routes require authentication
 router.use(requireAuth);
 
-/**
- * Address CRUD operations
- */
+// GET /api/addresses
+router.get("/", AddressController.getAddresses);
 
-// GET /api/addresses - Get all addresses for user
-router.get("/", asyncHandler(AddressController.getAddresses));
+// GET /api/addresses/default
+router.get("/default", AddressController.getDefaultAddress);
 
-// GET /api/addresses/default - Get default address
-router.get("/default", asyncHandler(AddressController.getDefaultAddress));
+// GET /api/addresses/:addressId
+router.get("/:addressId", validateAddressId, AddressController.getAddressById);
 
-// GET /api/addresses/:addressId - Get address by ID
-router.get(
-  "/:addressId",
-  validateAddressId,
-  asyncHandler(AddressController.getAddressById),
-);
+// POST /api/addresses
+router.post("/", AddressController.createAddress);
 
-// POST /api/addresses - Create new address
-router.post("/", asyncHandler(AddressController.createAddress));
+// PUT /api/addresses/:addressId
+router.put("/:addressId", validateAddressId, AddressController.updateAddress);
 
-// PUT /api/addresses/:addressId - Update address
-router.put(
-  "/:addressId",
-  validateAddressId,
-  asyncHandler(AddressController.updateAddress),
-);
-
-// DELETE /api/addresses/:addressId - Delete address
+// DELETE /api/addresses/:addressId
 router.delete(
   "/:addressId",
   validateAddressId,
-  asyncHandler(AddressController.deleteAddress),
+  AddressController.deleteAddress,
 );
 
-// POST /api/addresses/:addressId/set-default - Set address as default
+// POST /api/addresses/:addressId/set-default
 router.post(
   "/:addressId/set-default",
   validateAddressId,
-  asyncHandler(AddressController.setDefaultAddress),
+  AddressController.setDefaultAddress,
 );
 
 export default router;

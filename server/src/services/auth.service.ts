@@ -13,11 +13,13 @@ import {
   JWT_REFRESH_EXPIRATION,
   PASSWORD_RESET_EXPIRATION,
 } from "../config/constants";
+import { env } from "../config/env";
 import { ApiError, UnauthorizedError } from "../utils/asyncHandler";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+// Use centralized env config — single source of truth for secrets
+const JWT_SECRET = env.JWT_SECRET;
 const JWT_REFRESH_SECRET =
-  process.env.JWT_REFRESH_SECRET || "your-refresh-secret-key";
+  process.env.JWT_REFRESH_SECRET || env.JWT_SECRET + "-refresh";
 const JWT_EXPIRE = process.env.JWT_EXPIRE || JWT_EXPIRATION;
 const JWT_REFRESH_EXPIRE =
   process.env.JWT_REFRESH_EXPIRE || JWT_REFRESH_EXPIRATION;
@@ -338,7 +340,6 @@ export class AuthService {
 
     // Update fields
     if (data.name !== undefined) user.name = data.name;
-    if (data.phone !== undefined) user.phone = data.phone;
     user.lastUpdated = new Date();
 
     await user.save();

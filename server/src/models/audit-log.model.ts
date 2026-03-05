@@ -247,7 +247,7 @@ const auditLogSchema = new mongoose.Schema(
   {
     // Configuration
     timestamps: false, // We manage timestamps ourselves
-    collection: "auditlegs", // Explicit collection name
+    collection: "auditlogs", // Explicit collection name
   },
 );
 

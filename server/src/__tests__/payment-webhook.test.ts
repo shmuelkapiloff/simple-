@@ -6,10 +6,8 @@ import { OrderModel } from "../models/order.model";
 import { WebhookEventModel } from "../models/webhook-event.model";
 import { ProductModel } from "../models/product.model";
 import { FailedWebhookModel } from "../models/failed-webhook.model";
-import { connectMongo } from "../config/db";
 
-// Note: Database connection is handled by app.ts
-// Tests will use the same MongoDB instance as the application
+// Note: Database connection handled by test-setup.ts (MongoMemoryServer)
 
 // Mock Stripe SDK
 jest.mock("stripe");
@@ -31,11 +29,7 @@ describe("Payment Webhook Security", () => {
   let testPaymentId: string;
 
   beforeAll(async () => {
-    try {
-      await connectMongo();
-    } catch (err) {
-      console.warn("MongoDB connection failed (may be expected in CI)");
-    }
+    // DB connection handled by test-setup.ts
   });
 
   beforeEach(async () => {

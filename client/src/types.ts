@@ -79,15 +79,8 @@ export interface ProductsQuery {
   sort?: string;
 }
 
-export interface ProductsResponse {
-  products: Product[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
+// Server returns products array directly for getProducts
+export type ProductsResponse = Product[];
 
 // ---------- עגלה ----------
 export interface CartItem {
@@ -123,14 +116,14 @@ export interface OrderItem {
   image?: string;
 }
 
-export interface ShippingAddress {
 /**
  * ShippingAddress = "כרטיס משלוח" מלא
  * כולל את כל המידע הדרוש לשליח: שם מקבל, טלפון, כתובת
  */
 export interface ShippingAddress {
-  fullName: string;    // שם מקבל החבילה
-  phone: string;       // טלפון ליצירת קשר
+  fullName: string; // שם מקבל החבילה
+  phone: string; // טלפון ליצירת קשר
+  street: string;
   city: string;
   postalCode: string;
   country: string;
@@ -162,15 +155,21 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
+  shippingAddress: ShippingAddress;
+  paymentMethod?: string;
+  notes?: string;
+}
+
+// ---------- כתובת ----------
 /**
  * Address = "כרטיס משלוח" מלא ששמור באקאונט
- * כולל fullName ו-phone כי השליח צריך לדעת למי למסור ואיך ליצור קשר
+ * כולל fullName ו-phone כי השליח צריך לדעת למי למסור ואיך ליצירת קשר
  */
 export interface Address {
   _id: string;
   user: string;
-  fullName: string;    // שם מקבל החבילה
-  phone: string;       // טלפון ליצירת קשר
+  fullName: string; // שם מקבל החבילה
+  phone: string; // טלפון ליצירת קשר
   street: string;
   city: string;
   postalCode: string;
@@ -183,12 +182,6 @@ export interface Address {
 export interface AddressRequest {
   fullName: string;
   phone: string;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AddressRequest {
   street: string;
   city: string;
   postalCode: string;

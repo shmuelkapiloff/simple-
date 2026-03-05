@@ -4,6 +4,7 @@ import {
   UpdateAddressInput,
 } from "../models/address.model";
 import { CreateAddressDTO } from "../controllers/address.controller";
+import { NotFoundError } from "../utils/asyncHandler";
 
 export class AddressService {
   static async getAddresses(userId: string) {
@@ -19,7 +20,7 @@ export class AddressService {
       user: userId,
       isDefault: true,
     });
-    if (!address) throw new Error("No default address found");
+    if (!address) throw new NotFoundError("Default address");
     return address;
   }
 
@@ -35,7 +36,7 @@ export class AddressService {
       { $set: { isDefault: true } },
       { new: true },
     );
-    if (!address) throw new Error("Address not found");
+    if (!address) throw new NotFoundError("Address");
     return address;
   }
 
@@ -44,7 +45,7 @@ export class AddressService {
       _id: addressId,
       user: userId,
     });
-    if (!address) throw new Error("Address not found");
+    if (!address) throw new NotFoundError("Address");
     return address;
   }
 
@@ -54,6 +55,8 @@ export class AddressService {
     });
     const addressData = {
       user: userId,
+      fullName: data.fullName,
+      phone: data.phone,
       street: data.street,
       city: data.city,
       postalCode: data.postalCode,
@@ -74,7 +77,7 @@ export class AddressService {
       { $set: data },
       { new: true },
     );
-    if (!address) throw new Error("Address not found");
+    if (!address) throw new NotFoundError("Address");
     return address;
   }
 
@@ -83,6 +86,6 @@ export class AddressService {
       _id: addressId,
       user: userId,
     });
-    if (result.deletedCount === 0) throw new Error("Address not found");
+    if (result.deletedCount === 0) throw new NotFoundError("Address");
   }
 }

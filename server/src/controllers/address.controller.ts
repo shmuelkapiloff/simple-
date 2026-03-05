@@ -4,10 +4,12 @@ import {
   addressSchema,
   updateAddressSchema,
 } from "../validators/address.validator";
-import { UnauthorizedError, log } from "../utils/asyncHandler";
+import { asyncHandler, UnauthorizedError } from "../utils/asyncHandler";
 
-// DTO for address creation
+// DTO for address creation — "כרטיס משלוח" מלא
 export interface CreateAddressDTO {
+  fullName: string;
+  phone: string;
   street: string;
   city: string;
   postalCode: string;
@@ -16,63 +18,61 @@ export interface CreateAddressDTO {
 }
 
 export class AddressController {
-  static async getAddresses(req: Request, res: Response) {
+  static getAddresses = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?._id;
     if (!userId) throw new UnauthorizedError();
-    log.info("Fetching addresses", { userId });
     const addresses = await AddressService.getAddresses(userId);
     res.status(200).json({ success: true, data: addresses });
-  }
+  });
 
-  static async getDefaultAddress(req: Request, res: Response) {
-    const userId = req.user?._id;
-    if (!userId) throw new UnauthorizedError();
-    log.info("Fetching default address", { userId });
-    const address = await AddressService.getDefaultAddress(userId);
-    res.status(200).json({ success: true, data: address });
-  }
+  static getDefaultAddress = asyncHandler(
+    async (req: Request, res: Response) => {
+      const userId = req.user?._id;
+      if (!userId) throw new UnauthorizedError();
+      const address = await AddressService.getDefaultAddress(userId);
+      res.status(200).json({ success: true, data: address });
+    },
+  );
 
-  static async setDefaultAddress(req: Request, res: Response) {
+  static setDefaultAddress = asyncHandler(
+    async (req: Request, res: Response) => {
+      const userId = req.user?._id;
+      const { addressId } = req.params;
+      if (!userId) throw new UnauthorizedError();
+      const address = await AddressService.setDefaultAddress(userId, addressId);
+      res.status(200).json({
+        success: true,
+        data: address,
+        message: "Default address set successfully",
+      });
+    },
+  );
+
+  static getAddressById = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?._id;
     const { addressId } = req.params;
     if (!userId) throw new UnauthorizedError();
-    log.info("Setting default address", { userId, addressId });
-    const address = await AddressService.setDefaultAddress(userId, addressId);
-    res.status(200).json({
-      success: true,
-      data: address,
-      message: "Default address set successfully",
-    });
-  }
-
-  static async getAddressById(req: Request, res: Response) {
-    const userId = req.user?._id;
-    const { addressId } = req.params;
-    if (!userId) throw new UnauthorizedError();
-    log.info("Fetching address", { userId, addressId });
     const address = await AddressService.getAddressById(userId, addressId);
     res.status(200).json({ success: true, data: address });
-  }
+  });
 
-  static async createAddress(req: Request, res: Response) {
+  static createAddress = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?._id;
     if (!userId) throw new UnauthorizedError();
     const validated: CreateAddressDTO = addressSchema.parse(req.body);
-    log.info("Creating address", { userId });
     const address = await AddressService.createAddress(userId, validated);
     res.status(201).json({
       success: true,
       data: address,
       message: "Address created successfully",
     });
-  }
+  });
 
-  static async updateAddress(req: Request, res: Response) {
+  static updateAddress = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?._id;
     const { addressId } = req.params;
     if (!userId) throw new UnauthorizedError();
     const validated = updateAddressSchema.parse(req.body);
-    log.info("Updating address", { userId, addressId });
     const address = await AddressService.updateAddress(
       userId,
       addressId,
@@ -83,14 +83,13 @@ export class AddressController {
       data: address,
       message: "Address updated successfully",
     });
-  }
+  });
 
-  static async deleteAddress(req: Request, res: Response) {
+  static deleteAddress = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?._id;
     const { addressId } = req.params;
     if (!userId) throw new UnauthorizedError();
-    log.info("Deleting address", { userId, addressId });
     await AddressService.deleteAddress(userId, addressId);
     res.status(204).send();
-  }
+  });
 }

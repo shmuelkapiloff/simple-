@@ -1,20 +1,11 @@
 import request from "supertest";
 import { createApp } from "../app";
 import mongoose from "mongoose";
-import { connectMongo } from "../config/db";
 
 describe("Products API", () => {
   const app = createApp();
 
   jest.setTimeout(30000);
-
-  beforeAll(async () => {
-    try {
-      await connectMongo();
-    } catch (err) {
-      console.warn("MongoDB connection failed (may be expected in CI)");
-    }
-  });
 
   it("GET /api/products returns array", async () => {
     const res = await request(app).get("/api/products");

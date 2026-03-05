@@ -2,47 +2,32 @@ import { Router } from "express";
 import { OrderController } from "../controllers/order.controller";
 import { requireAuth } from "../middlewares/auth.middleware";
 import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
-import { asyncHandler } from "../utils/asyncHandler";
 import { validateOrderId } from "../middlewares/validateObjectId.middleware";
+import { publicReadRateLimiter } from "../middlewares/rate-limiter.middleware";
 
 const router = Router();
 
-/**
- * Public endpoint - Track order (NO AUTH REQUIRED)
- */
+// Public — track order (with rate limiting to prevent enumeration)
 router.get(
   "/track/:orderId",
+  publicReadRateLimiter,
   validateOrderId,
-  asyncHandler(OrderController.trackOrder)
+  OrderController.trackOrder,
 );
 
-/**
- * All routes below require authentication
- */
+// All routes below require authentication
 router.use(requireAuth);
 
-// POST /api/orders - Create new order from cart (with idempotency protection)
-router.post(
-  "/",
-  idempotencyMiddleware("order"),
-  asyncHandler(OrderController.createOrder)
-);
+// POST /api/orders (with idempotency)
+router.post("/", idempotencyMiddleware("order"), OrderController.createOrder);
 
-// GET /api/orders - Get user's orders (with optional status filter)
-router.get("/", asyncHandler(OrderController.getUserOrders));
+// GET /api/orders
+router.get("/", OrderController.getUserOrders);
 
-// GET /api/orders/:orderId - Get order by ID
-router.get(
-  "/:orderId",
-  validateOrderId,
-  asyncHandler(OrderController.getOrderById)
-);
+// GET /api/orders/:orderId
+router.get("/:orderId", validateOrderId, OrderController.getOrderById);
 
-// POST /api/orders/:orderId/cancel - Cancel order
-router.post(
-  "/:orderId/cancel",
-  validateOrderId,
-  asyncHandler(OrderController.cancelOrder)
-);
+// POST /api/orders/:orderId/cancel
+router.post("/:orderId/cancel", validateOrderId, OrderController.cancelOrder);
 
 export default router;

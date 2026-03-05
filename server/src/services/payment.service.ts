@@ -742,10 +742,7 @@ export class PaymentService {
                 duration,
               );
 
-              return {
-                status: result.status,
-                orderId: order._id.toString(),
-              };
+              // Don't return early — fall through to record idempotency event
             } catch (fallbackError: any) {
               log.error("❌ Fallback fulfillment failed", {
                 service: "PaymentService",
@@ -759,23 +756,23 @@ export class PaymentService {
 
               throw fallbackError;
             }
+          } else {
+            log.error(
+              "❌ Order fulfillment failed - transaction aborted, stock NOT reduced",
+              {
+                service: "PaymentService",
+                orderId: order._id,
+                error: fulfillmentError.message,
+              },
+            );
+
+            // ⚠️ Mark order as needing manual review
+            order.status = "pending";
+            order.notes = `Fulfillment failed: ${fulfillmentError.message}. Payment succeeded but stock/cart not updated due to transaction rollback.`;
+            await order.save();
+
+            throw fulfillmentError;
           }
-
-          log.error(
-            "❌ Order fulfillment failed - transaction aborted, stock NOT reduced",
-            {
-              service: "PaymentService",
-              orderId: order._id,
-              error: fulfillmentError.message,
-            },
-          );
-
-          // ⚠️ Mark order as needing manual review
-          order.status = "pending";
-          order.notes = `Fulfillment failed: ${fulfillmentError.message}. Payment succeeded but stock/cart not updated due to transaction rollback.`;
-          await order.save();
-
-          throw fulfillmentError;
         } finally {
           await session.endSession();
         }

@@ -1,5 +1,12 @@
 import { Response } from "express";
 
+/**
+ * Unified API Response helpers.
+ *
+ * Every endpoint should return:
+ *   { success: boolean, data?: T, message?: string, errors?: any[] }
+ */
+
 export type ApiResponse<T = unknown> = {
   success: boolean;
   message?: string;
@@ -7,12 +14,12 @@ export type ApiResponse<T = unknown> = {
   errors?: any[];
 };
 
-// Helper functions for sending responses
+/** Send a success response */
 export function sendSuccess<T>(
   res: Response,
   data: T,
   message?: string,
-  status: number = 200
+  status: number = 200,
 ): void {
   res.status(status).json({
     success: true,
@@ -21,11 +28,12 @@ export function sendSuccess<T>(
   });
 }
 
+/** Send an error response */
 export function sendError(
   res: Response,
   status: number,
   message: string,
-  errors?: any[]
+  errors?: any[],
 ): void {
   res.status(status).json({
     success: false,
@@ -34,25 +42,15 @@ export function sendError(
   });
 }
 
-// Export sendResponse with compatible signature for auth controller
-export function sendResponse<T>(
-  res: Response,
-  status: number,
-  message: string,
-  data?: T
-): void {
-  res.status(status).json({
-    success: true,
-    message,
-    data,
-  });
-}
-
-// Legacy functions (keep for backward compatibility)
-export function ok<T>(data: T, message?: string): ApiResponse<T> {
-  return { success: true, data, message };
-}
-
-export function fail(message: string, errors?: any[]): ApiResponse<null> {
-  return { success: false, message, errors: errors || [] };
-}
+// Legacy aliases — kept for backward compatibility (auth middleware, etc.)
+export const sendResponse = sendSuccess;
+export const ok = <T>(data: T, message?: string): ApiResponse<T> => ({
+  success: true,
+  data,
+  message,
+});
+export const fail = (message: string, errors?: any[]): ApiResponse<null> => ({
+  success: false,
+  message,
+  errors: errors || [],
+});

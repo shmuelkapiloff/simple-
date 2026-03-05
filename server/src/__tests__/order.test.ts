@@ -4,7 +4,6 @@ import { UserModel } from "../models/user.model";
 import { OrderModel } from "../models/order.model";
 import { ProductModel } from "../models/product.model";
 import { CartModel } from "../models/cart.model";
-import { connectMongo } from "../config/db";
 
 describe("Order Routes - Order Management & Permissions", () => {
   /**
@@ -30,14 +29,6 @@ describe("Order Routes - Order Management & Permissions", () => {
   let accessToken: string;
   let userId: string;
   let productId: string;
-
-  beforeAll(async () => {
-    try {
-      await connectMongo();
-    } catch (err) {
-      console.warn("MongoDB connection failed (may be expected in CI)");
-    }
-  });
 
   beforeEach(async () => {
     // Create test user and get token

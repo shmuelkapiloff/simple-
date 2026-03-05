@@ -5,39 +5,51 @@ import {
   getCategories,
   ProductFilters,
 } from "../services/product.service";
-import { ok, fail } from "../utils/response";
+import { asyncHandler, NotFoundError } from "../utils/asyncHandler";
 
-export async function getProducts(req: Request, res: Response) {
-  const filters: ProductFilters = {
-    category: req.query.category as string,
-    minPrice: req.query.minPrice
-      ? parseFloat(req.query.minPrice as string)
-      : undefined,
-    maxPrice: req.query.maxPrice
-      ? parseFloat(req.query.maxPrice as string)
-      : undefined,
-    search: req.query.search as string,
-    featured:
-      req.query.featured === "true"
-        ? true
-        : req.query.featured === "false"
-          ? false
-          : undefined,
-    sort: req.query.sort as any,
-  };
+export class ProductController {
+  /** GET /api/products */
+  static getProducts = asyncHandler(async (req: Request, res: Response) => {
+    const filters: ProductFilters = {
+      category: req.query.category as string,
+      minPrice: req.query.minPrice
+        ? parseFloat(req.query.minPrice as string)
+        : undefined,
+      maxPrice: req.query.maxPrice
+        ? parseFloat(req.query.maxPrice as string)
+        : undefined,
+      search: req.query.search as string,
+      featured:
+        req.query.featured === "true"
+          ? true
+          : req.query.featured === "false"
+            ? false
+            : undefined,
+      sort: req.query.sort as any,
+    };
 
-  const products = await listProducts(filters);
-  res.json(ok(products));
+    const products = await listProducts(filters);
+    res.json({ success: true, data: products });
+  });
+
+  /** GET /api/products/:id */
+  static getProduct = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const product = await getProductById(id);
+    if (!product) throw new NotFoundError("Product");
+    res.json({ success: true, data: product });
+  });
+
+  /** GET /api/products/categories/list */
+  static getCategoriesList = asyncHandler(
+    async (_req: Request, res: Response) => {
+      const categories = await getCategories();
+      res.json({ success: true, data: categories });
+    },
+  );
 }
 
-export async function getProduct(req: Request, res: Response) {
-  const { id } = req.params;
-  const product = await getProductById(id);
-  if (!product) return res.status(404).json(fail("Product not found"));
-  res.json(ok(product));
-}
-
-export async function getCategoriesList(_req: Request, res: Response) {
-  const categories = await getCategories();
-  res.json(ok(categories));
-}
+// Named exports for backward compatibility with existing route imports
+export const getProducts = ProductController.getProducts;
+export const getProduct = ProductController.getProduct;
+export const getCategoriesList = ProductController.getCategoriesList;

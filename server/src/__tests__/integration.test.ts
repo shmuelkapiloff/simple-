@@ -4,7 +4,6 @@ import { UserModel } from "../models/user.model";
 import { OrderModel } from "../models/order.model";
 import { ProductModel } from "../models/product.model";
 import { CartModel } from "../models/cart.model";
-import { connectMongo } from "../config/db";
 
 describe("Integration Tests - Complete Payment Flow", () => {
   /**
@@ -35,14 +34,6 @@ describe("Integration Tests - Complete Payment Flow", () => {
   let userId: string;
   let productId: string;
   let productPrice = 49.99;
-
-  beforeAll(async () => {
-    try {
-      await connectMongo();
-    } catch (err) {
-      console.warn("MongoDB connection failed (may be expected in CI)");
-    }
-  });
 
   beforeEach(async () => {
     // Step 1: Register user

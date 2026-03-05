@@ -1,24 +1,17 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useGetOrderQuery, useCancelOrderMutation } from "../api";
+import { ORDER_STATUS_MAP } from "../constants";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import type { OrderItem, TrackingEntry } from "../types";
-
-const statusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: "ממתין", color: "bg-yellow-100 text-yellow-800" },
-  pending_payment: {
-    label: "ממתין לתשלום",
-    color: "bg-orange-100 text-orange-800",
-  },
-  confirmed: { label: "אושר", color: "bg-blue-100 text-blue-800" },
-  processing: { label: "בטיפול", color: "bg-purple-100 text-purple-800" },
-  shipped: { label: "נשלח", color: "bg-indigo-100 text-indigo-800" },
-  delivered: { label: "נמסר", color: "bg-green-100 text-green-800" },
-  cancelled: { label: "בוטל", color: "bg-red-100 text-red-800" },
-};
 
 export default function Order() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useGetOrderQuery(id!);
   const [cancelOrder, { isLoading: cancelling }] = useCancelOrderMutation();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const toast = useToast();
 
   // Server returns order directly in data
   const order = data?.data?.order;
@@ -48,7 +41,7 @@ export default function Order() {
     );
   }
 
-  const s = statusMap[order.status] ?? {
+  const s = ORDER_STATUS_MAP[order.status] ?? {
     label: order.status,
     color: "bg-gray-100 text-gray-800",
   };
@@ -126,18 +119,23 @@ export default function Order() {
         <div className="bg-blue-50 rounded-lg p-4 space-y-2">
           <div>
             <p className="text-sm text-gray-500">מקבל החבילה</p>
-            <p className="font-semibold text-lg">{order.shippingAddress.fullName || "—"}</p>
+            <p className="font-semibold text-lg">
+              {order.shippingAddress.fullName || "—"}
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">טלפון</p>
-            <p className="font-medium" dir="ltr">{order.shippingAddress.phone || "—"}</p>
+            <p className="font-medium" dir="ltr">
+              {order.shippingAddress.phone || "—"}
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">כתובת</p>
             <p className="text-gray-800">
               {order.shippingAddress.street}, {order.shippingAddress.city}
               <br />
-              {order.shippingAddress.postalCode}, {order.shippingAddress.country}
+              {order.shippingAddress.postalCode},{" "}
+              {order.shippingAddress.country}
             </p>
           </div>
         </div>
@@ -149,7 +147,7 @@ export default function Order() {
           <h2 className="font-bold mb-4">מעקב הזמנה</h2>
           <div className="space-y-3">
             {order.trackingHistory.map((entry: TrackingEntry, i: number) => {
-              const es = statusMap[entry.status] ?? {
+              const es = ORDER_STATUS_MAP[entry.status] ?? {
                 label: entry.status,
                 color: "bg-gray-100 text-gray-800",
               };
@@ -185,12 +183,31 @@ export default function Order() {
       {/* Cancel button */}
       {canCancel && (
         <button
-          onClick={() => cancelOrder(order._id)}
+          onClick={() => setShowConfirm(true)}
           disabled={cancelling}
           className="bg-red-50 text-red-600 border border-red-200 px-6 py-2.5 rounded-lg font-medium hover:bg-red-100 transition disabled:opacity-50"
         >
-          {cancelling ? "מבטל..." : "ביטול הזמנה"}
+          ביטול הזמנה
         </button>
+      )}
+
+      {showConfirm && (
+        <ConfirmDialog
+          title="ביטול הזמנה"
+          message={`האם לבטל את הזמנה ${order.orderNumber}? פעולה זו לא ניתנת לביטול.`}
+          confirmLabel="בטל הזמנה"
+          isLoading={cancelling}
+          onConfirm={async () => {
+            try {
+              await cancelOrder(order._id).unwrap();
+              toast.success("ההזמנה בוטלה בהצלחה");
+              setShowConfirm(false);
+            } catch {
+              toast.error("שגיאה בביטול ההזמנה");
+            }
+          }}
+          onCancel={() => setShowConfirm(false)}
+        />
       )}
     </div>
   );

@@ -9,12 +9,17 @@ const israeliPhoneRegex = /^(\+972|0)([23489]|5[0-9])[0-9]{7}$/;
  */
 export const addressSchema = z.object({
   // פרטי איש קשר - חובה!
-  fullName: z.string()
+  fullName: z
+    .string()
     .min(2, "Full name must be at least 2 characters")
     .max(100, "Full name cannot exceed 100 characters"),
-  phone: z.string()
-    .regex(israeliPhoneRegex, "Please provide a valid Israeli phone number (e.g., 0501234567)"),
-  
+  phone: z
+    .string()
+    .regex(
+      israeliPhoneRegex,
+      "Please provide a valid Israeli phone number (e.g., 0501234567)",
+    ),
+
   // פרטי כתובת
   street: z.string().min(1, "Street is required"),
   city: z.string().min(1, "City is required"),
