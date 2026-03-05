@@ -4,11 +4,7 @@ interface Props {
   showValue?: boolean;
 }
 
-export default function StarRating({
-  rating,
-  size = "sm",
-  showValue = true,
-}: Props) {
+export default function StarRating({ rating, size = "sm", showValue = true }: Props) {
   const sizeClass = size === "md" ? "w-5 h-5" : "w-4 h-4";
 
   return (
@@ -25,10 +21,7 @@ export default function StarRating({
         </svg>
       ))}
       {showValue && (
-        <span
-          className="text-xs text-gray-400 mr-1"
-          aria-label={`דירוג ${rating.toFixed(1)} מתוך 5`}
-        >
+        <span className="text-xs text-gray-400 mr-1" aria-label={`דירוג ${rating.toFixed(1)} מתוך 5`}>
           {rating.toFixed(1)}
         </span>
       )}

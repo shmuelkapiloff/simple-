@@ -56,7 +56,7 @@ export default function Layout() {
             <Link
               to="/cart"
               className="relative text-gray-600 hover:text-primary-600 transition"
-              aria-label={`עגלת קניות${itemCount > 0 ? ` (${itemCount} פריטים)` : ""}`}
+              aria-label={`עגלת קניות${itemCount > 0 ? ` (${itemCount} פריטים)` : ''}`}
             >
               <svg
                 className="w-6 h-6"
@@ -138,11 +138,7 @@ export default function Layout() {
 
           {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-3">
-            <Link
-              to="/cart"
-              className="relative text-gray-600"
-              aria-label={`עגלת קניות${itemCount > 0 ? ` (${itemCount} פריטים)` : ""}`}
-            >
+            <Link to="/cart" className="relative text-gray-600" aria-label={`עגלת קניות${itemCount > 0 ? ` (${itemCount} פריטים)` : ''}`}>
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -166,7 +162,7 @@ export default function Layout() {
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="text-gray-600"
-              aria-label={mobileOpen ? "סגור תפריט" : "פתח תפריט"}
+              aria-label={mobileOpen ? 'סגור תפריט' : 'פתח תפריט'}
               aria-expanded={mobileOpen}
             >
               <svg

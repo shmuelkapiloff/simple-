@@ -21,7 +21,11 @@ router.get("/:addressId", validateAddressId, AddressController.getAddressById);
 router.post("/", AddressController.createAddress);
 
 // PUT /api/addresses/:addressId
-router.put("/:addressId", validateAddressId, AddressController.updateAddress);
+router.put(
+  "/:addressId",
+  validateAddressId,
+  AddressController.updateAddress,
+);
 
 // DELETE /api/addresses/:addressId
 router.delete(
