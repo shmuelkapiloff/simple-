@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { store } from "./store";
 import { ToastProvider } from "./components/Toast";
 import App from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -12,7 +13,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Provider store={store}>
       <BrowserRouter>
         <ToastProvider>
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </ToastProvider>
       </BrowserRouter>
     </Provider>

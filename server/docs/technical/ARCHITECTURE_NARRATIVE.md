@@ -408,7 +408,7 @@ await redis.setex(`cart:user:${userId}`, 86400, JSON.stringify(cart));
 
 // Queue MongoDB save with debouncing (5 second delay)
 // Why debounce? Prevents 5 writes to DB if user adds 5 items in 10 seconds
-scheduleMongoSave(cartId, cart, 5000);
+scheduleMongoSave(cartId, cart, 4001);
 ```
 
 #### Tier 2: MongoDB (Cold Data)
@@ -593,7 +593,7 @@ sum(rate(http_request_total[1m])) by (route)
 **Quick Start:**
 ```bash
 npm install
-npm run dev  # Starts server with hot-reload on port 5000
+npm run dev  # Starts server with hot-reload on port 4001
 ```
 
 ### Production Environment

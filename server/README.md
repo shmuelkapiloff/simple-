@@ -139,7 +139,7 @@ REFRESH_SECRET=your-refresh-secret-change-in-production
 
 # Server
 NODE_ENV=development
-PORT=5000
+PORT=4001
 CLIENT_URL=http://localhost:3000
 
 # Logging
@@ -167,7 +167,7 @@ npm run test:watch
 
 **4. Verify Health**
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:4001/health
 # Response: { "status": "ok", "timestamp": "2024-01-28T..." }
 ```
 
@@ -442,7 +442,7 @@ npm run test -- performance.test.ts
 ### Add New Product
 
 ```bash
-curl -X POST http://localhost:5000/api/admin/products \
+curl -X POST http://localhost:4001/api/admin/products \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -477,7 +477,7 @@ brew install stripe/stripe-cli/stripe
 stripe login
 
 # Start webhook listener
-stripe listen --forward-to localhost:5000/api/payments/webhook
+stripe listen --forward-to localhost:4001/api/payments/webhook
 
 # Trigger test webhook
 stripe trigger payment_intent.succeeded

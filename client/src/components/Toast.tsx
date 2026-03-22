@@ -1,4 +1,11 @@
-import { createContext, useContext, useCallback, useState, useEffect, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 
 // ---------- Types ----------
 type ToastType = "success" | "error" | "info";
@@ -93,7 +100,9 @@ function ToastItem({
       className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg animate-slide-in ${typeStyles[toast.type]}`}
       role="alert"
     >
-      <span className="font-bold text-lg leading-none">{typeIcons[toast.type]}</span>
+      <span className="font-bold text-lg leading-none">
+        {typeIcons[toast.type]}
+      </span>
       <p className="text-sm font-medium flex-1">{toast.message}</p>
       <button
         onClick={() => onClose(toast.id)}

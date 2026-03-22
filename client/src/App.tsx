@@ -3,6 +3,7 @@ import { Suspense, lazy } from "react";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
+import ResetPassword from "./pages/ResetPassword";
 import Product from "./pages/Product";
 import Cart from "./pages/Cart";
 import Spinner from "./components/Spinner";
@@ -30,24 +31,76 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/products/:id" element={<Product />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         {/* Protected - user */}
-        <Route path="/checkout" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><Checkout /></Suspense></ProtectedRoute>} />
-        <Route path="/orders" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><Orders /></Suspense></ProtectedRoute>} />
-        <Route path="/orders/:id" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><Order /></Suspense></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><Profile /></Suspense></ProtectedRoute>} />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageFallback />}>
+                <Checkout />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageFallback />}>
+                <Orders />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders/:id"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageFallback />}>
+                <Order />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageFallback />}>
+                <Profile />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected - admin */}
-        <Route path="/admin" element={<ProtectedRoute adminOnly><Suspense fallback={<PageFallback />}><Admin /></Suspense></ProtectedRoute>} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute adminOnly>
+              <Suspense fallback={<PageFallback />}>
+                <Admin />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
 
         {/* 404 */}
-        <Route path="*" element={
-          <div className="text-center py-20">
-            <p className="text-6xl mb-4">404</p>
-            <h1 className="text-2xl font-bold mb-2">העמוד לא נמצא</h1>
-            <Link to="/" className="text-primary-600 hover:underline">חזרה לדף הבית</Link>
-          </div>
-        } />
+        <Route
+          path="*"
+          element={
+            <div className="text-center py-20">
+              <p className="text-6xl mb-4">404</p>
+              <h1 className="text-2xl font-bold mb-2">העמוד לא נמצא</h1>
+              <Link to="/" className="text-primary-600 hover:underline">
+                חזרה לדף הבית
+              </Link>
+            </div>
+          }
+        />
       </Route>
     </Routes>
   );

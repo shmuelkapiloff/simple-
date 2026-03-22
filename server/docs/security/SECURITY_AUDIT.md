@@ -1,3 +1,4 @@
+
 # Security Audit Checklist
 
 **Date:** January 28, 2026  
@@ -142,21 +143,19 @@ npm audit
 
 **Status:** SECURED
 
-- [x] Password requirements enforced (8+ chars, uppercase, lowercase, digit, special)
-- [x] Refresh tokens stored in httpOnly cookies (not accessible to JavaScript)
+   - [x] Password requirements enforced (6+ chars, uppercase, lowercase, digit, special)
+   - [x] Refresh tokens stored in localStorage (not httpOnly cookies)
 - [x] Session invalidation on password change
 - [x] Password reset tokens expire after 1 hour
 - [x] No default accounts or credentials
 
 **Files:**
 - `auth.validator.ts`: Password strength validation
-- `auth.controller.ts`: Cookie configuration with httpOnly, secure, sameSite
+   - `auth.controller.ts`: Token storage in localStorage
 
-**Recommendations:**
-- ⚠️ Add rate limiting on login endpoint (5 attempts per IP per 15min)
-- ⚠️ Add CAPTCHA after 3 failed login attempts (future)
-
-**Priority:** Medium
+   **Recommendations:**
+   - (rate limiting כבר קיים ברמת כלל השרת)
+   **Priority:** Medium
 
 ---
 
@@ -358,7 +357,7 @@ npm audit
 
 1. **"How do you secure user authentication?"**
    - JWT tokens with bcrypt password hashing
-   - Refresh token rotation with httpOnly cookies
+   - Refresh token rotation with localStorage (not httpOnly cookies)
    - Token expiration (15min access, 7d refresh)
    - Password strength requirements enforced
 

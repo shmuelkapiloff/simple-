@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useLoginMutation, useRegisterMutation } from "../api";
+import {
+  useLoginMutation,
+  useRegisterMutation,
+  useForgotPasswordMutation,
+} from "../api";
 
 // Eye icons for show/hide password
 const EyeIcon = () => (
@@ -63,7 +67,12 @@ export default function AuthModal({
   const [error, setError] = useState("");
   const [login, { isLoading: loginLoading }] = useLoginMutation();
   const [register, { isLoading: regLoading }] = useRegisterMutation();
-  const isLoading = loginLoading || regLoading;
+  const [forgotPassword, { isLoading: forgotLoading }] =
+    useForgotPasswordMutation();
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMsg, setForgotMsg] = useState("");
+  const isLoading = loginLoading || regLoading || forgotLoading;
   const modalRef = useRef<HTMLDivElement>(null);
 
   const reset = useCallback(() => {
@@ -94,7 +103,7 @@ export default function AuthModal({
     if (!isOpen || !modalRef.current) return;
     const modal = modalRef.current;
     const focusable = modal.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
     if (focusable.length > 0) focusable[0].focus();
 
@@ -113,6 +122,18 @@ export default function AuthModal({
     document.addEventListener("keydown", trap);
     return () => document.removeEventListener("keydown", trap);
   }, [isOpen, view]);
+
+  // Forgot password submit
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotMsg("");
+    try {
+      await forgotPassword({ email: forgotEmail }).unwrap();
+      setForgotMsg("קישור לאיפוס סיסמה נשלח לאימייל (אם קיים במערכת)");
+    } catch (err) {
+      setForgotMsg("אירעה שגיאה, נסה שוב");
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -143,7 +164,11 @@ export default function AuthModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40" onClick={close} aria-hidden="true" />
+      <div
+        className="absolute inset-0 bg-black/40"
+        onClick={close}
+        aria-hidden="true"
+      />
 
       {/* Modal */}
       <div
@@ -162,110 +187,162 @@ export default function AuthModal({
           ✕
         </button>
 
-        <h2 id="auth-modal-title" className="text-2xl font-bold text-gray-900 mb-1">
-          {view === "login" ? "התחברות" : "הרשמה"}
+        <h2
+          id="auth-modal-title"
+          className="text-2xl font-bold text-gray-900 mb-1"
+        >
+          {showForgot ? "שחזור סיסמה" : view === "login" ? "התחברות" : "הרשמה"}
         </h2>
-        {message && <p className="text-sm text-primary-600 mb-4">{message}</p>}
+        {message && !showForgot && (
+          <p className="text-sm text-primary-600 mb-4">{message}</p>
+        )}
 
-        {error && (
+        {error && !showForgot && (
           <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3 mb-4">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {view === "register" && (
+        {!showForgot ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {view === "register" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  שם
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  placeholder="השם שלך"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                שם
+                אימייל
               </label>
               <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                placeholder="השם שלך"
-              />
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              אימייל
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              dir="ltr"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-              placeholder="email@example.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              סיסמה
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 dir="ltr"
-                minLength={6}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                placeholder="••••••••"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                placeholder="email@example.com"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
-              </button>
             </div>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                סיסמה
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  dir="ltr"
+                  minLength={6}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                </button>
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 transition disabled:opacity-50"
-          >
-            {isLoading ? "..." : view === "login" ? "התחבר" : "הירשם"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 transition disabled:opacity-50"
+            >
+              {isLoading ? "..." : view === "login" ? "התחבר" : "הירשם"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleForgot} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                אימייל לשחזור סיסמה
+              </label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                required
+                dir="ltr"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                placeholder="email@example.com"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={forgotLoading}
+              className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 transition disabled:opacity-50"
+            >
+              {forgotLoading ? "..." : "שלח קישור לאיפוס"}
+            </button>
+            {forgotMsg && (
+              <div className="text-center text-green-600 text-sm">
+                {forgotMsg}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowForgot(false)}
+              className="block mx-auto mt-2 text-primary-600 text-xs hover:underline"
+            >
+              חזרה להתחברות
+            </button>
+          </form>
+        )}
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          {view === "login" ? (
-            <>
-              אין לך חשבון?{" "}
-              <button
-                onClick={() => {
-                  setView("register");
-                  setError("");
-                }}
-                className="text-primary-600 font-medium hover:underline"
-              >
-                הירשם
-              </button>
-            </>
-          ) : (
-            <>
-              כבר יש לך חשבון?{" "}
-              <button
-                onClick={() => {
-                  setView("login");
-                  setError("");
-                }}
-                className="text-primary-600 font-medium hover:underline"
-              >
-                התחבר
-              </button>
-            </>
-          )}
-        </p>
+        {!showForgot && (
+          <p className="text-center text-sm text-gray-500 mt-4">
+            {view === "login" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  className="text-xs text-primary-600 hover:underline mb-2 block"
+                >
+                  שכחתי סיסמה
+                </button>
+                אין לך חשבון?{" "}
+                <button
+                  onClick={() => {
+                    setView("register");
+                    setError("");
+                  }}
+                  className="text-primary-600 font-medium hover:underline"
+                >
+                  הירשם
+                </button>
+              </>
+            ) : (
+              <>
+                כבר יש לך חשבון?{" "}
+                <button
+                  onClick={() => {
+                    setView("login");
+                    setError("");
+                  }}
+                  className="text-primary-600 font-medium hover:underline"
+                >
+                  התחבר
+                </button>
+              </>
+            )}
+          </p>
+        )}
       </div>
     </div>
   );

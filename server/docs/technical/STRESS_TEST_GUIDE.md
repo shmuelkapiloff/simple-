@@ -701,7 +701,7 @@ npm run test -- custom-stress.test.ts
 ### "Connection refused" Error
 
 ```
-❌ Error: connect ECONNREFUSED 127.0.0.1:5000
+❌ Error: connect ECONNREFUSED 127.0.0.1:4001
 ```
 
 **Solution:**
@@ -710,7 +710,7 @@ npm run test -- custom-stress.test.ts
 npm run dev
 
 # Or check if server is running
-curl http://localhost:5000/health
+curl http://localhost:4001/health
 ```
 
 ### "Too many open files" Error

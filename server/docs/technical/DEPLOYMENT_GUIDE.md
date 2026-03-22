@@ -130,7 +130,7 @@ db.carts.getIndexes()
 ```env
 # Application
 NODE_ENV=production
-PORT=5000
+PORT=4001
 LOG_LEVEL=info
 
 # Database
@@ -239,10 +239,10 @@ COPY --from=builder /app/dist ./dist
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+  CMD node -e "require('http').get('http://localhost:4001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 # Expose port
-EXPOSE 5000
+EXPOSE 4001
 
 # Start application
 CMD ["node", "dist/server.js"]
@@ -258,7 +258,7 @@ services:
   api:
     build: .
     ports:
-      - "5000:5000"
+      - "4001:4001"
     environment:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongo:27017/simple-shop
@@ -445,7 +445,7 @@ server {
     server_name api.shop.example.com;
 
     location / {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://localhost:4001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -615,7 +615,7 @@ maxmemory-policy allkeys-lru # Remove least recently used
 
 # Cluster (for high availability)
 cluster-enabled yes
-cluster-node-timeout 5000
+cluster-node-timeout 4001
 ```
 
 ### Query Optimization

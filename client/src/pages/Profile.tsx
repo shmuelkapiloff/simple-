@@ -67,6 +67,7 @@ function ProfileTab() {
   const [showPw, setShowPw] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
 
   const startEdit = () => {
     setName(user?.name ?? "");
@@ -85,14 +86,20 @@ function ProfileTab() {
 
   const handleChangePw = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newPw !== confirmPw) {
+      toast.error("הסיסמאות לא תואמות");
+      return;
+    }
     try {
       await changePassword({
         currentPassword: currentPw,
         newPassword: newPw,
+        confirmPassword: confirmPw,
       }).unwrap();
       toast.success("הסיסמה שונתה בהצלחה");
       setCurrentPw("");
       setNewPw("");
+      setConfirmPw("");
       setShowPw(false);
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string } };
@@ -200,6 +207,16 @@ function ProfileTab() {
               placeholder="סיסמה חדשה"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none"
             />
+            <input
+              type="password"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+              required
+              dir="ltr"
+              minLength={6}
+              placeholder="אימות סיסמה חדשה"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 outline-none"
+            />
             <div className="flex gap-3">
               <button
                 type="submit"
@@ -231,7 +248,8 @@ function AddressesTab() {
   const [createAddress, { isLoading: creating }] = useCreateAddressMutation();
   const [updateAddress, { isLoading: updatingAddr }] =
     useUpdateAddressMutation();
-  const [deleteAddress, { isLoading: deletingAddr }] = useDeleteAddressMutation();
+  const [deleteAddress, { isLoading: deletingAddr }] =
+    useDeleteAddressMutation();
   const [setDefault] = useSetDefaultAddressMutation();
   const toast = useToast();
 

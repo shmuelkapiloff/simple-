@@ -2,9 +2,15 @@
 // Shared status maps & constants used across multiple pages
 // ============================================================
 
-export const ORDER_STATUS_MAP: Record<string, { label: string; color: string }> = {
+export const ORDER_STATUS_MAP: Record<
+  string,
+  { label: string; color: string }
+> = {
   pending: { label: "ממתין", color: "bg-yellow-100 text-yellow-800" },
-  pending_payment: { label: "ממתין לתשלום", color: "bg-orange-100 text-orange-800" },
+  pending_payment: {
+    label: "ממתין לתשלום",
+    color: "bg-orange-100 text-orange-800",
+  },
   confirmed: { label: "אושר", color: "bg-blue-100 text-blue-800" },
   processing: { label: "בטיפול", color: "bg-purple-100 text-purple-800" },
   shipped: { label: "נשלח", color: "bg-indigo-100 text-indigo-800" },
@@ -12,7 +18,10 @@ export const ORDER_STATUS_MAP: Record<string, { label: string; color: string }> 
   cancelled: { label: "בוטל", color: "bg-red-100 text-red-800" },
 };
 
-export const PAYMENT_STATUS_MAP: Record<string, { label: string; color: string }> = {
+export const PAYMENT_STATUS_MAP: Record<
+  string,
+  { label: string; color: string }
+> = {
   pending: { label: "ממתין", color: "text-yellow-600" },
   paid: { label: "שולם", color: "text-green-600" },
   failed: { label: "נכשל", color: "text-red-600" },

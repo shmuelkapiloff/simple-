@@ -66,7 +66,12 @@ const baseQueryWithReauth: BaseQueryFn<
       );
 
       if (refreshResult.data) {
-        const data = (refreshResult.data as ApiResponse<{ token: string; refreshToken: string }>).data;
+        const data = (
+          refreshResult.data as ApiResponse<{
+            token: string;
+            refreshToken: string;
+          }>
+        ).data;
         localStorage.setItem("token", data.token);
         localStorage.setItem("refreshToken", data.refreshToken);
         // Retry original request with new token
@@ -128,19 +133,23 @@ export const authApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Auth"],
     }),
     changePassword: build.mutation<ApiResponse<null>, ChangePasswordRequest>({
-      query: (body) => ({ url: "/auth/change-password", method: "POST", body }),
+      query: ({ currentPassword, newPassword, confirmPassword }) => ({
+        url: "/auth/change-password",
+        method: "POST",
+        body: { currentPassword, newPassword, confirmPassword },
+      }),
     }),
     forgotPassword: build.mutation<ApiResponse<null>, { email: string }>({
       query: (body) => ({ url: "/auth/forgot-password", method: "POST", body }),
     }),
     resetPassword: build.mutation<
       ApiResponse<null>,
-      { token: string; newPassword: string }
+      { token: string; newPassword: string; confirmPassword: string }
     >({
-      query: ({ token, ...body }) => ({
+      query: ({ token, newPassword, confirmPassword }) => ({
         url: `/auth/reset-password/${token}`,
         method: "POST",
-        body,
+        body: { password: newPassword, confirmPassword },
       }),
     }),
   }),
@@ -151,10 +160,7 @@ export const authApi = apiSlice.injectEndpoints({
 // ============================================================
 export const productsApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
-    getProducts: build.query<
-      ApiResponse<Product[]>,
-      ProductsQuery | void
-    >({
+    getProducts: build.query<ApiResponse<Product[]>, ProductsQuery | void>({
       query: (params) => {
         const q = params
           ? "?" +
@@ -377,6 +383,8 @@ export const {
   useLogoutMutation,
   useGetProfileQuery,
   useUpdateProfileMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
   useChangePasswordMutation,
 } = authApi;
 

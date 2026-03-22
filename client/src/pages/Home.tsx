@@ -145,6 +145,26 @@ export default function Home() {
           </div>
         </>
       )}
+
+      {/* Pagination Controls */}
+      {products.length > 0 && (
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <button
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            עמוד קודם
+          </button>
+          <span className="font-bold">עמוד {page}</span>
+          <button
+            className="px-4 py-2 bg-gray-200 rounded"
+            onClick={() => setPage((p) => p + 1)}
+          >
+            עמוד הבא
+          </button>
+        </div>
+      )}
     </div>
   );
 }
