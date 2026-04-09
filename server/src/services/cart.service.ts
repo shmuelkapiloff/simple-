@@ -131,14 +131,18 @@ export class CartService {
     quantity: number,
     userId: string,
   ): Promise<ICart> {
-    // Validate product & stock
-    const product = await ProductModel.findById(productId);
+    // Fetch product and cart in parallel — they are independent
+    const [product, existingCart] = await Promise.all([
+      ProductModel.findById(productId),
+      CartModel.findOne({ userId }),
+    ]);
+
     if (!product) {
       throw new NotFoundError("Product");
     }
 
     // Find or create cart
-    let cart = await CartModel.findOne({ userId });
+    let cart = existingCart;
 
     if (!cart) {
       cart = new CartModel({
@@ -183,8 +187,11 @@ export class CartService {
     // Save to MongoDB (source of truth)
     await cart.save();
 
-    // Return populated version & update cache
-    return (await this.fetchAndCache(userId))!;
+    // The pre-save hook already populated items.product to calculate total.
+    // Reuse the in-memory populated document instead of a redundant DB round-trip.
+    const cartObj = cart.toObject();
+    await this.cacheSet(this.cacheKey(userId), cartObj);
+    return cartObj as ICart;
   }
 
   /** Remove item from cart */
@@ -200,7 +207,9 @@ export class CartService {
     ) as any;
 
     await cart.save();
-    return this.fetchAndCache(userId);
+    const cartObj = cart.toObject();
+    await this.cacheSet(this.cacheKey(userId), cartObj);
+    return cartObj as ICart;
   }
 
   /** Update item quantity */
@@ -237,7 +246,9 @@ export class CartService {
 
     cart.items[idx].quantity = quantity;
     await cart.save();
-    return this.fetchAndCache(userId);
+    const cartObj = cart.toObject();
+    await this.cacheSet(this.cacheKey(userId), cartObj);
+    return cartObj as ICart;
   }
 
   /** Clear cart */

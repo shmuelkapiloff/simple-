@@ -60,21 +60,6 @@ export class CartController {
 
     const cart = await CartService.addToCart(productId, quantity, userId);
 
-    // 🔍 Debug: log the response
-    logger.debug(
-      `Cart response: ${cart.items.length} items, total: ${cart.total}`,
-    );
-    if (cart.items.length > 0) {
-      const firstItem = cart.items[0];
-      logger.debug(
-        `First item: ${JSON.stringify({
-          productId: firstItem.product,
-          hasName: !!(firstItem.product as any)?.name,
-          hasPrice: !!(firstItem.product as any)?.price,
-        })}`,
-      );
-    }
-
     sendSuccess(res, cart, "Item added to cart");
   });
 
