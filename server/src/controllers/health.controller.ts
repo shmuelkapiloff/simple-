@@ -14,7 +14,7 @@ export class HealthController {
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const recentWebhooks = await WebhookEventModel.countDocuments({
-      createdAt: { $gte: last24h },
+      processedAt: { $gte: last24h },
     });
     const failedWebhooks = await FailedWebhookModel.countDocuments({
       status: "pending",

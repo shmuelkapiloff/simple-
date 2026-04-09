@@ -9,6 +9,8 @@ export interface IWebhookEvent extends Document {
   provider: string;
   processedAt: Date;
   metadata?: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const WebhookEventSchema = new Schema<IWebhookEvent>(
