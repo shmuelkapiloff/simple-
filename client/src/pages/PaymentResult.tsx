@@ -23,8 +23,8 @@ export default function PaymentResult() {
     pollingInterval: POLL_INTERVAL_MS,
   });
 
-  const paymentStatus = paymentData?.data?.payment?.status as string | undefined;
-  const confirmed = paymentStatus === "succeeded";
+  const paymentStatus = paymentData?.data?.paymentStatus;
+  const confirmed = paymentStatus === "succeeded" || paymentData?.data?.orderPaymentStatus === "paid";
   const failed = paymentStatus === "failed" || paymentStatus === "canceled";
 
   // Stop polling once the payment is resolved

@@ -119,10 +119,12 @@ export const authApi = apiSlice.injectEndpoints({
     }),
 
     // Google OAuth login
-    googleLogin: build.mutation<ApiResponse<AuthResponse>, { idToken: string }>({
-      query: (body) => ({ url: "/auth/google", method: "POST", body }),
-      invalidatesTags: ["Auth", "Cart"],
-    }),
+    googleLogin: build.mutation<ApiResponse<AuthResponse>, { idToken: string }>(
+      {
+        query: (body) => ({ url: "/auth/google", method: "POST", body }),
+        invalidatesTags: ["Auth", "Cart"],
+      },
+    ),
     logout: build.mutation<ApiResponse<null>, void>({
       query: () => ({ url: "/auth/logout", method: "POST" }),
       invalidatesTags: ["Auth", "Cart", "Orders", "Addresses"],
@@ -253,7 +255,10 @@ export const ordersApi = apiSlice.injectEndpoints({
       query: (id) => ({ url: `/orders/${id}/cancel`, method: "POST" }),
       invalidatesTags: ["Orders"],
     }),
-    getPaymentStatus: build.query<ApiResponse<{ payment: Payment }>, string>({
+    getPaymentStatus: build.query<
+      ApiResponse<{ paymentStatus: string; orderPaymentStatus: string }>,
+      string
+    >({
       query: (orderId) => `/payments/${orderId}/status`,
       providesTags: ["Orders"],
     }),
@@ -378,7 +383,6 @@ export const adminApi = apiSlice.injectEndpoints({
     }),
   }),
 });
-
 
 // ============================================================
 // Exported hooks

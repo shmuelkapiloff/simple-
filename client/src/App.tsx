@@ -47,6 +47,14 @@ export default function App() {
           }
         />
         <Route
+          path="/payment-result"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <PaymentResult />
+            </Suspense>
+          }
+        />
+        <Route
           path="/orders"
           element={
             <ProtectedRoute>
