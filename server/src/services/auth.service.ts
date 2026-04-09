@@ -1,3 +1,4 @@
+
 import {
   UserModel,
   CreateUserInput,
@@ -24,7 +25,40 @@ const JWT_EXPIRE = process.env.JWT_EXPIRE || JWT_EXPIRATION;
 const JWT_REFRESH_EXPIRE =
   process.env.JWT_REFRESH_EXPIRE || JWT_REFRESH_EXPIRATION;
 
+// ── Google OAuth helpers (used by googleAuth.service.ts) ──────────────────
+export async function getUserByEmail(email: string) {
+  return UserModel.findOne({ email: email.toLowerCase() });
+}
+
+export async function createUser(
+  data: Partial<CreateUserInput & { googleId?: string; avatar?: string; name?: string }>,
+) {
+  const user = await UserModel.create({
+    ...data,
+    email: data.email?.toLowerCase(),
+    isActive: true,
+  });
+  return user;
+}
+
+export async function updateUserGoogleId(userId: string, googleId: string) {
+  return UserModel.findByIdAndUpdate(userId, { googleId }, { new: true });
+}
+
 export class AuthService {
+  // ── Google OAuth: public wrappers for private token/sanitize methods ────
+  static createToken(userId: string, tokenVersion: number = 0): string {
+    return this.generateToken(userId, tokenVersion);
+  }
+
+  static createRefreshToken(userId: string, tokenVersion: number = 0): string {
+    return this.generateRefreshToken(userId, tokenVersion);
+  }
+
+  static sanitizeUserPublic(user: any) {
+    return this.sanitizeUser(user);
+  }
+
   /**
    * ==========================================
    * 🔓 PUBLIC METHODS (No auth required)
@@ -281,54 +315,6 @@ export class AuthService {
   }
 
   /**
-   * ==========================================
-   * 🔐 PROTECTED METHODS (Auth required)
-   * ==========================================
-   */
-
-  /**
-   * Verify JWT token
-   */
-  static async verifyToken(token: string) {
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as {
-        userId: string;
-        tokenVersion?: number;
-      };
-      const user = await UserModel.findById(decoded.userId);
-
-      if (!user || !user.isActive) {
-        throw new Error("Invalid token");
-      }
-
-      // ✨ Token Version check: if user logged out, version incremented and old tokens are invalid
-      if (
-        decoded.tokenVersion !== undefined &&
-        decoded.tokenVersion !== user.tokenVersion
-      ) {
-        throw new Error("Token revoked");
-      }
-
-      return this.sanitizeUser(user);
-    } catch (error) {
-      throw new Error("Invalid token");
-    }
-  }
-
-  /**
-   * Get user profile
-   */
-  static async getProfile(userId: string) {
-    const user = await UserModel.findById(userId);
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    return this.sanitizeUser(user);
-  }
-
-  /**
    * Update user profile
    */
   static async updateProfile(userId: string, data: UpdateProfileInput) {
@@ -405,7 +391,55 @@ export class AuthService {
 
   /**
    * ==========================================
-   * 🛠️ HELPER METHODS
+   * � PROTECTED METHODS (Auth required)
+   * ==========================================
+   */
+
+  /**
+   * Verify JWT token
+   */
+  static async verifyToken(token: string) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        userId: string;
+        tokenVersion?: number;
+      };
+      const user = await UserModel.findById(decoded.userId);
+
+      if (!user || !user.isActive) {
+        throw new Error("Invalid token");
+      }
+
+      // ✨ Token Version check: if user logged out, version incremented and old tokens are invalid
+      if (
+        decoded.tokenVersion !== undefined &&
+        decoded.tokenVersion !== user.tokenVersion
+      ) {
+        throw new Error("Token revoked");
+      }
+
+      return this.sanitizeUser(user);
+    } catch (error) {
+      throw new Error("Invalid token");
+    }
+  }
+
+  /**
+   * Get user profile
+   */
+  static async getProfile(userId: string) {
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * ==========================================
+   * �🛠️ HELPER METHODS
    * ==========================================
    */
 
@@ -541,9 +575,8 @@ export class AuthService {
       ) {
         throw new UnauthorizedError("Refresh token revoked");
       }
-
       // Generate new access token with current version
-      return this.generateToken(decoded.userId, user.tokenVersion);
+      return this.generateToken(user._id, user.tokenVersion);
     } catch (error: any) {
       throw new UnauthorizedError("Invalid or expired refresh token");
     }

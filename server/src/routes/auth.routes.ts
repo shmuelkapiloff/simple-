@@ -5,6 +5,7 @@ import { authRateLimiter } from "../middlewares/rate-limiter.middleware";
 
 const router = Router();
 
+
 // ── Public routes ───────────────────────────────────────────────────────
 router.post("/register", authRateLimiter, AuthController.register);
 router.post("/login", authRateLimiter, AuthController.login);
@@ -15,6 +16,9 @@ router.post(
   AuthController.resetPassword,
 );
 router.post("/refresh", authRateLimiter, AuthController.refreshToken);
+
+// Google OAuth
+router.post("/google", authRateLimiter, AuthController.googleLogin);
 
 // ── Protected routes ────────────────────────────────────────────────────
 router.get("/verify", authenticate, AuthController.verify);

@@ -12,10 +12,11 @@
     "make-admin": "npm run make-admin --prefix server"
   },
   "dependencies": {
-    "concurrently": "^9.0.1"
+    "concurrently": "^9.0.1",
+    "google-auth-library": "^10.6.2"
   },
   "engines": {
-    "node":  "24.x",
+    "node": "24.x",
     "npm": "^9.0.0"
   },
   "author": "",

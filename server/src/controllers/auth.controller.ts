@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
+import { findOrCreateGoogleUser } from "../services/googleAuth.service";
 import {
   registerSchema,
   loginSchema,
@@ -15,6 +16,31 @@ import {
 } from "../utils/asyncHandler";
 
 export class AuthController {
+  /** POST /api/auth/google */
+  static googleLogin = asyncHandler(async (req: Request, res: Response) => {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: "Google idToken is required" });
+    }
+    // אימות וקישור/יצירת משתמש
+    const user = await findOrCreateGoogleUser(idToken);
+    // בדיקת משתמש חסום/לא פעיל
+    if (!user || user.isActive === false) {
+      return res.status(403).json({ success: false, message: "User is blocked or inactive" });
+    }
+    // יצירת JWT פנימי
+    const token = AuthService.createToken(user._id, user.tokenVersion);
+    const refreshToken = AuthService.createRefreshToken(user._id, user.tokenVersion);
+    res.status(200).json({
+      success: true,
+      data: {
+        user: AuthService.sanitizeUserPublic(user),
+        token,
+        refreshToken,
+      },
+      message: "Google login successful",
+    });
+  });
   /** POST /api/auth/register */
   static register = asyncHandler(async (req: Request, res: Response) => {
     const validated = registerSchema.parse(req.body);

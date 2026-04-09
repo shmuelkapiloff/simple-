@@ -176,6 +176,60 @@ Content-Type: application/json
 **Body:** `{ "password": "newStrongPass123" }`  
 **תיאור:** מחליף סיסמה באמצעות token תקף
 
+### 🟦 POST `/auth/google`
+```http
+POST /api/auth/google
+Content-Type: application/json
+```
+**Body:** `{ "idToken": "<Google ID Token>" }`
+
+**תיאור:**
+- אימות משתמש באמצעות Google OAuth 2.0.
+- אם קיים משתמש עם אותו אימייל: קישור לחשבון (אם לא קיים googleId).
+- אם לא קיים: יצירת משתמש חדש.
+- משתמש חסום/לא פעיל לא יוכל להתחבר.
+
+**Response Success:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "googleId": "1234567890abcdef",
+      "avatar": "https://lh3.googleusercontent.com/..."
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "..."
+  },
+  "message": "Google login successful"
+}
+```
+
+**Response Error (403):**
+```json
+{
+  "success": false,
+  "message": "User is blocked or inactive"
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "success": false,
+  "message": "Google idToken is required"
+}
+```
+
+**הערות:**
+- יש לשלוח את ה-idToken שמתקבל מהלקוח (Google Sign-In) ב-body.
+- במידה והמשתמש חסום/לא פעיל, תוחזר שגיאה 403.
+- במידה וה-idToken לא תקין, תוחזר שגיאה 400.
+- קישור לחשבון קיים מתבצע לפי אימייל בלבד.
+
 ---
 
 ## 🛒 **Cart Endpoints** (⚠️ **דורש אימות - Authentication Required**)

@@ -2,6 +2,9 @@
 // Shared status maps & constants used across multiple pages
 // ============================================================
 
+// Google OAuth Client ID (from .env, never hardcoded)
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 export const ORDER_STATUS_MAP: Record<
   string,
   { label: string; color: string }

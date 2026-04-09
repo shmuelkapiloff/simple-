@@ -117,6 +117,12 @@ export const authApi = apiSlice.injectEndpoints({
       query: () => "/auth/verify",
       providesTags: ["Auth"],
     }),
+
+    // Google OAuth login
+    googleLogin: build.mutation<ApiResponse<AuthResponse>, { idToken: string }>({
+      query: (body) => ({ url: "/auth/google", method: "POST", body }),
+      invalidatesTags: ["Auth", "Cart"],
+    }),
     logout: build.mutation<ApiResponse<null>, void>({
       query: () => ({ url: "/auth/logout", method: "POST" }),
       invalidatesTags: ["Auth", "Cart", "Orders", "Addresses"],
@@ -373,6 +379,7 @@ export const adminApi = apiSlice.injectEndpoints({
   }),
 });
 
+
 // ============================================================
 // Exported hooks
 // ============================================================
@@ -386,6 +393,7 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useChangePasswordMutation,
+  useGoogleLoginMutation,
 } = authApi;
 
 export const {

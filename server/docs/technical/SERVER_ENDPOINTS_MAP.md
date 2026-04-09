@@ -719,3 +719,75 @@ flowchart TD
 - 📖 תיעוד API למפתחים
 - 🧪 כתיבת טסטים
 - 👥 Onboarding לצוות חדש
+
+---
+
+### POST /api/auth/google
+
+**📝 תיאור:** התחברות/קישור משתמש באמצעות Google OAuth 2.0
+
+**🔒 Security:** אימות מול Google, קישור לפי אימייל, מניעת כניסה למשתמש חסום
+
+```mermaid
+flowchart TD
+    Request([POST /api/auth/google]) --> Middleware1[Parse JSON body]
+    Middleware1 --> RateLimit{Rate limit check}
+    RateLimit -->|Exceeded| Return429[❌ 429 Too Many Requests]
+    RateLimit -->|OK| RouteHandler[authRoutes.post /google]
+    RouteHandler --> Controller[AuthController.googleLogin]
+    Controller --> ValidateInput{Check idToken}
+    ValidateInput -->|Missing| Return400[❌ 400: Google idToken is required]
+    ValidateInput -->|Valid| CallService[findOrCreateGoogleUser]
+    CallService --> UserFound{User found by email?}
+    UserFound -->|No| CreateUser[Create new user]
+    UserFound -->|Yes| LinkGoogleId{Has googleId?}
+    LinkGoogleId -->|No| UpdateUser[Update user with googleId]
+    LinkGoogleId -->|Yes| CheckActive{User is active?}
+    CreateUser --> CheckActive
+    UpdateUser --> CheckActive
+    CheckActive -->|No| Return403[❌ 403: User is blocked or inactive]
+    CheckActive -->|Yes| GenerateJWT[Generate JWT + refreshToken]
+    GenerateJWT --> PrepareResponse[Prepare response object]
+    PrepareResponse --> Return200[✅ 200: Google login successful]
+    style Request fill:#e3f2fd
+    style Return200 fill:#c8e6c9
+    style Return429 fill:#ffcdd2
+    style Return400 fill:#ffcdd2
+    style Return403 fill:#ffcdd2
+    style CreateUser fill:#fff9c4
+    style UpdateUser fill:#fff9c4
+```
+
+📥 **Request Example:**
+```json
+{
+  "idToken": "<Google ID Token>"
+}
+```
+
+✅ **Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "googleId": "1234567890abcdef",
+      "avatar": "https://lh3.googleusercontent.com/..."
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "..."
+  },
+  "message": "Google login successful"
+}
+```
+
+❌ **Possible Errors:**
+| Status | Message | Cause |
+|--------|---------|-------|
+| 400 | Google idToken is required | חסר טוקן מהלקוח |
+| 403 | User is blocked or inactive | המשתמש חסום/לא פעיל |
+| 400 | Invalid Google token | טוקן לא תקין |
+| 429 | Too Many Requests | יותר מדי ניסיונות |

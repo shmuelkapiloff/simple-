@@ -18,7 +18,7 @@ let mongoServer: MongoMemoryServer;
 // ── Setup: start in-memory MongoDB ──────────────────────────────────────
 beforeAll(async () => {
   logger.info("🚀 Jest setup — starting in-memory MongoDB…");
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create({ binary: { version: '4.4.10' } });
   const uri = mongoServer.getUri();
   await mongoose.connect(uri);
   logger.info("✅ In-memory MongoDB connected");

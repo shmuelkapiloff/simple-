@@ -18,6 +18,7 @@ server/dist/
 client/dist/
 server/build/
 client/build/
+server/server/
 
 # Environment variables
 .env

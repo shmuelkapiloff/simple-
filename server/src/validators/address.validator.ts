@@ -11,6 +11,7 @@ export const addressSchema = z.object({
   // פרטי איש קשר - חובה!
   fullName: z
     .string()
+    
     .min(2, "Full name must be at least 2 characters")
     .max(100, "Full name cannot exceed 100 characters"),
   phone: z

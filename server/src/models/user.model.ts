@@ -26,6 +26,9 @@ export interface IUser extends Document {
   // Token version for instant logout ⬅️ חדש - ביטול tokens
   tokenVersion: number;
 
+  // Google OAuth
+  googleId?: string | null;
+
   // Instance methods
   comparePassword(candidatePassword: string): Promise<boolean>;
   toJSON(): any;
@@ -111,6 +114,14 @@ const UserSchema = new Schema<IUser>(
     tokenVersion: {
       type: Number,
       default: 0,
+    },
+
+    // ⬅️ חדש - Google OAuth
+    googleId: {
+      type: String,
+      default: null,
+      index: true,
+      sparse: true,
     },
   },
   {

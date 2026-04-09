@@ -3,9 +3,19 @@ import {
   useLoginMutation,
   useRegisterMutation,
   useForgotPasswordMutation,
+  useGoogleLoginMutation,
 } from "../api";
+import { GOOGLE_CLIENT_ID } from "../constants";
 
 // Eye icons for show/hide password
+
+// Add Google type to window
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 const EyeIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -60,6 +70,7 @@ export default function AuthModal({
   close,
   setView,
 }: Props) {
+  if (!isOpen) return null;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -72,9 +83,14 @@ export default function AuthModal({
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMsg, setForgotMsg] = useState("");
-  const isLoading = loginLoading || regLoading || forgotLoading;
+  const [googleLogin, { isLoading: googleLoading }] = useGoogleLoginMutation();
+  const isLoading = loginLoading || regLoading || forgotLoading || googleLoading;
   const modalRef = useRef<HTMLDivElement>(null);
 
+
+
+
+  // Only declare reset ONCE, before use
   const reset = useCallback(() => {
     setEmail("");
     setPassword("");
@@ -82,6 +98,32 @@ export default function AuthModal({
     setError("");
     setShowPassword(false);
   }, []);
+
+  // Google login handler (now after reset)
+  const handleGoogleLogin = useCallback(() => {
+    if (!window.google || !GOOGLE_CLIENT_ID) {
+      setError("Google login לא זמין כרגע");
+      return;
+    }
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response: any) => {
+        setError("");
+        try {
+          const result = await googleLogin({ idToken: response.credential }).unwrap();
+          if (result.data) {
+            localStorage.setItem("token", result.data.token);
+            localStorage.setItem("refreshToken", result.data.refreshToken);
+          }
+          reset();
+          close();
+        } catch (err: any) {
+          setError(err?.data?.message || "אירעה שגיאה, נסה שוב");
+        }
+      },
+    });
+    window.google.accounts.id.prompt();
+  }, [googleLogin, close, reset]);
 
   // Reset form when switching views
   useEffect(() => {
@@ -135,7 +177,7 @@ export default function AuthModal({
     }
   };
 
-  if (!isOpen) return null;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,6 +202,20 @@ export default function AuthModal({
       setError(apiErr.data?.message || "אירעה שגיאה, נסה שוב");
     }
   };
+
+  // Load Google Identity Services script
+  useEffect(() => {
+    if (!isOpen) return;
+    if (document.getElementById("google-identity-script")) return;
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.id = "google-identity-script";
+    document.body.appendChild(script);
+    return () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+  }, [isOpen]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
@@ -204,7 +260,8 @@ export default function AuthModal({
         )}
 
         {!showForgot ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <>
+            <form onSubmit={handleSubmit} className="space-y-4">
             {view === "register" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -267,6 +324,19 @@ export default function AuthModal({
               {isLoading ? "..." : view === "login" ? "התחבר" : "הירשם"}
             </button>
           </form>
+          {/* Google Login Button */}
+          {view === "login" && (
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 mt-2 bg-white hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5" />
+              <span>התחבר עם Google</span>
+            </button>
+          )}
+          </>
         ) : (
           <form onSubmit={handleForgot} className="space-y-4">
             <div>

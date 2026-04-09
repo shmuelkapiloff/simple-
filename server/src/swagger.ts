@@ -420,6 +420,59 @@ const definition = {
       },
     },
 
+    "/api/auth/google": {
+      post: {
+        tags: ["Authentication"],
+        summary: "Login or link account with Google OAuth 2.0",
+        description:
+          "Authenticate user using Google ID token. If a user with the same email exists, link the Google account. If not, create a new user. Blocked/inactive users cannot log in.",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["idToken"],
+                properties: {
+                  idToken: {
+                    type: "string",
+                    description: "Google ID token from client",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: successEnvelope(
+            {
+              type: "object",
+              properties: {
+                user: {
+                  allOf: [
+                    { $ref: "#/components/schemas/User" },
+                    {
+                      type: "object",
+                      properties: {
+                        googleId: { type: "string", description: "Google user ID" },
+                        avatar: { type: "string", description: "Google profile picture URL" },
+                      },
+                    },
+                  ],
+                },
+                token: { type: "string", description: "JWT access token" },
+                refreshToken: { type: "string", description: "JWT refresh token" },
+              },
+            },
+            "Google login successful",
+          ),
+          400: errorResponse(400, "Google idToken is required or invalid"),
+          403: errorResponse(403, "User is blocked or inactive"),
+          429: errorResponse(429, "Too Many Requests"),
+        },
+      },
+    },
     "/api/auth/login": {
       post: {
         tags: ["Authentication"],
