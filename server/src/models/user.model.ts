@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 export interface IUser extends Document {
   _id: string;
   email: string;
-  password: string;
+  password?: string;
   name: string;
   role: "user" | "admin";
 
@@ -51,7 +51,10 @@ const UserSchema = new Schema<IUser>(
 
     password: {
       type: String,
-      required: [true, "Password is required"],
+      // Required only for non-Google users
+      required: function (this: any) {
+        return !this.googleId;
+      },
       minlength: [6, "Password must be at least 6 characters long"],
       select: false, // Don't include password in queries by default
     },
@@ -148,8 +151,8 @@ UserSchema.index({ resetPasswordToken: 1 }); // ⬅️ חדש - לאיפוס ס�
 
 // Pre-save middleware to hash password
 UserSchema.pre("save", async function (next) {
-  // Only hash password if it's modified
-  if (!this.isModified("password")) {
+  // Skip if password not modified or not set (Google OAuth users)
+  if (!this.isModified("password") || !this.password) {
     return next();
   }
 
@@ -167,6 +170,7 @@ UserSchema.pre("save", async function (next) {
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string,
 ): Promise<boolean> {
+  if (!this.password) return false; // Google-only accounts have no password
   try {
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
