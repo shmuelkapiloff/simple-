@@ -31,7 +31,6 @@ export async function findOrCreateGoogleUser(idToken: string) {
       name: payload.name,
       googleId: payload.sub!,
       avatar: payload.picture,
-      // ...שדות נוספים
     });
   }
   return user;

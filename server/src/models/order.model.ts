@@ -51,10 +51,10 @@ export interface IOrder extends Document {
     postalCode: string;
     country: string;
   };
-  trackingHistory: ITrackingHistory[]; // ⬅️ חדש
-  estimatedDelivery?: Date; // ⬅️ חדש
+  trackingHistory: ITrackingHistory[];
+  estimatedDelivery?: Date;
   notes?: string;
-  // ⬅️ חדש - Payment Verification
+  // Payment verification
   paymentIntentId?: string;
   paymentIntentStripeId?: string; // Real Stripe payment_intent ID (pi_...)
   paymentVerifiedAt?: Date;
@@ -177,7 +177,7 @@ const OrderSchema = new Schema<IOrder>(
       },
     },
 
-    // ⬅️ חדש - Tracking History
+    // Tracking History
     trackingHistory: [
       {
         status: {
@@ -204,7 +204,7 @@ const OrderSchema = new Schema<IOrder>(
       },
     ],
 
-    // ⬅️ חדש - Estimated Delivery
+    // Estimated delivery date
     estimatedDelivery: {
       type: Date,
     },
@@ -214,14 +214,14 @@ const OrderSchema = new Schema<IOrder>(
       maxlength: [500, "Notes cannot exceed 500 characters"],
     },
 
-    // ⬅️ חדש - Payment Verification Fields
+    // Payment verification fields
     paymentIntentId: {
       type: String,
       index: true,
       description: "Stripe checkout session ID (cs_test_...)",
     },
 
-    // ⬅️ חדש - Real Stripe Payment Intent ID
+    // Real Stripe Payment Intent ID (pi_...)
     paymentIntentStripeId: {
       type: String,
       index: true,
@@ -238,7 +238,7 @@ const OrderSchema = new Schema<IOrder>(
       enum: ["stripe", "paypal", "mock"],
     },
 
-    // ⬅️ חדש - Fulfillment Flag (prevents double stock reduction)
+    // Fulfillment flag (prevents double stock reduction)
     fulfilled: {
       type: Boolean,
       default: false,
@@ -267,7 +267,7 @@ const OrderSchema = new Schema<IOrder>(
 OrderSchema.index({ user: 1, createdAt: -1 });
 OrderSchema.index({ status: 1, createdAt: -1 });
 
-// ⬅️ חדש - Pre-save middleware: add initial tracking entry
+// Pre-save middleware: add initial tracking entry
 OrderSchema.pre("save", function (next) {
   if (this.isNew && this.trackingHistory.length === 0) {
     this.trackingHistory.push({

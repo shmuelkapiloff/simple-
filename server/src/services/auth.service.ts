@@ -89,9 +89,8 @@ export class AuthService {
       email: userData.email.toLowerCase(),
     });
 
-    // Generate short-lived access token (15 min)
+    // Generate access token (7d) + refresh token (7d)
     const token = this.generateToken(user._id, user.tokenVersion);
-    // Generate long-lived refresh token (7 days) - stored in httpOnly cookie or secure storage
     const refreshToken = this.generateRefreshToken(user._id, user.tokenVersion);
 
     // Update last login
@@ -100,8 +99,8 @@ export class AuthService {
 
     return {
       user: this.sanitizeUser(user),
-      token, // ⚠️ Short-lived (15 min) - send to client as access token
-      refreshToken, // ⚠️ Long-lived (7 days) - send in httpOnly cookie (recommended) or secure storage
+      token,
+      refreshToken,
     };
   }
 
@@ -190,9 +189,8 @@ export class AuthService {
     user.failedLoginAttempts = 0;
     user.lockedUntil = null;
 
-    // Generate short-lived access token (15 min)
+    // Generate access token (7d) + refresh token (7d)
     const token = this.generateToken(user._id, user.tokenVersion);
-    // Generate long-lived refresh token (7 days)
     const refreshToken = this.generateRefreshToken(user._id, user.tokenVersion);
 
     // Update last login
@@ -209,7 +207,7 @@ export class AuthService {
 
     return {
       user: this.sanitizeUser(user),
-      token, // ⚠️ Short-lived access token (15 min)
+      token,
       refreshToken, // ⚠️ Long-lived refresh token (7 days)
     };
   }
@@ -521,10 +519,10 @@ export class AuthService {
   }
 
   /**
-   * Generate JWT access token (short-lived)
+   * Generate JWT access token
    * @param userId MongoDB user ID
    * @param tokenVersion Current token version for instant revocation
-   * @returns JWT token (valid for 15 minutes)
+   * @returns JWT token (valid for JWT_EXPIRATION, default 7d)
    */
   private static generateToken(
     userId: string,
@@ -553,7 +551,7 @@ export class AuthService {
   /**
    * Verify and exchange refresh token for new access token
    * @param refreshToken The refresh token from client
-   * @returns New access token (short-lived, 15m)
+   * @returns New access token (7d validity)
    */
   static async refreshAccessToken(refreshToken: string): Promise<string> {
     try {

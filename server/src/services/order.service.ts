@@ -151,7 +151,6 @@ export class OrderService {
     return order;
   }
 
-  // ⬅️ חדש - מעקב הזמנה
   /**
    * Get order tracking information
    */
@@ -174,7 +173,7 @@ export class OrderService {
     };
   }
 
-  // ⬅️ חדש - עדכון סטטוס הזמנה (להוסיף entry לhistory)
+
   /**
    * Update order status and add tracking entry
    */

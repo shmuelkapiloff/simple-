@@ -13,21 +13,22 @@ export interface IUser extends Document {
   updatedAt: Date;
   isActive: boolean;
   lastLogin?: Date;
-  lastUpdated?: Date; // ⬅️ חדש
+  lastUpdated?: Date;
 
-  // Password reset fields ⬅️ חדש
+  // Password reset fields
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
 
-  // Account lockout fields ⬅️ חדש - אבטחה
+  // Account lockout fields
   failedLoginAttempts: number;
   lockedUntil?: Date | null;
 
-  // Token version for instant logout ⬅️ חדש - ביטול tokens
+  // Token version for instant logout / invalidation
   tokenVersion: number;
 
   // Google OAuth
   googleId?: string | null;
+  avatar?: string | null;
 
   // Instance methods
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -87,7 +88,7 @@ const UserSchema = new Schema<IUser>(
       default: Date.now,
     },
 
-    // ⬅️ חדש - איפוס סיסמה
+    // Password reset
     resetPasswordToken: {
       type: String,
       default: null,
@@ -100,7 +101,7 @@ const UserSchema = new Schema<IUser>(
       select: false, // Don't include in queries
     },
 
-    // ⬅️ חדש - נעילת חשבון (Account Lockout)
+    // Account lockout
     failedLoginAttempts: {
       type: Number,
       default: 0,
@@ -113,18 +114,23 @@ const UserSchema = new Schema<IUser>(
       index: true, // For efficient querying of locked accounts
     },
 
-    // ⬅️ חדש - Token Version: כשעולה ב-1, כל הtokens הישנים מתבטלים
+    // Token version: incrementing invalidates all existing tokens instantly
     tokenVersion: {
       type: Number,
       default: 0,
     },
 
-    // ⬅️ חדש - Google OAuth
+    // Google OAuth
     googleId: {
       type: String,
       default: null,
       index: true,
       sparse: true,
+    },
+
+    avatar: {
+      type: String,
+      default: null,
     },
   },
   {
@@ -147,7 +153,7 @@ const UserSchema = new Schema<IUser>(
 // Index for better query performance
 // Email index is already created by unique: true in schema
 UserSchema.index({ createdAt: -1 });
-UserSchema.index({ resetPasswordToken: 1 }); // ⬅️ חדש - לאיפוס סיסמה מהיר
+UserSchema.index({ resetPasswordToken: 1 });
 
 // Pre-save middleware to hash password
 UserSchema.pre("save", async function (next) {
@@ -183,10 +189,6 @@ UserSchema.statics.findByEmail = function (email: string) {
   return this.findOne({ email: email.toLowerCase(), isActive: true });
 };
 
-UserSchema.statics.findById = function (id: string) {
-  return this.findOne({ _id: id, isActive: true });
-};
-
 // Create and export the User model
 export const UserModel = model<IUser>("User", UserSchema);
 
@@ -195,7 +197,7 @@ export type CreateUserInput = {
   email: string;
   password: string;
   name: string;
-  phone?: string; // ⬅️ חדש
+  phone?: string;
 };
 
 export type LoginInput = {
@@ -207,14 +209,13 @@ export type UserResponse = {
   _id: string;
   email: string;
   name: string;
-  phone?: string; // ⬅️ חדש
-  role: string; // ⬅️ חדש
+  phone?: string;
+  role: string;
   createdAt: Date;
   updatedAt: Date;
   lastLogin?: Date;
 };
 
-// ⬅️ חדש - טייפ לעדכון פרופיל
 export type UpdateProfileInput = {
   name?: string;
   phone?: string;
