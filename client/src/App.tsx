@@ -10,11 +10,11 @@ import Spinner from "./components/Spinner";
 
 // Lazy-loaded pages (code splitting for large/admin pages)
 const Checkout = lazy(() => import("./pages/Checkout"));
+const PaymentResult = lazy(() => import("./pages/PaymentResult"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Order = lazy(() => import("./pages/Order"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Admin = lazy(() => import("./pages/Admin"));
-const PaymentResult = lazy(() => import("./pages/PaymentResult"));
 
 function PageFallback() {
   return (
@@ -72,17 +72,6 @@ export default function App() {
             <ProtectedRoute>
               <Suspense fallback={<PageFallback />}>
                 <Profile />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/payment-result"
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<PageFallback />}>
-                <PaymentResult />
               </Suspense>
             </ProtectedRoute>
           }

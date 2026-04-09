@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   useGetCartQuery,
   useGetAddressesQuery,
@@ -13,26 +13,6 @@ import type { AddressRequest, CartItem as CartItemType } from "../types";
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get("session_id");
-  const cancelled = searchParams.get("canceled");
-
-  // Stripe redirected back — forward to the dedicated result page
-  useEffect(() => {
-    if (sessionId) {
-      const orderId = localStorage.getItem("checkout_order_id");
-      const target = orderId
-        ? `/payment-result?orderId=${orderId}`
-        : "/payment-result";
-      navigate(target, { replace: true });
-    } else if (cancelled) {
-      navigate("/payment-result?cancelled=1", { replace: true });
-    }
-  }, [sessionId, cancelled, navigate]);
-
-  // While the redirect effect fires, render nothing
-  if (sessionId || cancelled) return null;
-
   return <CheckoutFlow navigate={navigate} />;
 }
 
@@ -113,9 +93,6 @@ function CheckoutFlow({
       const order = result.data.order;
       // checkoutUrl is inside payment object
       const checkoutUrl = result.data.payment?.checkoutUrl;
-
-      // Save order ID for polling on return
-      localStorage.setItem("checkout_order_id", order._id);
 
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
