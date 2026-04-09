@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useGetCartQuery,
   useGetAddressesQuery,
   useCreateAddressMutation,
   useCreateOrderMutation,
-  useGetPaymentStatusQuery,
 } from "../api";
 import CartItem from "../components/CartItem";
 import AddressForm from "../components/AddressForm";
@@ -18,70 +17,21 @@ export default function Checkout() {
   const sessionId = searchParams.get("session_id");
   const cancelled = searchParams.get("canceled");
 
-  // ---- Stripe return: success polling ----
-  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(() =>
-    sessionId ? localStorage.getItem("checkout_order_id") : null,
-  );
-  const { data: paymentData } = useGetPaymentStatusQuery(paymentOrderId!, {
-    skip: !paymentOrderId,
-    pollingInterval: 3000,
-  });
-
+  // Stripe redirected back — forward to the dedicated result page
   useEffect(() => {
-    // Server returns { data: { payment } }
-    if (paymentData?.data?.payment?.status === "succeeded") {
-      localStorage.removeItem("checkout_order_id");
+    if (sessionId) {
+      const orderId = localStorage.getItem("checkout_order_id");
+      const target = orderId
+        ? `/payment-result?orderId=${orderId}`
+        : "/payment-result";
+      navigate(target, { replace: true });
+    } else if (cancelled) {
+      navigate("/payment-result?cancelled=1", { replace: true });
     }
-  }, [paymentData]);
+  }, [sessionId, cancelled, navigate]);
 
-  // If returned from Stripe success
-  if (sessionId && paymentOrderId) {
-    const status = paymentData?.data?.payment?.status;
-    const paid = status === "succeeded";
-
-    return (
-      <div className="max-w-lg mx-auto px-4 py-20 text-center">
-        {paid ? (
-          <>
-            <div className="text-6xl mb-4">✅</div>
-            <h1 className="text-2xl font-bold text-green-600 mb-2">
-              התשלום בוצע בהצלחה!
-            </h1>
-            <p className="text-gray-500 mb-6">ההזמנה שלך אושרה</p>
-            <Link
-              to="/orders"
-              className="inline-block bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 transition"
-            >
-              צפה בהזמנות
-            </Link>
-          </>
-        ) : (
-          <>
-            <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
-            <h1 className="text-xl font-bold mb-2">ממתין לאישור תשלום...</h1>
-            <p className="text-gray-500 text-sm">זה יכול לקחת כמה שניות</p>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  // If cancelled from Stripe
-  if (cancelled) {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-20 text-center">
-        <div className="text-6xl mb-4">❌</div>
-        <h1 className="text-2xl font-bold text-red-600 mb-2">התשלום בוטל</h1>
-        <p className="text-gray-500 mb-6">לא בוצע חיוב. העגלה שלך נשמרה.</p>
-        <Link
-          to="/cart"
-          className="inline-block bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 transition"
-        >
-          חזרה לעגלה
-        </Link>
-      </div>
-    );
-  }
+  // While the redirect effect fires, render nothing
+  if (sessionId || cancelled) return null;
 
   return <CheckoutFlow navigate={navigate} />;
 }
