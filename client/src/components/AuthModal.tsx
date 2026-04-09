@@ -86,6 +86,7 @@ export default function AuthModal({
   const [googleLogin, { isLoading: googleLoading }] = useGoogleLoginMutation();
   const isLoading = loginLoading || regLoading || forgotLoading || googleLoading;
   const modalRef = useRef<HTMLDivElement>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
 
 
@@ -99,30 +100,19 @@ export default function AuthModal({
     setShowPassword(false);
   }, []);
 
-  // Google login handler (now after reset)
-  const handleGoogleLogin = useCallback(() => {
-    if (!window.google || !GOOGLE_CLIENT_ID) {
-      setError("Google login לא זמין כרגע");
-      return;
+  const googleCallback = useCallback(async (response: any) => {
+    setError("");
+    try {
+      const result = await googleLogin({ idToken: response.credential }).unwrap();
+      if (result.data) {
+        localStorage.setItem("token", result.data.token);
+        localStorage.setItem("refreshToken", result.data.refreshToken);
+      }
+      reset();
+      close();
+    } catch (err: any) {
+      setError(err?.data?.message || "אירעה שגיאה, נסה שוב");
     }
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async (response: any) => {
-        setError("");
-        try {
-          const result = await googleLogin({ idToken: response.credential }).unwrap();
-          if (result.data) {
-            localStorage.setItem("token", result.data.token);
-            localStorage.setItem("refreshToken", result.data.refreshToken);
-          }
-          reset();
-          close();
-        } catch (err: any) {
-          setError(err?.data?.message || "אירעה שגיאה, נסה שוב");
-        }
-      },
-    });
-    window.google.accounts.id.prompt();
   }, [googleLogin, close, reset]);
 
   // Reset form when switching views
@@ -203,19 +193,45 @@ export default function AuthModal({
     }
   };
 
-  // Load Google Identity Services script
+  // Load Google Identity Services script and render button
   useEffect(() => {
-    if (!isOpen) return;
-    if (document.getElementById("google-identity-script")) return;
+    if (!isOpen || view !== "login" || !GOOGLE_CLIENT_ID) return;
+
+    const renderGoogleButton = () => {
+      if (!window.google || !googleButtonRef.current) return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: googleCallback,
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        locale: "he",
+        width: 400,
+      });
+    };
+
+    const existing = document.getElementById("google-identity-script");
+    if (existing) {
+      // Script tag already in DOM — may or may not be loaded yet
+      if (window.google) {
+        renderGoogleButton();
+      } else {
+        existing.addEventListener("load", renderGoogleButton);
+        return () => existing.removeEventListener("load", renderGoogleButton);
+      }
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.id = "google-identity-script";
+    script.onload = renderGoogleButton;
     document.body.appendChild(script);
-    return () => {
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-  }, [isOpen]);
+  }, [isOpen, view, googleCallback]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
@@ -324,17 +340,9 @@ export default function AuthModal({
               {isLoading ? "..." : view === "login" ? "התחבר" : "הירשם"}
             </button>
           </form>
-          {/* Google Login Button */}
+          {/* Google Login Button — rendered by Google SDK (no One Tap / iframe issues) */}
           {view === "login" && (
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2.5 mt-2 bg-white hover:bg-gray-50 transition disabled:opacity-50"
-            >
-              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5" />
-              <span>התחבר עם Google</span>
-            </button>
+            <div ref={googleButtonRef} className="mt-2 flex justify-center" />
           )}
           </>
         ) : (
