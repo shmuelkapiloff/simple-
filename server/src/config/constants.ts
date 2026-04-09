@@ -74,8 +74,17 @@ export const AUDIT_LOG_TTL = 90 * 24 * 60 * 60; // 90 days in seconds
  * when a user logs out or changes password, tokenVersion is incremented,
  * immediately invalidating all existing tokens without waiting for expiry.
  *
- * If migrating to a short-lived access + refresh token flow (e.g. 15m / 7d),
- * update this value to "15m" and update the client to use the /auth/refresh endpoint.
+ * ⚠️  Access token intentionally set to 7 days (not 15m) because this server
+ *     serves multiple clients — including a separate client that does NOT use
+ *     the /auth/refresh endpoint. A short-lived token would force that client
+ *     to re-authenticate frequently without any mechanism to renew silently.
+ *
+ *     Instant revocation is handled by tokenVersion: on logout or password
+ *     change, tokenVersion increments in the DB and all existing tokens
+ *     (regardless of expiry) are rejected immediately by the auth middleware.
+ *
+ *     Clients that DO support refresh tokens can use POST /auth/refresh to
+ *     obtain a new access token proactively before the 7-day window expires.
  */
 export const JWT_EXPIRATION = "7d";
 
