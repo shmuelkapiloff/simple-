@@ -1,4 +1,3 @@
-
 import {
   UserModel,
   CreateUserInput,
@@ -31,7 +30,9 @@ export async function getUserByEmail(email: string) {
 }
 
 export async function createUser(
-  data: Partial<CreateUserInput & { googleId?: string; avatar?: string; name?: string }>,
+  data: Partial<
+    CreateUserInput & { googleId?: string; avatar?: string; name?: string }
+  >,
 ) {
   const user = await UserModel.create({
     ...data,

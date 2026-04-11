@@ -40,7 +40,7 @@ const WebhookEventSchema = new Schema<IWebhookEvent>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // TTL index - automatically delete old webhook events after 30 days
@@ -48,5 +48,5 @@ WebhookEventSchema.index({ processedAt: 1 }, { expireAfterSeconds: 2592000 });
 
 export const WebhookEventModel = model<IWebhookEvent>(
   "WebhookEvent",
-  WebhookEventSchema
+  WebhookEventSchema,
 );

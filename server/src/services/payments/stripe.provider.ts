@@ -160,8 +160,8 @@ export class StripeProvider implements PaymentProvider {
         },
       ],
       mode: "payment",
-      success_url: `${clientUrl}/checkout?payment=success&orderId=${params.orderId}`,
-      cancel_url: `${clientUrl}/checkout?payment=cancelled&orderId=${params.orderId}`,
+      success_url: `${clientUrl}/payment-result?payment=success&orderId=${params.orderId}`,
+      cancel_url: `${clientUrl}/payment-result?payment=cancelled&orderId=${params.orderId}`,
       client_reference_id: params.orderId,
       metadata: {
         orderId: params.orderId,

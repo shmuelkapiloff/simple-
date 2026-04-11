@@ -84,12 +84,10 @@ export default function AuthModal({
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMsg, setForgotMsg] = useState("");
   const [googleLogin, { isLoading: googleLoading }] = useGoogleLoginMutation();
-  const isLoading = loginLoading || regLoading || forgotLoading || googleLoading;
+  const isLoading =
+    loginLoading || regLoading || forgotLoading || googleLoading;
   const modalRef = useRef<HTMLDivElement>(null);
   const googleButtonRef = useRef<HTMLDivElement>(null);
-
-
-
 
   // Only declare reset ONCE, before use
   const reset = useCallback(() => {
@@ -100,20 +98,25 @@ export default function AuthModal({
     setShowPassword(false);
   }, []);
 
-  const googleCallback = useCallback(async (response: any) => {
-    setError("");
-    try {
-      const result = await googleLogin({ idToken: response.credential }).unwrap();
-      if (result.data) {
-        localStorage.setItem("token", result.data.token);
-        localStorage.setItem("refreshToken", result.data.refreshToken);
+  const googleCallback = useCallback(
+    async (response: any) => {
+      setError("");
+      try {
+        const result = await googleLogin({
+          idToken: response.credential,
+        }).unwrap();
+        if (result.data) {
+          localStorage.setItem("token", result.data.token);
+          localStorage.setItem("refreshToken", result.data.refreshToken);
+        }
+        reset();
+        close();
+      } catch (err: any) {
+        setError(err?.data?.message || "אירעה שגיאה, נסה שוב");
       }
-      reset();
-      close();
-    } catch (err: any) {
-      setError(err?.data?.message || "אירעה שגיאה, נסה שוב");
-    }
-  }, [googleLogin, close, reset]);
+    },
+    [googleLogin, close, reset],
+  );
 
   // Reset form when switching views
   useEffect(() => {
@@ -166,8 +169,6 @@ export default function AuthModal({
       setForgotMsg("אירעה שגיאה, נסה שוב");
     }
   };
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,72 +279,72 @@ export default function AuthModal({
         {!showForgot ? (
           <>
             <form onSubmit={handleSubmit} className="space-y-4">
-            {view === "register" && (
+              {view === "register" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    שם
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                    placeholder="השם שלך"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  שם
+                  אימייל
                 </label>
                 <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                  placeholder="השם שלך"
-                />
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                אימייל
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                dir="ltr"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                placeholder="email@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                סיסמה
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   dir="ltr"
-                  minLength={6}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                  placeholder="••••••••"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  placeholder="email@example.com"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
-                </button>
               </div>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  סיסמה
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    dir="ltr"
+                    minLength={6}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                  </button>
+                </div>
+              </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 transition disabled:opacity-50"
-            >
-              {isLoading ? "..." : view === "login" ? "התחבר" : "הירשם"}
-            </button>
-          </form>
-          {/* Google Login Button — rendered by Google SDK (no One Tap / iframe issues) */}
-          {view === "login" && (
-            <div ref={googleButtonRef} className="mt-2 flex justify-center" />
-          )}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 transition disabled:opacity-50"
+              >
+                {isLoading ? "..." : view === "login" ? "התחבר" : "הירשם"}
+              </button>
+            </form>
+            {/* Google Login Button — rendered by Google SDK (no One Tap / iframe issues) */}
+            {view === "login" && (
+              <div ref={googleButtonRef} className="mt-2 flex justify-center" />
+            )}
           </>
         ) : (
           <form onSubmit={handleForgot} className="space-y-4">

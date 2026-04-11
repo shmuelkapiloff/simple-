@@ -1,7 +1,7 @@
-import { OAuth2Client } from 'google-auth-library';
-import { UserModel } from '../models/user.model';
-import { getUserByEmail, createUser, updateUserGoogleId } from './auth.service';
-import { env } from '../config/env';
+import { OAuth2Client } from "google-auth-library";
+import { UserModel } from "../models/user.model";
+import { getUserByEmail, createUser, updateUserGoogleId } from "./auth.service";
+import { env } from "../config/env";
 
 const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
 
@@ -12,7 +12,7 @@ export async function verifyGoogleToken(idToken: string) {
   });
   const payload = ticket.getPayload();
   if (!payload || !payload.email) {
-    throw new Error('Invalid Google token');
+    throw new Error("Invalid Google token");
   }
   return payload;
 }

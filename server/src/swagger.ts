@@ -113,7 +113,8 @@ const definition = {
           googleId: {
             type: "string",
             nullable: true,
-            description: "Google OAuth user ID (present for Google-linked accounts)",
+            description:
+              "Google OAuth user ID (present for Google-linked accounts)",
           },
           avatar: {
             type: "string",
@@ -465,14 +466,23 @@ const definition = {
                     {
                       type: "object",
                       properties: {
-                        googleId: { type: "string", description: "Google user ID" },
-                        avatar: { type: "string", description: "Google profile picture URL" },
+                        googleId: {
+                          type: "string",
+                          description: "Google user ID",
+                        },
+                        avatar: {
+                          type: "string",
+                          description: "Google profile picture URL",
+                        },
                       },
                     },
                   ],
                 },
                 token: { type: "string", description: "JWT access token" },
-                refreshToken: { type: "string", description: "JWT refresh token" },
+                refreshToken: {
+                  type: "string",
+                  description: "JWT refresh token",
+                },
               },
             },
             "Google login successful",
