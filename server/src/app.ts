@@ -8,6 +8,7 @@ import {
   requestIdMiddleware,
   requestLoggerMiddleware,
 } from "./middlewares/logging.middleware";
+import { auditLoggingMiddleware } from "./middlewares/audit-logging.middleware";
 import {
   metricsMiddleware,
   metricsEndpoint,
@@ -47,6 +48,7 @@ app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: MAX_JSON_SIZE })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true, limit: MAX_JSON_SIZE })); // Parse URL-encoded bodies
 app.use(requestIdMiddleware); // Assign X-Request-ID
+app.use(auditLoggingMiddleware); // Enrich request with audit context (IP, UA, session)
 app.use(requestLoggerMiddleware); // Structured request/response logging
 app.use(metricsMiddleware); // Prometheus metrics tracking
 

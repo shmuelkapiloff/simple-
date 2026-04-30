@@ -21,8 +21,7 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // Optionally log error
-    // console.error(error, info);
+    console.error("[ErrorBoundary] Uncaught error:", error, info);
   }
 
   render() {

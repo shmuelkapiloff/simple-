@@ -134,7 +134,7 @@ PORT=4001
 LOG_LEVEL=info
 
 # Database
-MONGODB_URI=mongodb+srv://admin:PASSWORD@cluster0.xxxxx.mongodb.net/simple-shop?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://admin:PASSWORD@cluster0.xxxxx.mongodb.net/simple-shop?retryWrites=true&w=majority
 MONGODB_MAX_CONNECTIONS=20
 MONGODB_TIMEOUT=30000
 
@@ -149,9 +149,9 @@ STRIPE_WEBHOOK_SECRET=whsec_... # From Stripe webhook settings
 
 # JWT
 JWT_SECRET=GENERATE_STRONG_SECRET_32_CHARS_MIN
-REFRESH_SECRET=GENERATE_STRONG_SECRET_32_CHARS_MIN
-JWT_EXPIRY=15m
-REFRESH_EXPIRY=7d
+JWT_REFRESH_SECRET=GENERATE_STRONG_SECRET_32_CHARS_MIN
+JWT_EXPIRE=15m
+JWT_REFRESH_EXPIRE=7d
 
 # Server
 CLIENT_URL=https://shop.example.com # Production frontend URL
@@ -261,7 +261,7 @@ services:
       - "4001:4001"
     environment:
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://mongo:27017/simple-shop
+      - MONGO_URI=mongodb://mongo:27017/simple-shop
       - REDIS_URL=redis://redis:6379
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
@@ -495,7 +495,7 @@ sudo certbot --nginx -d api.shop.example.com
 
 - [ ] Database migrated to production
 - [ ] Indexes created
-- [ ] Initial admin user created: `npm run make-admin admin@example.com`
+- [ ] Initial admin user role set in MongoDB (`db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })`)
 - [ ] Seed data loaded (products, categories)
 - [ ] Application deployed and health check passes
 - [ ] API responds to requests
@@ -758,7 +758,7 @@ chmod +x deploy.sh
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | **Health check fails** | App not starting | Check logs: `docker logs API_CONTAINER` |
-| **Database connection error** | Wrong connection string | Verify `MONGODB_URI` in environment |
+| **Database connection error** | Wrong connection string | Verify `MONGO_URI` in environment |
 | **Webhook not received** | Wrong endpoint | Check Stripe dashboard webhook URL |
 | **Out of memory** | App leak or too many requests | Increase instance size, add monitoring |
 | **High latency** | Database too slow | Add indexes, scale database |

@@ -199,8 +199,8 @@ npm start                # הרצת השרת המקומפל
 
 # Database
 npm run seed             # איכולס מסד נתונים עם מוצרים לדוגמה
-npm run make-admin       # הפיכת משתמש ל-admin
-                         # שימוש: npm run make-admin user@example.com
+# הפיכת משתמש ל-admin (ידנית ב-MongoDB):
+# db.users.updateOne({ email: "user@example.com" }, { $set: { role: "admin" } })
 
 # Testing
 npm test                 # הרצת בדיקות Jest

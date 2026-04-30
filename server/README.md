@@ -2,11 +2,11 @@
 
 ## Quick Links
 
-- **Setup & Configuration:** [DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md)
-- **Architecture Overview:** [docs/ARCHITECTURE_NARRATIVE.md](./docs/ARCHITECTURE_NARRATIVE.md)
-- **Payment System:** [docs/PAYMENT_SYSTEM_DESIGN.md](./docs/PAYMENT_SYSTEM_DESIGN.md)
-- **Security:** [docs/SECURITY_DESIGN_DECISIONS.md](./docs/SECURITY_DESIGN_DECISIONS.md)
-- **API Reference:** [docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)
+- **Setup & Configuration:** [DEPLOYMENT_GUIDE.md](./docs/technical/DEPLOYMENT_GUIDE.md)
+- **Architecture Overview:** [ARCHITECTURE_NARRATIVE.md](./docs/technical/ARCHITECTURE_NARRATIVE.md)
+- **Payment System:** [PAYMENT_SYSTEM_DESIGN.md](./docs/technical/PAYMENT_SYSTEM_DESIGN.md)
+- **Security:** [SECURITY_DESIGN_DECISIONS.md](./docs/security/SECURITY_DESIGN_DECISIONS.md)
+- **API Reference:** [API_REFERENCE.md](./docs/technical/API_REFERENCE.md)
 - **Postman Collection:** [postman/Simple-Shop-Complete-Collection.json](./postman/Simple-Shop-Complete-Collection.json)
 
 ---
@@ -47,7 +47,7 @@
 ```
 ┌─────────────┐
 │   Client    │ (React + Redux)
-│  (Next.js)  │
+│   (Vite)    │
 └──────┬──────┘
        │ HTTP/HTTPS
        ↓
@@ -87,15 +87,21 @@
 **Collections:**
 - `users` - Authentication, profiles
 - `products` - Catalog with pricing, stock
-- `orders` - Order headers with customer info
-- `order-items` - Order line items (product, qty, price)
+- `orders` - Orders including embedded order line items snapshot
 - `carts` - Shopping cart state per user
+- `addresses` - User shipping addresses
 - `payments` - Payment records with provider reference
 - `webhook-events` - Processed webhook IDs (idempotency)
 - `failed-webhooks` - Retry queue for failed webhooks
-- `refresh-tokens` - Token rotation tracking (optional)
+- `idempotency-keys` - Cached responses for idempotent order creation
+- `sequences` - Atomic counters (order number generation)
+- `audit-logs` - Admin/security activity trail
 
-**See Also:** [Database Schema](./docs/DATABASE_SCHEMA_COMPLETE.md)
+**Auth Token Model:**
+- Access token + refresh token are JWTs.
+- Refresh token revocation is handled via `tokenVersion` on user documents (no separate `refresh-tokens` collection).
+
+**See Also:** [Database Schema](./docs/technical/DATABASE_SCHEMA_COMPLETE.md)
 
 ---
 
@@ -124,7 +130,7 @@ cp .env.example .env
 Edit `.env`:
 ```env
 # Database
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/simple-shop
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/simple-shop
 
 # Cache
 REDIS_URL=redis://default:password@host:port
@@ -135,7 +141,7 @@ STRIPE_WEBHOOK_SECRET=whsec_test_...
 
 # JWT
 JWT_SECRET=your-super-secret-key-change-in-production
-REFRESH_SECRET=your-refresh-secret-change-in-production
+JWT_REFRESH_SECRET=your-refresh-secret-change-in-production
 
 # Server
 NODE_ENV=development
@@ -173,7 +179,7 @@ curl http://localhost:4001/health
 
 ### Deployment
 
-See [DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md) for:
+See [DEPLOYMENT_GUIDE.md](./docs/technical/DEPLOYMENT_GUIDE.md) for:
 - Docker containerization
 - Render.com deployment
 - AWS EC2 deployment
@@ -193,7 +199,7 @@ POST   /api/auth/login        - Get JWT token
 POST   /api/auth/logout       - Clear session
 POST   /api/auth/refresh      - Get new token
 POST   /api/auth/forgot-password - Password reset flow
-POST   /api/auth/reset-password  - Confirm reset with token
+POST   /api/auth/reset-password/:token - Confirm reset with token
 ```
 
 ### Product Endpoints
@@ -201,7 +207,7 @@ POST   /api/auth/reset-password  - Confirm reset with token
 ```
 GET    /api/products          - List all products (paginated)
 GET    /api/products/:id      - Get product details
-GET    /api/products/search   - Search products by name/category
+GET    /api/products/categories/list - List available categories
 ```
 
 ### Cart Endpoints (Authenticated)
@@ -209,9 +215,9 @@ GET    /api/products/search   - Search products by name/category
 ```
 GET    /api/cart              - Get current user's cart
 POST   /api/cart/add          - Add item to cart
-POST   /api/cart/update       - Update item quantity
-POST   /api/cart/remove       - Remove item from cart
-POST   /api/cart/clear        - Clear entire cart
+PUT    /api/cart/update       - Update item quantity
+DELETE /api/cart/remove       - Remove item from cart
+DELETE /api/cart/clear        - Clear entire cart
 ```
 
 ### Order Endpoints (Authenticated)
@@ -227,7 +233,7 @@ POST   /api/orders/:id/cancel - Cancel order
 
 ```
 POST   /api/payments/create-intent  - Create Stripe checkout session
-GET    /api/payments/verify-session - Verify payment success
+GET    /api/payments/:orderId/status - Verify payment status
 POST   /api/payments/webhook        - Receive Stripe webhooks (⚠️ Signed)
 ```
 
@@ -241,7 +247,7 @@ PUT    /api/admin/products/:id - Update product
 DELETE /api/admin/products/:id - Delete product
 ```
 
-**Full API Reference:** [docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)
+**Full API Reference:** [API_REFERENCE.md](./docs/technical/API_REFERENCE.md)
 
 ---
 
@@ -269,7 +275,7 @@ DELETE /api/admin/products/:id - Delete product
 - ✅ MongoDB transactions (atomic stock reduction)
 - ✅ Retry logic with exponential backoff
 
-**See Also:** [PAYMENT_SYSTEM_DESIGN.md](./docs/PAYMENT_SYSTEM_DESIGN.md)
+**See Also:** [PAYMENT_SYSTEM_DESIGN.md](./docs/technical/PAYMENT_SYSTEM_DESIGN.md)
 
 ---
 
@@ -361,8 +367,11 @@ GET /metrics
 # Basic health
 GET /health
 
-# Deep health check (dependencies)
-GET /health/deep
+# API health (dependencies)
+GET /api/health
+
+# Fast ping
+GET /api/health/ping
 ```
 
 Returns:
@@ -456,8 +465,13 @@ curl -X POST http://localhost:4001/api/admin/products \
 
 ### Create Admin User
 
-```bash
-npm run ts-node scripts/make-admin.ts user@example.com
+Update user role directly in MongoDB (the `make-admin` script was removed):
+
+```javascript
+db.users.updateOne(
+  { email: "user@example.com" },
+  { $set: { role: "admin" } }
+)
 ```
 
 ### Seed Database
@@ -604,7 +618,7 @@ db.webhookEvents.createIndex({ createdAt: 1 }, { expireAfterSeconds: 2592000 })
 - [ ] WAF deployed (infrastructure level)
 - [ ] DDoS protection configured (infrastructure level)
 
-**Full Details:** [SECURITY_DESIGN_DECISIONS.md](./docs/SECURITY_DESIGN_DECISIONS.md)
+**Full Details:** [SECURITY_DESIGN_DECISIONS.md](./docs/security/SECURITY_DESIGN_DECISIONS.md)
 
 ---
 
@@ -633,23 +647,21 @@ db.webhookEvents.createIndex({ createdAt: 1 }, { expireAfterSeconds: 2592000 })
 ### Code Style
 
 - TypeScript strict mode
-- ESLint + Prettier configured
-- Format: `npm run format`
-- Lint: `npm run lint`
+- Consistent code style and clear commit conventions
+- Formatting follows project conventions
 
 ### Making Changes
 
 1. Create feature branch: `git checkout -b feature/my-feature`
 2. Write tests for your change
 3. Ensure all tests pass: `npm run test`
-4. Format code: `npm run format`
+4. Build the project: `npm run build`
 5. Commit with clear message: `git commit -m "feat: add new feature"`
 6. Push and create PR
 
 ### Before Deployment
 
 ```bash
-npm run lint      # Check code style
 npm run test      # Run all tests
 npm run build     # Verify build succeeds
 npm run start     # Test production start
@@ -660,10 +672,10 @@ npm run start     # Test production start
 ## Support & Resources
 
 ### Documentation
-- [API Documentation](./docs/API_DOCUMENTATION.md)
-- [Database Schema](./docs/DATABASE_SCHEMA_COMPLETE.md)
-- [Deployment Guide](./docs/DEPLOYMENT_GUIDE.md)
-- [Architecture Narrative](./docs/ARCHITECTURE_NARRATIVE.md)
+- [API Reference](./docs/technical/API_REFERENCE.md)
+- [Database Schema](./docs/technical/DATABASE_SCHEMA_COMPLETE.md)
+- [Deployment Guide](./docs/technical/DEPLOYMENT_GUIDE.md)
+- [Architecture Narrative](./docs/technical/ARCHITECTURE_NARRATIVE.md)
 
 ### External Resources
 - [Stripe Documentation](https://stripe.com/docs)

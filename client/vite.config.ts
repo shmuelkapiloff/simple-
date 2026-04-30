@@ -6,12 +6,11 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    // Proxy disabled - using VITE_API_BASE_URL from .env.local
-    // proxy: {
-    //   "/api": {
-    //     target: "http://localhost:4001",
-    //     changeOrigin: true,
-    //   },
-    // },
+    proxy: {
+      "/api": {
+        target: "http://localhost:4001",
+        changeOrigin: true,
+      },
+    },
   },
 });

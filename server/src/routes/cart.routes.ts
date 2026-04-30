@@ -14,21 +14,21 @@ router.use(requireAuth);
 router.use(apiRateLimiter);
 
 // GET /api/cart - קבלת עגלה נוכחית
-router.get("/", requireAuth, CartController.getCart);
+router.get("/", CartController.getCart);
 
 // GET /api/cart/count - ספירת פריטים בעגלה
-router.get("/count", requireAuth, CartController.getCartCount);
+router.get("/count",     CartController.getCartCount);
 
 // POST /api/cart/add - הוספת פריט לעגלה
-router.post("/add", requireAuth, CartController.addToCart);
+router.post("/add", CartController.addToCart);
 
 // PUT /api/cart/update - עדכון כמות פריט
-router.put("/update", requireAuth, CartController.updateQuantity);
+router.put("/update",  CartController.updateQuantity);
 
 // DELETE /api/cart/remove - הסרת פריט מעגלה
-router.delete("/remove", requireAuth, CartController.removeFromCart);
+router.delete("/remove", CartController.removeFromCart);
 
 // DELETE /api/cart/clear - ניקוי עגלה מלאה
-router.delete("/clear", requireAuth, CartController.clearCart);
+router.delete("/clear", CartController.clearCart);
 
 export default router;

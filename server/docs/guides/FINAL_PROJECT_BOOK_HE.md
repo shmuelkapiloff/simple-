@@ -195,7 +195,7 @@ Simple Shop היא **מערכת e-commerce מלאה** שמאפשרת לכל עס
 | הרשמה | `POST /auth/register` | יצירת חשבון חדש |
 | התחברות | `POST /auth/login` | אימות + JWT token |
 | התנתקות | `POST /auth/logout` | ביטול כל הטוקנים (tokenVersion) |
-| רענון טוקן | `POST /auth/refresh-token` | קבלת access token חדש |
+| רענון טוקן | `POST /auth/refresh` | קבלת access token חדש |
 | אימות | `GET /auth/verify` | בדיקת תקינות הטוקן |
 | איפוס סיסמה | `POST /auth/forgot-password` | שליחת קוד לאימייל |
 
@@ -212,10 +212,10 @@ Simple Shop היא **מערכת e-commerce מלאה** שמאפשרת לכל עס
 | פעולה | Endpoint | תיאור |
 |-------|----------|-------|
 | צפייה בעגלה | `GET /cart` | פריטים + סכום |
-| הוספת פריט | `POST /cart` | עם בדיקת מלאי |
-| עדכון כמות | `PUT /cart/:itemId` | עם בדיקת מלאי |
-| הסרת פריט | `DELETE /cart/:itemId` | הסרה מהעגלה |
-| ריקון עגלה | `DELETE /cart` | הסרת כל הפריטים |
+| הוספת פריט | `POST /cart/add` | עם בדיקת מלאי |
+| עדכון כמות | `PUT /cart/update` | עם בדיקת מלאי |
+| הסרת פריט | `DELETE /cart/remove` | הסרה מהעגלה |
+| ריקון עגלה | `DELETE /cart/clear` | הסרת כל הפריטים |
 
 #### מודול Orders
 | פעולה | Endpoint | תיאור |
@@ -223,12 +223,12 @@ Simple Shop היא **מערכת e-commerce מלאה** שמאפשרת לכל עס
 | יצירת הזמנה | `POST /orders` | מהעגלה + כתובת |
 | רשימת הזמנות | `GET /orders` | הזמנות המשתמש |
 | הזמנה בודדת | `GET /orders/:id` | פרטים מלאים |
-| ביטול | `PUT /orders/:id/cancel` | לפני שילוח בלבד |
+| ביטול | `POST /orders/:id/cancel` | לפני שילוח בלבד |
 
 #### מודול Payments
 | פעולה | Endpoint | תיאור |
 |-------|----------|-------|
-| יצירת Checkout | `POST /payments/create-checkout` | Stripe session |
+| יצירת Checkout | `POST /payments/create-intent` | Stripe session |
 | Webhook | `POST /payments/webhook` | קבלת אירועים מ-Stripe |
 
 #### מודול Admin
@@ -319,18 +319,18 @@ Simple Shop היא **מערכת e-commerce מלאה** שמאפשרת לכל עס
 
 | שכבה | טכנולוגיה | גרסה | תפקיד |
 |------|-----------|------|-------|
-| **Runtime** | Node.js | 22.x | JavaScript execution engine |
-| **Framework** | Express.js | 4.18 | HTTP server & routing |
+| **Runtime** | Node.js | 18+ | JavaScript execution engine |
+| **Framework** | Express.js | 4.19+ | HTTP server & routing |
 | **Language** | TypeScript | 5.x | Type-safe JavaScript |
 | **Database** | MongoDB | 8.x | NoSQL document database |
 | **ODM** | Mongoose | 8.x | MongoDB object modeling |
 | **Cache** | Redis | 5.x | In-memory data store |
 | **Auth** | JWT | - | Stateless authentication |
-| **Payments** | Stripe | v1 | Payment processing |
+| **Payments** | Stripe | 20.x | Payment processing |
 | **Validation** | Zod | 3.x | Runtime type validation |
 | **Logging** | Pino | 8.x | Structured JSON logging |
 | **Testing** | Jest | 29.x | Unit & integration tests |
-| **Metrics** | prom-client | 14.x | Prometheus metrics |
+| **Metrics** | prom-client | 15.x | Prometheus metrics |
 
 ### 1.3.7.3 שפות הפיתוח
 
@@ -494,7 +494,7 @@ Webhook: POST /api/payments/webhook
 POST   /api/auth/register          # יצירת חשבון
 POST   /api/auth/login             # התחברות
 POST   /api/auth/logout            # התנתקות (tokenVersion++)
-POST   /api/auth/refresh-token     # רענון token
+POST   /api/auth/refresh           # רענון token
 GET    /api/auth/verify            # בדיקת token
 POST   /api/auth/forgot-password   # איפוס סיסמה
 
@@ -504,19 +504,20 @@ GET    /api/products/:id           # מוצר בודד
 
 # Cart (Authenticated)
 GET    /api/cart                   # צפייה בעגלה
-POST   /api/cart                   # הוספת פריט
-PUT    /api/cart/:itemId           # עדכון כמות
-DELETE /api/cart/:itemId           # הסרת פריט
-DELETE /api/cart                   # ריקון עגלה
+POST   /api/cart/add               # הוספת פריט
+PUT    /api/cart/update            # עדכון כמות
+DELETE /api/cart/remove            # הסרת פריט
+DELETE /api/cart/clear             # ריקון עגלה
 
 # Orders (Authenticated)
 POST   /api/orders                 # יצירת הזמנה
 GET    /api/orders                 # רשימת הזמנות
 GET    /api/orders/:id             # הזמנה בודדת
-PUT    /api/orders/:id/cancel      # ביטול
+POST   /api/orders/:id/cancel      # ביטול
 
 # Payments (Authenticated)
-POST   /api/payments/create-checkout  # יצירת Stripe session
+POST   /api/payments/create-intent    # יצירת Stripe session
+GET    /api/payments/:orderId/status  # סטטוס תשלום להזמנה
 POST   /api/payments/webhook          # Stripe webhook (no auth)
 
 # Admin (Admin only)
@@ -559,10 +560,10 @@ GET    /api/health                 # בריאות המערכת
 
 | חבילה | גרסה | תפקיד |
 |-------|------|-------|
-| `express` | ^4.18 | HTTP server framework |
+| `express` | ^4.19 | HTTP server framework |
 | `mongoose` | ^8.0 | MongoDB ODM |
-| `redis` | ^4.6 | Redis client |
-| `stripe` | ^14.0 | Payment processing |
+| `ioredis` | ^5.4 | Redis client |
+| `stripe` | ^20.1 | Payment processing |
 | `jsonwebtoken` | ^9.0 | JWT creation & verification |
 | `bcryptjs` | ^2.4 | Password hashing |
 | `helmet` | ^7.0 | Security headers |
@@ -590,13 +591,13 @@ GET    /api/health                 # בריאות המערכת
 | `AuthService.logout()` | auth.service.ts | הגדלת tokenVersion לביטול כל הטוקנים |
 | `AuthService.register()` | auth.service.ts | יצירת משתמש, hash סיסמה |
 | `OrderService.createOrder()` | order.service.ts | יצירת הזמנה מעגלה |
-| `PaymentService.createCheckout()` | payment.service.ts | יצירת Stripe session |
+| `PaymentService.createPaymentIntent()` | payment.service.ts | יצירת Stripe session |
 | `PaymentService.handleWebhook()` | payment.service.ts | עיבוד webhook, idempotency |
 | `PaymentService.fulfillOrder()` | payment.service.ts | הפחתת מלאי אטומית |
-| `CartService.addItem()` | cart.service.ts | הוספה לעגלה עם בדיקת מלאי |
+| `CartService.addToCart()` | cart.service.ts | הוספה לעגלה עם בדיקת מלאי |
 | `ProductService.getProducts()` | product.service.ts | שליפה עם סינון |
 | `AdminService.getStats()` | admin.service.ts | סטטיסטיקות מכירות ומלאי |
-| `authMiddleware.protect()` | auth.middleware.ts | אימות JWT + tokenVersion |
+| `AuthMiddleware.requireAuth()` | auth.middleware.ts | אימות JWT + tokenVersion |
 | `rateLimiter.authRateLimiter()` | rate-limiter.middleware.ts | הגנה מ-brute force |
 
 ---
@@ -850,7 +851,7 @@ await WebhookEvent.create({ eventId, processedAt: new Date() });
     │              │─────────────►│              │              │
     │              │◄─────────────│              │              │
     │              │              │              │              │
-    │ POST /payments/create-checkout             │              │
+    │ POST /payments/create-intent               │              │
     │─────────────►│              │              │              │
     │              │ Create session              │              │
     │              │─────────────────────────────►│              │
